@@ -64,7 +64,7 @@
         }
 
         .logo-container img {
-            max-width: 120px;
+            max-width: 200px;
             max-height: 80px;
             width: auto;
             height: auto;
@@ -167,6 +167,12 @@
             gap: 15px;
         }
 
+        .source-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
         .stat-card {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white;
@@ -202,6 +208,16 @@
         .stat-card.total h3 {
             font-size: 1.2rem;
             font-weight: bold;
+        }
+
+        .stat-card.source {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            box-shadow: 0 10px 25px rgba(155, 89, 182, 0.3);
+        }
+
+        .stat-card.source:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(155, 89, 182, 0.4);
         }
 
         .divider {
@@ -312,6 +328,10 @@
 
         @media (max-width: 768px) {
             .stats-details {
+                grid-template-columns: 1fr;
+            }
+
+            .source-details {
                 grid-template-columns: 1fr;
             }
             
@@ -433,6 +453,21 @@
                 </div>
 
                 <div class="divider">
+                    <span class="divider-text">🎯 פירוט לפי מקור הכנסה</span>
+                </div>
+
+                <div class="source-details">
+                    <div class="stat-card source">
+                        <h3>קשר</h3>
+                        <div class="amount">₪<span class="formatted-number">67499</span></div>
+                    </div>
+                    <div class="stat-card source">
+                        <h3>נדרים פלוס</h3>
+                        <div class="amount">₪<span class="formatted-number">22266</span></div>
+                    </div>
+                </div>
+
+                <div class="divider">
                     <span class="divider-text">📊 גרפים וניתוחים</span>
                 </div>
 
@@ -499,12 +534,27 @@
                         <div class="amount">₪<span class="formatted-number">34124</span></div>
                     </div>
                     <div class="stat-card">
-                        <h3>ההעברות בנקאיות - המחאות</h3>
+                        <h3>העברות בנקאיות - המחאות</h3>
                         <div class="amount">₪<span class="formatted-number">2820</span></div>
                     </div>
                     <div class="stat-card">
                         <h3>מזומן</h3>
                         <div class="amount">₪<span class="formatted-number">8450</span></div>
+                    </div>
+                </div>
+
+                <div class="divider">
+                    <span class="divider-text">🎯 פירוט לפי מקור הכנסה</span>
+                </div>
+
+                <div class="source-details">
+                    <div class="stat-card source">
+                        <h3>קשר</h3>
+                        <div class="amount">₪<span class="formatted-number">71027</span></div>
+                    </div>
+                    <div class="stat-card source">
+                        <h3>נדרים פלוס</h3>
+                        <div class="amount">₪<span class="formatted-number">30959</span></div>
                     </div>
                 </div>
 
