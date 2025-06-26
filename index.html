@@ -74,9 +74,12 @@
         .refresh-container {
             flex: 0 0 auto;
             margin-left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .refresh-button {
+        .refresh-button, .reports-button {
             background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
             color: white;
             border: none;
@@ -97,18 +100,29 @@
             justify-content: center;
         }
 
+        .reports-button {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
+        }
+
         .refresh-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 12px 25px rgba(46, 204, 113, 0.4);
             background: linear-gradient(135deg, #229954 0%, #27ae60 100%);
         }
 
-        .refresh-button:active {
+        .reports-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(52, 152, 219, 0.4);
+            background: linear-gradient(135deg, #2980b9 0%, #1f4e79 100%);
+        }
+
+        .refresh-button:active, .reports-button:active {
             transform: translateY(0);
             box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
         }
 
-        .refresh-icon {
+        .refresh-icon, .reports-icon {
             width: 20px;
             height: 20px;
             transition: transform 0.3s ease;
@@ -116,6 +130,10 @@
 
         .refresh-button:hover .refresh-icon {
             transform: rotate(180deg);
+        }
+
+        .reports-button:hover .reports-icon {
+            transform: scale(1.1);
         }
 
         .refresh-button.loading .refresh-icon {
@@ -358,6 +376,8 @@
             .refresh-container {
                 order: 1;
                 margin: 0;
+                flex-direction: row;
+                justify-content: center;
             }
 
             .logo-container {
@@ -365,9 +385,11 @@
                 margin: 0;
             }
 
-            .refresh-button {
+            .refresh-button, .reports-button {
                 padding: 10px 20px;
                 font-size: 0.9rem;
+                width: 130px;
+                height: 45px;
             }
         }
     </style>
@@ -392,6 +414,13 @@
                     </svg>
                     רענן נתונים
                 </button>
+
+                <a href="https://na5845.github.io/A/Reports.html#" class="reports-button" target="_blank">
+                    <svg class="reports-icon" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                    </svg>
+                    דוחות
+                </a>
             </div>
         </div>
 
@@ -691,443 +720,3 @@
             },
             kesher: {
                 labels: ['אשראי', 'הו"ק בנקאי'],
-                data: [44353, 27654],
-                colors: ['#3498db', '#e74c3c']
-            },
-            nedarim: {
-                labels: ['אשראי', 'הו"ק בנקאי'],
-                data: [20918, 1400],
-                colors: ['#3498db', '#e74c3c']
-            }
-        };
-
-        // נתונים מאי 2025
-        const mayData = {
-            daily: {
-                labels: ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '30'],
-                data: [4814,2000,1000,3829,5351,1774,198,3428,1395,454,5489,742,1034,23704,2651,5340,2011,250,24621,1377,572,3901,106,6378,1049,2135,7173,480]
-            },
-            payment: {
-                labels: ['אשראי', 'הו"ק בנקאי', 'העברות בנקאיות-המחאות', 'מזומן'],
-                data: [67862, 34124, 2820, 8450],
-                colors: ['#3498db', '#e74c3c', '#f39c12', '#2ecc71']
-            },
-            sources: {
-                labels: ['קשר', 'נדרים פלוס', 'אחר'],
-                data: [71027, 30959, 11270],
-                colors: ['#9b59b6', '#1abc9c', '#34495e']
-            },
-            kesher: {
-                labels: ['אשראי', 'הו"ק בנקאי'],
-                data: [43591, 27436],
-                colors: ['#3498db', '#e74c3c']
-            },
-            nedarim: {
-                labels: ['אשראי', 'הו"ק בנקאי'],
-                data: [24271, 6688],
-                colors: ['#3498db', '#e74c3c']
-            }
-        };
-
-        // הגדרות גרף כלליות
-        const chartOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 8,
-                        font: {
-                            size: 8
-                        },
-                        generateLabels: function(chart) {
-                            const data = chart.data;
-                            if (data.labels.length && data.datasets.length) {
-                                return data.labels.map((label, index) => {
-                                    const value = data.datasets[0].data[index];
-                                    const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                    const percentage = ((value / total) * 100).toFixed(1);
-                                    return {
-                                        text: `${label}: ${percentage}%`,
-                                        fillStyle: data.datasets[0].backgroundColor[index],
-                                        strokeStyle: data.datasets[0].backgroundColor[index],
-                                        lineWidth: 0,
-                                        hidden: false,
-                                        index: index
-                                    };
-                                });
-                            }
-                            return [];
-                        }
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.parsed || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((value / total) * 100).toFixed(1);
-                            return `${label}: ₪${value.toLocaleString()} (${percentage}%)`;
-                        }
-                    }
-                }
-            }
-        };
-
-        const barOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `${context.label}: ₪${context.parsed.y.toLocaleString()}`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return '₪' + value.toLocaleString();
-                        }
-                    }
-                }
-            }
-        };
-
-        // גרפים כלליים
-        // גרף 12 החודשים האחרונים
-        new Chart(document.getElementById('yearlyTrendChart').getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: overviewData.yearly.labels,
-                datasets: [{
-                    label: 'תרומות חודשיות (₪)',
-                    data: overviewData.yearly.data,
-                    borderColor: '#3498db',
-                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                    borderWidth: 3,
-                    pointBackgroundColor: '#3498db',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 6,
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.label}: ₪${context.parsed.y.toLocaleString()}`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '₪' + (value / 1000) + 'K';
-                            }
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            maxRotation: 45
-                        }
-                    }
-                }
-            }
-        });
-
-        // גרף מפתחת הקרן
-        new Chart(document.getElementById('fundDevelopmentChart').getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: overviewData.fundDevelopment.labels,
-                datasets: [{
-                    label: 'סה"כ תרומות שנתיות (₪)',
-                    data: overviewData.fundDevelopment.data,
-                    backgroundColor: ['#95a5a6', '#1abc9c', '#3498db', '#e74c3c'],
-                    borderColor: ['#7f8c8d', '#16a085', '#2980b9', '#c0392b'],
-                    borderWidth: 1,
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.label}: ₪${context.parsed.y.toLocaleString()}`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '₪' + (value / 1000) + 'K';
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        // יוני 2025 - גרפים
-        // גרף יומי
-        new Chart(document.getElementById('dailyChart1').getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: juneData.daily.labels,
-                datasets: [{
-                    label: 'הכנסות יומיות (₪)',
-                    data: juneData.daily.data,
-                    backgroundColor: '#3498db',
-                    borderColor: '#2980b9',
-                    borderWidth: 1,
-                    borderRadius: 3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `יום ${context.label}: ₪${context.parsed.y.toLocaleString()}`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '₪' + (value / 1000) + 'K';
-                            },
-                            font: {
-                                size: 9
-                            }
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            font: {
-                                size: 8
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        new Chart(document.getElementById('paymentMethodChart1').getContext('2d'), {
-            type: 'pie',
-            data: {
-                labels: juneData.payment.labels,
-                datasets: [{
-                    data: juneData.payment.data,
-                    backgroundColor: juneData.payment.colors,
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: chartOptions
-        });
-
-        new Chart(document.getElementById('sourceChart1').getContext('2d'), {
-            type: 'pie',
-            data: {
-                labels: juneData.sources.labels,
-                datasets: [{
-                    data: juneData.sources.data,
-                    backgroundColor: juneData.sources.colors,
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: chartOptions
-        });
-
-        new Chart(document.getElementById('kesherBreakdownChart1').getContext('2d'), {
-            type: 'pie',
-            data: {
-                labels: juneData.kesher.labels,
-                datasets: [{
-                    data: juneData.kesher.data,
-                    backgroundColor: juneData.kesher.colors,
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: chartOptions
-        });
-
-        new Chart(document.getElementById('nedarimBreakdownChart1').getContext('2d'), {
-            type: 'pie',
-            data: {
-                labels: juneData.nedarim.labels,
-                datasets: [{
-                    data: juneData.nedarim.data,
-                    backgroundColor: juneData.nedarim.colors,
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: chartOptions
-        });
-
-        // מאי 2025 - גרפים
-        // גרף יומי
-        new Chart(document.getElementById('dailyChart2').getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: mayData.daily.labels,
-                datasets: [{
-                    label: 'הכנסות יומיות (₪)',
-                    data: mayData.daily.data,
-                    backgroundColor: '#e74c3c',
-                    borderColor: '#c0392b',
-                    borderWidth: 1,
-                    borderRadius: 3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `יום ${context.label}: ₪${context.parsed.y.toLocaleString()}`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '₪' + (value / 1000) + 'K';
-                            },
-                            font: {
-                                size: 9
-                            }
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            font: {
-                                size: 8
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        new Chart(document.getElementById('paymentMethodChart2').getContext('2d'), {
-            type: 'pie',
-            data: {
-                labels: mayData.payment.labels,
-                datasets: [{
-                    data: mayData.payment.data,
-                    backgroundColor: mayData.payment.colors,
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: chartOptions
-        });
-
-        new Chart(document.getElementById('sourceChart2').getContext('2d'), {
-            type: 'pie',
-            data: {
-                labels: mayData.sources.labels,
-                datasets: [{
-                    data: mayData.sources.data,
-                    backgroundColor: mayData.sources.colors,
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: chartOptions
-        });
-
-        new Chart(document.getElementById('kesherBreakdownChart2').getContext('2d'), {
-            type: 'pie',
-            data: {
-                labels: mayData.kesher.labels,
-                datasets: [{
-                    data: mayData.kesher.data,
-                    backgroundColor: mayData.kesher.colors,
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: chartOptions
-        });
-
-        new Chart(document.getElementById('nedarimBreakdownChart2').getContext('2d'), {
-            type: 'pie',
-            data: {
-                labels: mayData.nedarim.labels,
-                datasets: [{
-                    data: mayData.nedarim.data,
-                    backgroundColor: mayData.nedarim.colors,
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: chartOptions
-        });
-
-        // פונקציה לפורמט מספרים עם פסיקים
-        function formatNumbers() {
-            document.querySelectorAll('.formatted-number').forEach(element => {
-                const number = parseInt(element.textContent);
-                if (!isNaN(number)) {
-                    element.textContent = number.toLocaleString('he-IL');
-                }
-            });
-        }
-
-        // הפעלת פורמט המספרים כשהעמוד נטען
-        document.addEventListener('DOMContentLoaded', formatNumbers);
-    </script>
-</body>
-</html>
