@@ -905,6 +905,8 @@
                 this.baseId = '';
                 this.tableId = '';
                 this.apiKey = '';
+                
+                console.log('AirtableConnector נוצר');
             }
 
             updateCredentials() {
@@ -1868,11 +1870,23 @@
         }
 
         function handleRefresh() {
-            this.debug('handleRefresh נקרא');
+            console.log('handleRefresh נקרא');
+            console.log('airtableConnector קיים:', !!airtableConnector);
+            
+            if (!airtableConnector) {
+                console.error('airtableConnector לא קיים!');
+                openSettings();
+                return;
+            }
+            
+            console.log('בודק הגדרות:', {
+                baseId: airtableConnector.baseId,
+                tableId: airtableConnector.tableId,
+                apiKey: airtableConnector.apiKey ? 'קיים' : 'לא קיים'
+            });
             
             // Check if we have valid credentials
-            if (airtableConnector && 
-                airtableConnector.baseId && 
+            if (airtableConnector.baseId && 
                 airtableConnector.tableId && 
                 airtableConnector.apiKey &&
                 airtableConnector.baseId.trim() !== '' &&
@@ -1890,25 +1904,34 @@
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
             console.log('מאתחל דף');
-            airtableConnector = new AirtableConnector();
             
-            // Set default values and save them to the connector
-            airtableConnector.baseId = 'appxvOE27PFbq5z9J';
-            airtableConnector.tableId = 'tbloSMtX2CV0yHAg8';
-            airtableConnector.apiKey = 'pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99';
-            
-            console.log('ערכי ברירת מחדל נקבעו:', {
-                baseId: airtableConnector.baseId,
-                tableId: airtableConnector.tableId,
-                apiKey: airtableConnector.apiKey ? 'קיים' : 'לא קיים'
-            });
-            
-            // Close modal when clicking outside
-            document.getElementById('settingsModal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeSettings();
-                }
-            });
+            try {
+                airtableConnector = new AirtableConnector();
+                console.log('AirtableConnector נוצר בהצלחה');
+                
+                // Set default values and save them to the connector
+                airtableConnector.baseId = 'appxvOE27PFbq5z9J';
+                airtableConnector.tableId = 'tbloSMtX2CV0yHAg8';
+                airtableConnector.apiKey = 'pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99';
+                
+                console.log('ערכי ברירת מחדל נקבעו בהצלחה:', {
+                    baseId: airtableConnector.baseId,
+                    tableId: airtableConnector.tableId,
+                    apiKey: airtableConnector.apiKey ? 'קיים' : 'לא קיים'
+                });
+                
+                // Close modal when clicking outside
+                document.getElementById('settingsModal').addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeSettings();
+                    }
+                });
+                
+                console.log('אתחול הושלם בהצלחה');
+                
+            } catch (error) {
+                console.error('שגיאה באתחול:', error);
+            }
         });
     </script>
 </body>
