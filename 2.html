@@ -135,6 +135,7 @@
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
+            pointer-events: none;
         }
 
         .refresh-icon, .reports-icon, .settings-icon {
@@ -145,6 +146,11 @@
 
         .refresh-button.loading .refresh-icon {
             animation: spin 1s linear infinite;
+        }
+
+        .refresh-button.loading {
+            pointer-events: none;
+            opacity: 0.8;
         }
 
         @keyframes spin {
@@ -1041,7 +1047,7 @@
                     this.showLoading(false);
                     refreshBtn.classList.remove('loading');
                     refreshBtn.disabled = false;
-                    document.getElementById('refreshBtnText').textContent = 'רענן נתונים';
+                    // Keep the original text, don't change it back
                 }
             }
 
