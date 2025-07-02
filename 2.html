@@ -571,7 +571,7 @@
             </div>
             
             <div class="buttons-container">
-                <button class="refresh-button" id="refreshBtn" onclick="handleRefresh()">
+                <button class="refresh-button" id="refreshBtn" onclick="airtable.loadData()">
                     <svg class="refresh-icon" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
                     </svg>
@@ -607,8 +607,8 @@
                 <label for="apiKey">Personal Access Token:</label>
                 <input type="password" id="apiKey" value="pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99" readonly style="background: #f5f5f5;">
             </div>
-            <button class="setup-button" onclick="testConnection()">בדוק חיבור</button>
-            <button class="setup-button" onclick="loadAirtableData()">טען נתונים מAirtable</button>
+            <button class="setup-button" onclick="airtable.testConnection()">בדוק חיבור</button>
+            <button class="setup-button" onclick="airtable.loadData()">טען נתונים מAirtable</button>
         </div>
 
         <div id="loadingMessage" class="loading" style="display: none;">
@@ -1599,24 +1599,13 @@
         // יצירת מופע של מחלקת Airtable
         const airtable = new AirtableConnector();
 
-        // פונקציות גלובליות
-        function testConnection() {
-            airtable.testConnection();
-        }
-
-        function loadAirtableData() {
-            airtable.loadData();
-        }
-
-        function handleRefresh() {
-            airtable.loadData();
-        }
-
+        // פונקציות גלובליות - הוסרו כי אנחנו קוראים ישירות לairtable
+        
         // אתחול הדף
         document.addEventListener('DOMContentLoaded', () => {
             // בדיקת חיבור אוטומטית
             setTimeout(() => {
-                testConnection();
+                airtable.testConnection();
             }, 1000);
         });        // אתחול הדף
         document.addEventListener('DOMContentLoaded', () => {
