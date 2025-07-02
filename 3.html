@@ -96,6 +96,9 @@
             height: 50px;
             justify-content: center;
             color: white;
+            min-width: 150px; /* Force consistent width */
+            min-height: 50px; /* Force consistent height */
+            box-sizing: border-box; /* Include padding and border in size */
         }
 
         .refresh-button {
@@ -153,6 +156,11 @@
             cursor: not-allowed;
             transform: none !important;
             pointer-events: none;
+            width: 150px !important; /* Force original width */
+            height: 50px !important; /* Force original height */
+            min-width: 150px !important;
+            min-height: 50px !important;
+            padding: 15px 20px !important; /* Keep original padding */
         }
 
         .refresh-button.loading:hover {
