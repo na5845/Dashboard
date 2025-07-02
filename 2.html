@@ -1053,6 +1053,14 @@
 
             async loadAllRecords() {
                 console.log('loadAllRecords started');
+                const refreshBtn = document.getElementById('refreshBtn');
+                console.log('מצב כפתור בתחילת loadAllRecords:', {
+                    hasLoadingClass: refreshBtn.classList.contains('loading'),
+                    disabled: refreshBtn.disabled,
+                    width: refreshBtn.offsetWidth,
+                    height: refreshBtn.offsetHeight
+                });
+                
                 let allRecords = [];
                 let offset = '';
                 let pageCount = 0;
@@ -1063,6 +1071,16 @@
                     if (pageCount > maxPages) {
                         this.debug(`הגעתי למגבלת עמודים (${maxPages}), מפסיק`);
                         break;
+                    }
+                    
+                    // Check button status every 10 pages
+                    if (pageCount % 10 === 0) {
+                        console.log(`מצב כפתור בעמוד ${pageCount}:`, {
+                            hasLoadingClass: refreshBtn.classList.contains('loading'),
+                            disabled: refreshBtn.disabled,
+                            width: refreshBtn.offsetWidth,
+                            height: refreshBtn.offsetHeight
+                        });
                     }
                     
                     const url = `${this.baseUrl}/${this.baseId}/${this.tableId}?pageSize=100${offset ? `&offset=${offset}` : ''}`;
@@ -1089,6 +1107,12 @@
                 } while (offset);
 
                 console.log('loadAllRecords finished');
+                console.log('מצב כפתור בסוף loadAllRecords:', {
+                    hasLoadingClass: refreshBtn.classList.contains('loading'),
+                    disabled: refreshBtn.disabled,
+                    width: refreshBtn.offsetWidth,
+                    height: refreshBtn.offsetHeight
+                });
                 return allRecords;
             }
 
