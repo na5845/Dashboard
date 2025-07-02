@@ -1596,36 +1596,36 @@
             }
         }
 
-        // יצירת מופע של מחלקת Airtable
-        let airtable;
-
-        // פונקציות גלובליות
-        function testConnection() {
-            if (airtable) {
-                airtable.testConnection();
-            }
-        }
-
-        function loadAirtableData() {
-            if (airtable) {
-                airtable.loadData();
-            }
-        }
-
-        function handleRefresh() {
-            if (airtable) {
-                airtable.loadData();
-            }
-        }
+        // יצירת מופע של מחלקת Airtable ופונקציות גלובליות
+        let airtableConnector;
 
         // אתחול הדף
         document.addEventListener('DOMContentLoaded', () => {
             // יצירת מופע של המחלקה
-            airtable = new AirtableConnector();
+            airtableConnector = new AirtableConnector();
+            
+            // הגדרת פונקציות גלובליות
+            window.testConnection = function() {
+                if (airtableConnector) {
+                    airtableConnector.testConnection();
+                }
+            };
+
+            window.loadAirtableData = function() {
+                if (airtableConnector) {
+                    airtableConnector.loadData();
+                }
+            };
+
+            window.handleRefresh = function() {
+                if (airtableConnector) {
+                    airtableConnector.loadData();
+                }
+            };
             
             // בדיקת חיבור אוטומטית
             setTimeout(() => {
-                testConnection();
+                window.testConnection();
             }, 1000);
         });        // אתחול הדף
         document.addEventListener('DOMContentLoaded', () => {
