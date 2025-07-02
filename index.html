@@ -1118,6 +1118,70 @@
                 this.formatNumbers();
             }
 
+            createOrganizationBreakdownChart(canvasId, categoryOrgData, orgName) {
+                const ctx = document.getElementById(canvasId);
+                if (!ctx) return;
+
+                // Filter data only for the specific organization
+                const orgData = {};
+                Object.entries(categoryOrgData).forEach(([key, value]) => {
+                    if (key.startsWith(`${orgName}_`)) {
+                        const category = key.replace(`${orgName}_`, '');
+                        orgData[category] = value;
+                    }
+                });
+
+                if (Object.keys(orgData).length === 0) {
+                    orgData['אין נתונים'] = 0;
+                }
+
+                if (charts[canvasId]) {
+                    charts[canvasId].destroy();
+                }
+
+                // Different colors for different organizations
+                const colors = orgName === 'קשר' ? 
+                    ['#3498db', '#e74c3c', '#f39c12', '#2ecc71'] : 
+                    ['#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
+
+                charts[canvasId] = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(orgData),
+                        datasets: [{
+                            data: Object.values(orgData),
+                            backgroundColor: colors.slice(0, Object.keys(orgData).length),
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 8,
+                                    font: { size: 8 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+                                        return `${label}: ₪${value.toLocaleString('he-IL')} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
             updateSourceDetails(containerId, monthData) {
                 const container = document.getElementById(containerId);
                 if (!container) return;
