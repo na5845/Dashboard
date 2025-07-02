@@ -135,7 +135,6 @@
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
-            pointer-events: none;
         }
 
         .refresh-icon, .reports-icon, .settings-icon {
@@ -146,11 +145,6 @@
 
         .refresh-button.loading .refresh-icon {
             animation: spin 1s linear infinite;
-        }
-
-        .refresh-button.loading {
-            pointer-events: none;
-            opacity: 0.8;
         }
 
         @keyframes spin {
@@ -394,15 +388,6 @@
             padding: 50px;
             color: #666;
             font-size: 18px;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            z-index: 100;
-            border: 2px solid #3498db;
         }
 
         /* Dashboard styles */
@@ -1056,20 +1041,11 @@
                     this.showLoading(false);
                     refreshBtn.classList.remove('loading');
                     refreshBtn.disabled = false;
-                    // Keep the original text, don't change it back
+                    document.getElementById('refreshBtnText').textContent = 'רענן נתונים';
                 }
             }
 
             async loadAllRecords() {
-                console.log('loadAllRecords started');
-                const refreshBtn = document.getElementById('refreshBtn');
-                console.log('מצב כפתור בתחילת loadAllRecords:', {
-                    hasLoadingClass: refreshBtn.classList.contains('loading'),
-                    disabled: refreshBtn.disabled,
-                    width: refreshBtn.offsetWidth,
-                    height: refreshBtn.offsetHeight
-                });
-                
                 let allRecords = [];
                 let offset = '';
                 let pageCount = 0;
@@ -1080,16 +1056,6 @@
                     if (pageCount > maxPages) {
                         this.debug(`הגעתי למגבלת עמודים (${maxPages}), מפסיק`);
                         break;
-                    }
-                    
-                    // Check button status every 10 pages
-                    if (pageCount % 10 === 0) {
-                        console.log(`מצב כפתור בעמוד ${pageCount}:`, {
-                            hasLoadingClass: refreshBtn.classList.contains('loading'),
-                            disabled: refreshBtn.disabled,
-                            width: refreshBtn.offsetWidth,
-                            height: refreshBtn.offsetHeight
-                        });
                     }
                     
                     const url = `${this.baseUrl}/${this.baseId}/${this.tableId}?pageSize=100${offset ? `&offset=${offset}` : ''}`;
@@ -1115,18 +1081,10 @@
                     
                 } while (offset);
 
-                console.log('loadAllRecords finished');
-                console.log('מצב כפתור בסוף loadAllRecords:', {
-                    hasLoadingClass: refreshBtn.classList.contains('loading'),
-                    disabled: refreshBtn.disabled,
-                    width: refreshBtn.offsetWidth,
-                    height: refreshBtn.offsetHeight
-                });
                 return allRecords;
             }
 
             processAllData(allRecords) {
-                console.log('processAllData started');
                 const now = new Date();
                 const currentMonth = now.getMonth();
                 const currentYear = now.getFullYear();
@@ -1311,7 +1269,6 @@
 
                 airtableData = stats;
                 this.displayData(stats);
-                console.log('processAllData finished');
             }
 
             addToMonthStats(monthStats, amount, date, category, organization) {
@@ -1328,7 +1285,6 @@
             }
 
             displayData(stats) {
-                console.log('displayData started');
                 // Update totals with proper formatting
                 document.getElementById('currentMonthTotal').textContent = stats.currentMonth.total.toLocaleString('he-IL');
                 document.getElementById('lastMonthTotal').textContent = stats.lastMonth.total.toLocaleString('he-IL');
@@ -1358,7 +1314,6 @@
                 // Show dashboard
                 document.getElementById('originalDashboard').style.display = 'block';
                 this.formatNumbers();
-                console.log('displayData finished');
             }
 
             createOrganizationBreakdownChart(canvasId, categoryOrgData, orgName) {
@@ -1801,11 +1756,7 @@
             }
 
             showLoading(show) {
-                console.log(`showLoading called with: ${show}`);
-                const loadingMessage = document.getElementById('loadingMessage');
-                loadingMessage.style.display = show ? 'block' : 'none';
-                console.log(`Loading message display set to: ${loadingMessage.style.display}`);
-                // Don't modify the refresh button here - it's handled in loadData()
+                document.getElementById('loadingMessage').style.display = show ? 'block' : 'none';
             }
 
             debug(message, data = null) {
