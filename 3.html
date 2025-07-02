@@ -409,9 +409,72 @@
 
         .loading {
             text-align: center;
-            padding: 50px;
+            padding: 20px;
             color: #666;
-            font-size: 18px;
+            font-size: 16px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .progress-text {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #27ae60, #2ecc71, #3498db);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.4),
+                transparent
+            );
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-percentage {
+            font-size: 14px;
+            font-weight: bold;
+            color: #495057;
         }
 
         /* Dashboard styles */
@@ -669,7 +732,7 @@
             
             <div class="header-content">
                 <h1>📊<br>דשבורד תרומות</h1>
-                <p class="subtitle">קרן התומך - ניתוח נתונים מפורט</p>
+                <p class="subtitle">קרן התורה - ניתוח נתונים מפורט</p>
             </div>
             
             <div class="buttons-container">
@@ -746,7 +809,13 @@
         </div>
 
         <div id="loadingMessage" class="loading" style="display: none;">
-            <div>🔄 טוען נתונים מAirtable...</div>
+            <div class="progress-container">
+                <div class="progress-text">טוען נתונים מAirtable...</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-percentage" id="progressPercentage">0%</div>
+            </div>
         </div>
 
         <!-- Dashboard content -->
@@ -929,8 +998,60 @@
                 this.baseId = '';
                 this.tableId = '';
                 this.apiKey = '';
+                this.cacheKey = 'airtable_dashboard_data';
+                this.cacheTimestamp = 'airtable_dashboard_timestamp';
                 
                 console.log('AirtableConnector נוצר');
+            }
+
+            // Save data to localStorage
+            saveDataToCache(data) {
+                try {
+                    const dataToSave = {
+                        ...data,
+                        timestamp: new Date().getTime()
+                    };
+                    const jsonData = JSON.stringify(dataToSave);
+                    localStorage.setItem(this.cacheKey, jsonData);
+                    localStorage.setItem(this.cacheTimestamp, new Date().toLocaleString('he-IL'));
+                    console.log('נתונים נשמרו לזיכרון המקומי');
+                } catch (error) {
+                    console.warn('לא ניתן לשמור נתונים לזיכרון המקומי:', error);
+                }
+            }
+
+            // Load data from localStorage
+            loadDataFromCache() {
+                try {
+                    const cachedData = localStorage.getItem(this.cacheKey);
+                    if (cachedData) {
+                        const data = JSON.parse(cachedData);
+                        console.log('נתונים נטענו מהזיכרון המקומי');
+                        return data;
+                    }
+                } catch (error) {
+                    console.warn('לא ניתן לטעון נתונים מהזיכרון המקומי:', error);
+                }
+                return null;
+            }
+
+            // Check if we have cached data and load it
+            loadCachedDataIfExists() {
+                const cachedData = this.loadDataFromCache();
+                if (cachedData) {
+                    const lastUpdate = localStorage.getItem(this.cacheTimestamp);
+                    this.showMessage(`נתונים נטענו מהזיכרון המקומי (עדכון אחרון: ${lastUpdate}) ✅`, 'success');
+                    
+                    // Remove timestamp before displaying
+                    const { timestamp, ...dataWithoutTimestamp } = cachedData;
+                    this.displayData(dataWithoutTimestamp);
+                    airtableData = dataWithoutTimestamp;
+                    
+                    // Show dashboard
+                    document.getElementById('originalDashboard').style.display = 'block';
+                    return true;
+                }
+                return false;
             }
 
             updateCredentials() {
@@ -1073,7 +1194,7 @@
                     this.debug(`שגיאה בטעינת הנתונים: ${error.message}`);
                     this.showMessage(`שגיאה בטעינת הנתונים: ${error.message}`, 'error');
                 } finally {
-                    this.showLoading(false);
+                    this.completeProgress(); // Complete the progress bar
                     refreshBtn.classList.remove('loading');
                     refreshBtn.disabled = false;
                     refreshBtnText.textContent = originalText; // החזרת הטקסט המקורי
@@ -1303,6 +1424,7 @@
                 this.debug('פירוט ארגונים חודש נוכחי:', JSON.stringify(stats.currentMonth.organizations, null, 2));
 
                 airtableData = stats;
+                this.saveDataToCache(stats); // Save to cache
                 this.displayData(stats);
             }
 
@@ -1791,7 +1913,71 @@
             }
 
             showLoading(show) {
-                document.getElementById('loadingMessage').style.display = show ? 'block' : 'none';
+                const loadingEl = document.getElementById('loadingMessage');
+                const progressFill = document.getElementById('progressFill');
+                const progressPercentage = document.getElementById('progressPercentage');
+                
+                if (show) {
+                    loadingEl.style.display = 'block';
+                    // Start progress animation
+                    this.animateProgress(progressFill, progressPercentage);
+                } else {
+                    loadingEl.style.display = 'none';
+                    // Reset progress
+                    if (progressFill) {
+                        progressFill.style.width = '0%';
+                    }
+                    if (progressPercentage) {
+                        progressPercentage.textContent = '0%';
+                    }
+                }
+            }
+
+            animateProgress(progressFill, progressPercentage) {
+                if (!progressFill || !progressPercentage) return;
+                
+                let progress = 0;
+                const duration = 110000; // 110 seconds total
+                const interval = 300; // Update every 300ms
+                const increment = (interval / duration) * 100;
+                
+                const progressInterval = setInterval(() => {
+                    progress += increment + Math.random() * 0.6; // Add some randomness
+                    
+                    if (progress >= 95) {
+                        progress = 95; // Stop at 95% and wait for actual completion
+                    }
+                    
+                    progressFill.style.width = progress + '%';
+                    progressPercentage.textContent = Math.round(progress) + '%';
+                    
+                    if (progress >= 95) {
+                        clearInterval(progressInterval);
+                    }
+                }, interval);
+                
+                // Store interval ID so we can clear it if needed
+                this.progressInterval = progressInterval;
+            }
+
+            completeProgress() {
+                const progressFill = document.getElementById('progressFill');
+                const progressPercentage = document.getElementById('progressPercentage');
+                
+                if (progressFill && progressPercentage) {
+                    progressFill.style.width = '100%';
+                    progressPercentage.textContent = '100%';
+                    
+                    // Clear any existing interval
+                    if (this.progressInterval) {
+                        clearInterval(this.progressInterval);
+                    }
+                    
+                    // Hide loading after a short delay
+                    setTimeout(() => {
+                        this.showLoading(false);
+                    }, 500);
+                }
             }
 
             debug(message, data = null) {
@@ -1966,6 +2152,12 @@
                     tableId: airtableConnector.tableId,
                     apiKey: airtableConnector.apiKey ? 'קיים' : 'לא קיים'
                 });
+                
+                // Try to load cached data first
+                const hasCachedData = airtableConnector.loadCachedDataIfExists();
+                if (!hasCachedData) {
+                    console.log('אין נתונים שמורים, הדף יישאר ריק עד לטעינה ידנית');
+                }
                 
                 // Close modal when clicking outside
                 document.getElementById('settingsModal').addEventListener('click', function(e) {
