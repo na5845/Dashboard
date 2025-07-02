@@ -571,7 +571,7 @@
             </div>
             
             <div class="buttons-container">
-                <button class="refresh-button" id="refreshBtn" onclick="loadAirtableData()" style="display: none;">
+                <button class="refresh-button" id="refreshBtn" onclick="handleRefresh()" style="display: none;">
                     <svg class="refresh-icon" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
                     </svg>
@@ -583,17 +583,7 @@
                         <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
                     </svg>
                     דוחות
-                </a>0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
-                    </svg>
-                    דוחות
                 </a>
-
-                <button class="mode-button" onclick="toggleMode()">
-                    <svg class="mode-icon" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span id="modeText">Airtable</span>
-                </button>
             </div>
         </div>
 
@@ -734,6 +724,14 @@
                     </div>
 
                     <div class="divider">
+                        <span class="divider-text">🎯 פירוט לפי מקור הכנסה</span>
+                    </div>
+
+                    <div class="source-details" id="lastMonthSources">
+                        <!-- יעודכן דינמית -->
+                    </div>
+
+                    <div class="divider">
                         <span class="divider-text">📊 גרפים וניתוחים</span>
                     </div>
 
@@ -773,14 +771,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- תרומות אחרונות -->
-            <div class="recent-donations">
-                <h3>תרומות אחרונות</h3>
-                <div id="recentDonationsList">
-                    <!-- יעודכן דינמית -->
                 </div>
             </div>
         </div>
@@ -833,11 +823,24 @@
                 document.getElementById('refreshBtnText').textContent = 'טוען...';
 
                 try {
-                    // טעינת כל הנתונים מהטבלה הראשית
-                    const allRecords = await this.loadAllRecords();
+                    // טעינת נתונים מ-Views הנכונים
+                    const [
+                        currentMonthData,
+                        yearToDateData,
+                        last12MonthsData
+                    ] = await Promise.all([
+                        this.loadFromView('viwrF5Dby6v77rnj2'), // מתחילת החודש
+                        this.loadFromView('viwqls7cGxKYxkA2V'), // מתחילת השנה 
+                        this.loadFromView('viwGBVEUH0gtYEv67')  // שנה אחורה
+                    ]);
+
+                    this.processViewsData({
+                        currentMonth: currentMonthData,
+                        yearToDate: yearToDateData,
+                        last12Months: last12MonthsData
+                    });
                     
-                    this.processAllData(allRecords);
-                    this.showMessage(`נטענו ${allRecords.length} רשומות בהצלחה! ✅`, 'success');
+                    this.showMessage(`נטענו הנתונים בהצלחה! ✅`, 'success');
                     
                 } catch (error) {
                     this.showMessage(`שגיאה בטעינת הנתונים: ${error.message}`, 'error');
@@ -849,12 +852,13 @@
                 }
             }
 
-            async loadAllRecords() {
+            async loadFromView(viewId) {
                 let allRecords = [];
                 let offset = '';
                 
                 do {
-                    const url = `${this.baseUrl}/${this.baseId}/${this.tableId}?pageSize=100${offset ? `&offset=${offset}` : ''}`;
+                    // שימוש בURL עם viewId כparam במקום בpath
+                    const url = `${this.baseUrl}/${this.baseId}/${this.tableId}?view=${viewId}&pageSize=100${offset ? `&offset=${offset}` : ''}`;
                     const response = await fetch(url, {
                         headers: {
                             'Authorization': `Bearer ${this.apiKey}`,
@@ -874,19 +878,12 @@
                 return allRecords;
             }
 
-            processAllData(allRecords) {
+            processViewsData(dataSources) {
                 const now = new Date();
                 const currentMonth = now.getMonth();
                 const currentYear = now.getFullYear();
                 const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
                 const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-                
-                // תאריכים לסינון
-                const currentMonthStart = new Date(currentYear, currentMonth, 1);
-                const lastMonthStart = new Date(lastMonthYear, lastMonth, 1);
-                const lastMonthEnd = new Date(lastMonthYear, lastMonth + 1, 0);
-                const yearStart = new Date(currentYear, 0, 1);
-                const last12MonthsStart = new Date(currentYear, currentMonth - 11, 1);
 
                 const stats = {
                     currentMonth: { 
@@ -909,64 +906,153 @@
                         '2023': 527445,
                         '2024': 913946,
                         '2025': 0
-                    }
+                    },
+                    recentDonations: []
                 };
 
-                // סינון רשומות תקינות
-                const validRecords = allRecords.filter(record => 
-                    record.fields['סכום עסקה'] && 
-                    record.fields['תאריך ושעת ביצוע העסקה'] &&
-                    parseFloat(record.fields['סכום עסקה']) > 0
-                );
+                // עיבוד נתוני החודש הנוכחי מ-View "מתחילת החודש"
+                this.processMonthData(dataSources.currentMonth, stats.currentMonth);
 
-                validRecords.forEach(record => {
-                    const fields = record.fields;
-                    const amount = parseFloat(fields['סכום עסקה']);
-                    const date = new Date(fields['תאריך ושעת ביצוע העסקה']);
-                    const category = fields['קטגוריה'] || 'לא מוגדר';
-                    const organization = fields['עמותה'] || 'אחר';
-                    
-                    // חודש נוכחי
-                    if (date >= currentMonthStart) {
-                        this.addToMonthStats(stats.currentMonth, amount, date, category, organization);
-                    }
-                    
-                    // חודש קודם
-                    if (date >= lastMonthStart && date <= lastMonthEnd) {
-                        this.addToMonthStats(stats.lastMonth, amount, date, category, organization);
-                    }
-                    
-                    // נתוני השנה הנוכחית
-                    if (date >= yearStart) {
-                        stats.yearlyData['2025'] += amount;
-                    }
-                    
-                    // 12 החודשים האחרונים
-                    if (date >= last12MonthsStart) {
-                        const monthKey = date.toLocaleDateString('he-IL', { year: 'numeric', month: 'long' });
-                        stats.monthlyData[monthKey] = (stats.monthlyData[monthKey] || 0) + amount;
-                    }
-                });
+                // עיבוד נתוני החודש הקודם מ-View "מתחילת השנה" 
+                this.processLastMonthFromYearData(dataSources.yearToDate, stats.lastMonth, lastMonth, lastMonthYear);
+
+                // עיבוד 12 החודשים האחרונים מ-View "שנה אחורה"
+                this.processLast12MonthsData(dataSources.last12Months, stats);
+
+                // חישוב סה"כ 2025 מ-View "מתחילת השנה"
+                stats.yearlyData['2025'] = this.calculateYearTotal(dataSources.yearToDate);
+
+                // תרומות אחרונות מהחודש הנוכחי
+                stats.recentDonations = this.getRecentDonations(dataSources.currentMonth);
 
                 airtableData = stats;
                 this.displayData(stats);
             }
 
-            addToMonthStats(monthStats, amount, date, category, organization) {
-                monthStats.total += amount;
-                
-                const dayOfMonth = date.getDate();
-                monthStats.daily[dayOfMonth] = (monthStats.daily[dayOfMonth] || 0) + amount;
-                
-                // קיבוץ לפי קטגוריה
-                monthStats.categories[category] = (monthStats.categories[category] || 0) + amount;
-                
-                // קיבוץ לפי עמותה
-                monthStats.organizations[organization] = (monthStats.organizations[organization] || 0) + amount;
-                
-                // קיבוץ משולב קטגוריה ועמותה
-                const key = `${organization}_${category}`;
-                monthStats.categoryOrg[key] = (monthStats.categoryOrg[key] || 0) + amount;
+            processMonthData(records, monthStats) {
+                records
+                    .filter(record => record.fields['סכום עסקה'] && record.fields['תאריך ושעת ביצוע העסקה'])
+                    .forEach(record => {
+                        const fields = record.fields;
+                        const amount = parseFloat(fields['סכום עסקה'] || 0);
+                        const date = new Date(fields['תאריך ושעת ביצוע העסקה']);
+                        const category = fields['קטגוריה'] || 'לא מוגדר';
+                        const organization = fields['עמותה'] || 'אחר';
+                        
+                        if (amount > 0) {
+                            monthStats.total += amount;
+                            
+                            const dayOfMonth = date.getDate();
+                            monthStats.daily[dayOfMonth] = (monthStats.daily[dayOfMonth] || 0) + amount;
+                            
+                            // קיבוץ לפי קטגוריה
+                            monthStats.categories[category] = (monthStats.categories[category] || 0) + amount;
+                            
+                            // קיבוץ לפי עמותה
+                            monthStats.organizations[organization] = (monthStats.organizations[organization] || 0) + amount;
+                            
+                            // קיבוץ משולב קטגוריה ועמותה
+                            const key = `${organization}_${category}`;
+                            monthStats.categoryOrg[key] = (monthStats.categoryOrg[key] || 0) + amount;
+                        }
+                updateSourceDetails(containerId, monthData) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+
+                const organizations = monthData.organizations;
+
+                container.innerHTML = '';
+                Object.entries(organizations).forEach(([organization, amount]) => {
+                    container.innerHTML += `
+                        <div class="stat-card source">
+                            <h3>${organization}</h3>
+                            <div class="amount">₪${amount.toLocaleString()}</div>
+                        </div>
+                    `;
+                });
+
+                // אם אין עמותות, נציג הודעה
+                if (Object.keys(organizations).length === 0) {
+                    container.innerHTML = `
+                        <div class="stat-card source">
+                            <h3>אין נתונים</h3>
+                            <div class="amount">₪0</div>
+                        </div>
+                    `;
+                }
+            }
+
+            processLastMonthFromYearData(yearRecords, lastMonthStats, targetMonth, targetYear) {
+                yearRecords
+                    .filter(record => {
+                        if (!record.fields['סכום עסקה'] || !record.fields['תאריך ושעת ביצוע העסקה']) return false;
+                        
+                        const date = new Date(record.fields['תאריך ושעת ביצוע העסקה']);
+                        return date.getMonth() === targetMonth && date.getFullYear() === targetYear;
+                    })
+                    .forEach(record => {
+                        const fields = record.fields;
+                        const amount = parseFloat(fields['סכום עסקה'] || 0);
+                        const date = new Date(fields['תאריך ושעת ביצוע העסקה']);
+                        const category = fields['קטגוריה'] || 'לא מוגדר';
+                        const organization = fields['עמותה'] || 'אחר';
+                        
+                        if (amount > 0) {
+                            lastMonthStats.total += amount;
+                            
+                            const dayOfMonth = date.getDate();
+                            lastMonthStats.daily[dayOfMonth] = (lastMonthStats.daily[dayOfMonth] || 0) + amount;
+                            
+                            lastMonthStats.categories[category] = (lastMonthStats.categories[category] || 0) + amount;
+                            lastMonthStats.organizations[organization] = (lastMonthStats.organizations[organization] || 0) + amount;
+                            
+                            const key = `${organization}_${category}`;
+                            lastMonthStats.categoryOrg[key] = (lastMonthStats.categoryOrg[key] || 0) + amount;
+                        }
+                    });
+            }
+
+            processLast12MonthsData(records, stats) {
+                records
+                    .filter(record => record.fields['סכום עסקה'] && record.fields['תאריך ושעת ביצוע העסקה'])
+                    .forEach(record => {
+                        const fields = record.fields;
+                        const amount = parseFloat(fields['סכום עסקה'] || 0);
+                        const date = new Date(fields['תאריך ושעת ביצוע העסקה']);
+                        
+                        if (amount > 0) {
+                            const monthKey = date.toLocaleDateString('he-IL', { year: 'numeric', month: 'long' });
+                            stats.monthlyData[monthKey] = (stats.monthlyData[monthKey] || 0) + amount;
+                        }
+                    });
+            }
+
+            calculateYearTotal(yearRecords) {
+                return yearRecords
+                    .filter(record => record.fields['סכום עסקה'])
+                    .reduce((total, record) => {
+                        const amount = parseFloat(record.fields['סכום עסקה'] || 0);
+                        return total + amount;
+                    }, 0);
+            }
+
+            getRecentDonations(currentMonthRecords) {
+                return currentMonthRecords
+                    .filter(record => record.fields['סכום עסקה'] && record.fields['תאריך ושעת ביצוע העסקה'])
+                    .sort((a, b) => {
+                        const dateA = new Date(a.fields['תאריך ושעת ביצוע העסקה']);
+                        const dateB = new Date(b.fields['תאריך ושעת ביצוע העסקה']);
+                        return dateB - dateA;
+                    })
+                    .slice(0, 10)
+                    .map(record => {
+                        const fields = record.fields;
+                        return {
+                            name: fields['שם תורם'] || 'תורם אנונימי',
+                            amount: parseFloat(fields['סכום עסקה'] || 0),
+                            date: new Date(fields['תאריך ושעת ביצוע העסקה']).toLocaleDateString('he-IL')
+                        };
+                    });
             }
 
             displayData(stats) {
@@ -976,9 +1062,11 @@
 
                 // עדכון פירוט תשלומים לחודש הנוכחי
                 this.updatePaymentDetails('currentMonthPayments', stats.currentMonth);
+                this.updateSourceDetails('currentMonthSources', stats.currentMonth);
                 
                 // עדכון פירוט תשלומים לחודש הקודם
                 this.updatePaymentDetails('lastMonthPayments', stats.lastMonth);
+                this.updateSourceDetails('lastMonthSources', stats.lastMonth);
 
                 // יצירת גרפים
                 this.createDailyChart('dailyChart1', stats.currentMonth.daily, 'החודש הנוכחי');
@@ -993,7 +1081,6 @@
                 this.createNedarimChart('nedarimBreakdownChart2', stats.lastMonth.categoryOrg, 'נדרים פלוס');
                 this.createMonthlyTrendChart(stats.monthlyData);
                 this.createYearlyChart(stats.yearlyData);
-                this.displayRecentDonations(stats.recentDonations);
 
                 // הסתרת פאנל ההגדרות והצגת הדשבורד
                 document.getElementById('setupPanel').style.display = 'none';
@@ -1006,17 +1093,17 @@
                 if (!container) return;
 
                 const categories = monthData.categories;
-                const organizations = monthData.organizations;
 
-                container.innerHTML = `
-                    <div class="stat-card">
-                        <h3>כל הקטגוריות</h3>
-                        <div class="amount">₪${monthData.total.toLocaleString()}</div>
-                    </div>
-                `;
+                // כרטיסיות לפי קטגוריות ספציפיות
+                const specificCategories = {
+                    'אשראי': categories['אשראי'] || 0,
+                    'בנקאי': categories['בנקאי'] || 0,
+                    'העברות': categories['העברות'] || categories['העברה'] || 0,
+                    'מזומן': categories['מזומן'] || 0
+                };
 
-                // הוספת קטגוריות אם יש
-                Object.entries(categories).forEach(([category, amount]) => {
+                container.innerHTML = '';
+                Object.entries(specificCategories).forEach(([category, amount]) => {
                     container.innerHTML += `
                         <div class="stat-card">
                             <h3>${category}</h3>
@@ -1024,17 +1111,6 @@
                         </div>
                     `;
                 });
-
-                // אם אין מספיק קטגוריות, נוסיף ריקים
-                const currentCards = container.children.length;
-                for (let i = currentCards; i < 4; i++) {
-                    container.innerHTML += `
-                        <div class="stat-card">
-                            <h3>-</h3>
-                            <div class="amount">₪0</div>
-                        </div>
-                    `;
-                }
             }
 
             createPaymentChart(canvasId, categoriesData) {
@@ -1401,18 +1477,8 @@
         }
 
         function toggleMode() {
-            currentMode = currentMode === 'airtable' ? 'make' : 'airtable';
-            document.getElementById('modeText').textContent = currentMode === 'airtable' ? 'Make.com' : 'Airtable';
-            
-            if (currentMode === 'airtable') {
-                document.getElementById('setupPanel').style.display = 'block';
-                document.getElementById('refreshBtnText').textContent = 'טען נתונים';
-            } else {
-                document.getElementById('setupPanel').style.display = 'none';
-                document.getElementById('refreshBtnText').textContent = 'רענן נתונים';
-                // טעינת הקוד המקורי
-                loadOriginalData();
-            }
+            // הסרת פונקציית מעבר בין מצבים - רק Airtable
+            console.log('מצב Airtable בלבד');
         }
 
         // הפונקציה המקורית לרענון מMake.com
