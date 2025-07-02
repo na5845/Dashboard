@@ -910,13 +910,27 @@
             }
 
             updateCredentials() {
-                // Try modal fields first, fall back to original fields
-                this.baseId = document.getElementById('modalBaseId').value.trim() || 
-                             document.getElementById('baseId')?.value.trim() || '';
-                this.tableId = document.getElementById('modalTableId').value.trim() || 
-                              document.getElementById('tableId')?.value.trim() || '';
-                this.apiKey = document.getElementById('modalApiKey').value.trim() || 
-                             document.getElementById('apiKey')?.value.trim() || '';
+                // Only update from modal fields, don't try to read from non-existent fields
+                const modalBaseId = document.getElementById('modalBaseId')?.value?.trim();
+                const modalTableId = document.getElementById('modalTableId')?.value?.trim();
+                const modalApiKey = document.getElementById('modalApiKey')?.value?.trim();
+                
+                // Only update if modal fields have values, otherwise keep current values
+                if (modalBaseId !== undefined && modalBaseId !== '') {
+                    this.baseId = modalBaseId;
+                }
+                if (modalTableId !== undefined && modalTableId !== '') {
+                    this.tableId = modalTableId;
+                }
+                if (modalApiKey !== undefined && modalApiKey !== '') {
+                    this.apiKey = modalApiKey;
+                }
+                
+                console.log('updateCredentials called, current values:', {
+                    baseId: this.baseId,
+                    tableId: this.tableId,
+                    apiKey: this.apiKey ? 'קיים' : 'ריק'
+                });
             }
 
             validateCredentials() {
@@ -939,8 +953,7 @@
             }
 
             async testConnection() {
-                this.updateCredentials();
-                
+                // Don't call updateCredentials here - use current values
                 if (!this.validateCredentials()) {
                     return false;
                 }
@@ -992,8 +1005,7 @@
             }
 
             async loadData() {
-                this.updateCredentials();
-                
+                // Don't call updateCredentials here - use current values
                 if (!this.validateCredentials()) {
                     return;
                 }
@@ -1882,7 +1894,7 @@
             console.log('בודק הגדרות:', {
                 baseId: airtableConnector.baseId,
                 tableId: airtableConnector.tableId,
-                apiKey: airtableConnector.apiKey ? 'קיים' : 'לא קיים'
+                apiKey: airtableConnector.apiKey ? `קיים (${airtableConnector.apiKey.length} תווים)` : 'לא קיים'
             });
             
             // Check if we have valid credentials
