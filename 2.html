@@ -1,51 +1,4 @@
-async loadAllRecords() {
-                let allRecords = [];
-                let offset = '';
-                let pageCount = 0;
-                const maxPages = 400; // Safety limit - increased to get much more data (40,000 records)
-                
-                do {
-                    if (loadingCancelled) {
-                        throw new Error('הטעינה בוטלה על ידי המשתמש');
-                    }
-                    
-                    pageCount++;
-                    if (pageCount > maxPages) {
-                        this.debug(`הגעתי למגבלת עמודים (${maxPages}), מפסיק`);
-                        break;
-                    }
-                    
-                    const url = `${this.baseUrl}/${this.baseId}/${this.tableId}?pageSize=100${offset ? `&offset=${offset}` : ''}`;
-                    this.debug(`טוען עמוד ${pageCount}, URL: ${url}`);
-                    
-                    // Update progress
-                    const estimatedProgress = Math.min(80, (pageCount / 100) * 80); // Up to 80% for loading
-                    this.updateProgress(estimatedProgress, 100, `טוען עמוד ${pageCount}...`);
-                    
-                    const response = await fetch(url, {
-                        headers: {
-                            'Authorization': `Bearer ${this.apiKey}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`HTTP ${response.status}: ${errorText}`);
-                    }
-
-                    const data = await response.json();
-                    this.debug(`עמוד ${pageCount}: ${data.records.length} רשומות`);
-                    
-                    allRecords = allRecords.concat(data.records);
-                    offset = data.offset;
-                    
-                } while (offset);
-
-                return allRecords;
-            }
-
-            processAllData(allRecords) {<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -126,7 +79,7 @@ async loadAllRecords() {
             gap: 10px;
         }
 
-        .refresh-button, .reports-button {
+        .refresh-button, .reports-button, .settings-button {
             border: none;
             padding: 15px 20px;
             border-radius: 50px;
@@ -167,13 +120,24 @@ async loadAllRecords() {
             background: linear-gradient(135deg, #7d3c98 0%, #8e44ad 100%);
         }
 
+        .settings-button {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            box-shadow: 0 8px 20px rgba(52, 73, 94, 0.3);
+        }
+
+        .settings-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(52, 73, 94, 0.4);
+            background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
+        }
+
         .refresh-button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
 
-        .refresh-icon, .reports-icon {
+        .refresh-icon, .reports-icon, .settings-icon {
             width: 20px;
             height: 20px;
             transition: transform 0.3s ease;
@@ -223,146 +187,154 @@ async loadAllRecords() {
             color: #495057;
         }
 
-        .setup-panel {
-            background: white;
-            border: 2px solid #2196f3;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-            display: none; /* Hidden by default */
-        }
-
-        .setup-modal {
+        /* Settings Modal */
+        .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.7);
             display: none;
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            backdrop-filter: blur(5px);
         }
 
-        .setup-modal-content {
+        .modal-content {
             background: white;
-            padding: 30px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 500px;
-            position: relative;
-        }
-
-        .close-modal {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            font-size: 24px;
-            cursor: pointer;
-            color: #666;
-        }
-
-        .close-modal:hover {
-            color: #333;
-        }
-
-        .progress-container {
-            background: white;
-            border: 2px solid #3498db;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-            display: none;
-            text-align: center;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 30px;
-            background: #f0f0f0;
-            border-radius: 15px;
-            overflow: hidden;
-            margin: 20px 0;
-            position: relative;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #3498db, #2ecc71);
-            border-radius: 15px;
-            width: 0%;
-            transition: width 0.3s ease;
-            position: relative;
-        }
-
-        .progress-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-weight: bold;
-            color: #333;
-            z-index: 1;
-        }
-
-        .progress-details {
-            color: #666;
-            font-size: 14px;
-            margin-top: 10px;
-        }
-
-        .cache-info {
-            background: #e8f5e8;
-            border: 2px solid #4caf50;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-            color: #2e7d32;
-            font-size: 14px;
-        }
-
-        .cache-controls {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-
-        .cache-button {
-            background: #2196f3;
-            color: white;
-            border: none;
-            padding: 8px 16px;
             border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .modal-title {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
             cursor: pointer;
-            font-size: 12px;
-            transition: background 0.3s;
+            color: #6c757d;
+            padding: 5px;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
         }
 
-        .cache-button:hover {
-            background: #1976d2;
+        .close-button:hover {
+            background: #f8f9fa;
+            color: #495057;
+            transform: rotate(90deg);
         }
 
-        .cache-button.danger {
-            background: #f44336;
+        .modal-form .form-group {
+            margin-bottom: 20px;
         }
 
-        .cache-button.danger:hover {
-            background: #d32f2f;
+        .modal-form .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #495057;
+            font-size: 0.9rem;
         }
 
-        .settings-button {
-            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
-            box-shadow: 0 8px 20px rgba(149, 165, 166, 0.3);
+        .modal-form .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 14px;
+            direction: ltr;
+            transition: border-color 0.3s ease;
         }
 
-        .settings-button:hover {
+        .modal-form .form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .modal-button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            min-width: 100px;
+        }
+
+        .modal-button.primary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .modal-button.primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 25px rgba(149, 165, 166, 0.4);
-            background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 100%);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .modal-button.secondary {
+            background: #f8f9fa;
+            color: #6c757d;
+            border: 2px solid #e9ecef;
+        }
+
+        .modal-button.secondary:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .setup-panel {
+            display: none;
         }
 
         .setup-panel h3 {
@@ -657,7 +629,7 @@ async loadAllRecords() {
                 margin: 0;
             }
 
-            .refresh-button, .reports-button {
+            .refresh-button, .reports-button, .settings-button {
                 padding: 10px 20px;
                 font-size: 0.9rem;
             }
@@ -691,8 +663,8 @@ async loadAllRecords() {
                     דוחות
                 </a>
 
-                <button class="settings-button" onclick="openSettings()">
-                    <svg class="refresh-icon" fill="currentColor" viewBox="0 0 20 20">
+                <button class="settings-button" id="settingsBtn" onclick="openSettings()">
+                    <svg class="settings-icon" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path>
                     </svg>
                     הגדרות
@@ -702,50 +674,50 @@ async loadAllRecords() {
 
         <div id="statusMessage" class="status-message" style="display: none;"></div>
 
-        <div id="cacheInfo" class="cache-info" style="display: none;">
-            <div>📊 <strong>נתונים נטענו מהמטמון</strong></div>
-            <div id="cacheTime"></div>
-            <div class="cache-controls">
-                <button class="cache-button" onclick="forceRefresh()">רענן נתונים</button>
-                <button class="cache-button danger" onclick="clearCache()">נקה מטמון</button>
-                <button class="cache-button" onclick="toggleDebug()">דיבאג</button>
-            </div>
+        <div id="debugPanel" class="debug-panel" style="display: none;">
+            <h4>🐛 מידע דיבאג:</h4>
+            <div id="debugContent"></div>
         </div>
 
-        <div id="progressContainer" class="progress-container">
-            <h3>🔄 טוען נתונים מAirtable</h3>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
-                <div class="progress-text" id="progressText">0%</div>
-            </div>
-            <div class="progress-details" id="progressDetails">מתחיל טעינה...</div>
-            <div style="margin-top: 15px;">
-                <button class="cache-button" onclick="cancelLoading()">בטל טעינה</button>
-            </div>
-        </div>
-
-        <div id="setupModal" class="setup-modal">
-            <div class="setup-modal-content">
-                <span class="close-modal" onclick="closeSettings()">&times;</span>
-                <h3>🔗 הגדרות חיבור לAirtable</h3>
-                <p style="margin-bottom: 20px; color: #666;">
-                    הגדר את פרטי החיבור שלך לAirtable
-                </p>
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">🔗 הגדרות חיבור לAirtable</h3>
+                    <button class="close-button" onclick="closeSettings()">×</button>
+                </div>
                 
-                <div class="form-group">
-                    <label for="baseId">Base ID:</label>
-                    <input type="text" id="baseId" value="appxvOE27PFbq5z9J">
+                <form class="modal-form">
+                    <div class="form-group">
+                        <label for="modalBaseId">Base ID:</label>
+                        <input type="text" id="modalBaseId" placeholder="appxxxxxxxxxxxxx">
+                        <small style="color: #6c757d; font-size: 0.8rem; margin-top: 5px; display: block;">
+                            מזהה הבסיס שלך באAirtable
+                        </small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modalTableId">Table ID (או שם הטבלה):</label>
+                        <input type="text" id="modalTableId" placeholder="tblxxxxxxxxxxxxx או שם הטבלה">
+                        <small style="color: #6c757d; font-size: 0.8rem; margin-top: 5px; display: block;">
+                            מזהה הטבלה או שם הטבלה
+                        </small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modalApiKey">Personal Access Token:</label>
+                        <input type="password" id="modalApiKey" placeholder="patxxxxxxxxxxxxxxxxx">
+                        <small style="color: #6c757d; font-size: 0.8rem; margin-top: 5px; display: block;">
+                            טוקן הגישה האישי שלך
+                        </small>
+                    </div>
+                </form>
+                
+                <div class="modal-buttons">
+                    <button class="modal-button secondary" onclick="closeSettings()">ביטול</button>
+                    <button class="modal-button primary" onclick="testConnectionFromModal()">בדוק חיבור</button>
+                    <button class="modal-button primary" onclick="saveSettingsAndLoad()">שמור וטען נתונים</button>
                 </div>
-                <div class="form-group">
-                    <label for="tableId">Table ID:</label>
-                    <input type="text" id="tableId" value="tbloSMtX2CV0yHAg8">
-                </div>
-                <div class="form-group">
-                    <label for="apiKey">Personal Access Token:</label>
-                    <input type="password" id="apiKey" value="pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99">
-                </div>
-                <button class="setup-button" onclick="testConnection()">בדוק חיבור</button>
-                <button class="setup-button" onclick="saveSettings()">שמור הגדרות</button>
             </div>
         </div>
 
@@ -753,13 +725,8 @@ async loadAllRecords() {
             <div>🔄 טוען נתונים מAirtable...</div>
         </div>
 
-        <div id="debugPanel" class="debug-panel" style="display: none;">
-            <h4>🐛 מידע דיבאג:</h4>
-            <div id="debugContent"></div>
-        </div>
-
         <!-- Dashboard content -->
-        <div id="originalDashboard" style="display: none;">
+        <div id="originalDashboard">
             <div class="divider">
                 <span class="divider-text">📈 מגמות כלליות</span>
             </div>
@@ -931,71 +898,6 @@ async loadAllRecords() {
         let airtableData = null;
         let charts = {};
         let debugMode = false;
-        let loadingCancelled = false;
-        let currentProgress = 0;
-
-        class DataCache {
-            constructor() {
-                this.CACHE_KEY = 'airtable_dashboard_cache';
-                this.CACHE_TIMESTAMP_KEY = 'airtable_dashboard_timestamp';
-                this.CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
-            }
-
-            set(data) {
-                try {
-                    const cacheData = {
-                        data: data,
-                        timestamp: Date.now()
-                    };
-                    // Store in memory only (Claude.ai doesn't support localStorage)
-                    window.dashboardCache = cacheData;
-                    this.showCacheInfo(new Date());
-                } catch (e) {
-                    console.warn('Cache storage failed:', e);
-                }
-            }
-
-            get() {
-                try {
-                    const cached = window.dashboardCache;
-                    if (cached && (Date.now() - cached.timestamp) < this.CACHE_DURATION) {
-                        this.showCacheInfo(new Date(cached.timestamp));
-                        return cached.data;
-                    }
-                } catch (e) {
-                    console.warn('Cache retrieval failed:', e);
-                }
-                return null;
-            }
-
-            clear() {
-                try {
-                    delete window.dashboardCache;
-                    document.getElementById('cacheInfo').style.display = 'none';
-                    this.showMessage('המטמון נוקה בהצלחה', 'success');
-                } catch (e) {
-                    console.warn('Cache clear failed:', e);
-                }
-            }
-
-            showCacheInfo(timestamp) {
-                const cacheInfo = document.getElementById('cacheInfo');
-                const cacheTime = document.getElementById('cacheTime');
-                cacheTime.textContent = `עודכן לאחרונה: ${timestamp.toLocaleString('he-IL')}`;
-                cacheInfo.style.display = 'block';
-            }
-
-            showMessage(message, type = 'success') {
-                const statusEl = document.getElementById('statusMessage');
-                statusEl.textContent = message;
-                statusEl.className = `status-message ${type === 'error' ? 'error' : ''}`;
-                statusEl.style.display = 'block';
-                
-                setTimeout(() => {
-                    statusEl.style.display = 'none';
-                }, 5000);
-            }
-        }
 
         class AirtableConnector {
             constructor() {
@@ -1006,9 +908,13 @@ async loadAllRecords() {
             }
 
             updateCredentials() {
-                this.baseId = document.getElementById('baseId').value.trim();
-                this.tableId = document.getElementById('tableId').value.trim();
-                this.apiKey = document.getElementById('apiKey').value.trim();
+                // Try modal fields first, fall back to original fields
+                this.baseId = document.getElementById('modalBaseId').value.trim() || 
+                             document.getElementById('baseId')?.value.trim() || '';
+                this.tableId = document.getElementById('modalTableId').value.trim() || 
+                              document.getElementById('tableId')?.value.trim() || '';
+                this.apiKey = document.getElementById('modalApiKey').value.trim() || 
+                             document.getElementById('apiKey')?.value.trim() || '';
             }
 
             validateCredentials() {
@@ -1125,70 +1031,7 @@ async loadAllRecords() {
                 }
             }
 
-            updateCredentials() {
-                this.baseId = document.getElementById('baseId').value.trim();
-                this.tableId = document.getElementById('tableId').value.trim();
-                this.apiKey = document.getElementById('apiKey').value.trim();
-            }
-
-            validateCredentials() {
-                if (!this.baseId || !this.tableId || !this.apiKey) {
-                    this.showMessage('נא למלא את כל השדות הנדרשים', 'error');
-                    return false;
-                }
-
-                if (!this.baseId.startsWith('app')) {
-                    this.showMessage('Base ID חייב להתחיל ב-app', 'error');
-                    return false;
-                }
-
-                if (!this.apiKey.startsWith('pat')) {
-                    this.showMessage('Personal Access Token חייב להתחיל ב-pat', 'error');
-                    return false;
-                }
-
-                return true;
-            }
-
-            async testConnection() {
-                this.updateCredentials();
-                
-                if (!this.validateCredentials()) {
-                    return false;
-                }
-
-                this.debug('מתחיל בדיקת חיבור...');
-
-                try {
-                    const url = `${this.baseUrl}/${this.baseId}/${this.tableId}?maxRecords=1`;
-                    const response = await fetch(url, {
-                        headers: {
-                            'Authorization': `Bearer ${this.apiKey}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (response.ok) {
-                        this.showMessage('החיבור לAirtable תקין! ✅', 'success');
-                        return true;
-                    } else {
-                        const errorText = await response.text();
-                        let errorMessage = 'שגיאה לא ידועה';
-                        try {
-                            const errorJson = JSON.parse(errorText);
-                            errorMessage = errorJson.error?.message || errorJson.error || errorText;
-                        } catch (e) {
-                            errorMessage = errorText;
-                        }
-                        
-                        this.showMessage(`שגיאה בחיבור (${response.status}): ${errorMessage}`, 'error');
-                        return false;
-                    }
-                } catch (error) {
-                    this.showMessage(`שגיאת רשת: ${error.message}`, 'error');
-                    return false;
-                }
-            }
+            async loadAllRecords() {
                 let allRecords = [];
                 let offset = '';
                 let pageCount = 0;
@@ -1412,7 +1255,6 @@ async loadAllRecords() {
 
                 airtableData = stats;
                 this.displayData(stats);
-                return stats; // Return the processed data for caching
             }
 
             addToMonthStats(monthStats, amount, date, category, organization) {
@@ -1456,7 +1298,6 @@ async loadAllRecords() {
                 this.createYearlyChart(stats.yearlyData);
 
                 // Show dashboard
-                document.getElementById('setupPanel').style.display = 'none';
                 document.getElementById('originalDashboard').style.display = 'block';
                 this.formatNumbers();
             }
@@ -1936,6 +1777,49 @@ async loadAllRecords() {
             }
         }
 
+        function openSettings() {
+            // Load current values into modal
+            const modal = document.getElementById('settingsModal');
+            document.getElementById('modalBaseId').value = airtableConnector.baseId || 'appxvOE27PFbq5z9J';
+            document.getElementById('modalTableId').value = airtableConnector.tableId || 'tbloSMtX2CV0yHAg8';
+            document.getElementById('modalApiKey').value = airtableConnector.apiKey || 'pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99';
+            
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Prevent background scroll
+        }
+
+        function closeSettings() {
+            const modal = document.getElementById('settingsModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto'; // Restore scroll
+        }
+
+        function testConnectionFromModal() {
+            // Update connector credentials from modal
+            airtableConnector.baseId = document.getElementById('modalBaseId').value.trim();
+            airtableConnector.tableId = document.getElementById('modalTableId').value.trim();
+            airtableConnector.apiKey = document.getElementById('modalApiKey').value.trim();
+            
+            if (airtableConnector) {
+                airtableConnector.testConnection();
+            }
+        }
+
+        function saveSettingsAndLoad() {
+            // Update connector credentials from modal
+            airtableConnector.baseId = document.getElementById('modalBaseId').value.trim();
+            airtableConnector.tableId = document.getElementById('modalTableId').value.trim();
+            airtableConnector.apiKey = document.getElementById('modalApiKey').value.trim();
+            
+            // Close modal
+            closeSettings();
+            
+            // Load data
+            if (airtableConnector) {
+                airtableConnector.loadData();
+            }
+        }
+
         function testConnection() {
             if (airtableConnector) {
                 airtableConnector.testConnection();
@@ -1949,8 +1833,10 @@ async loadAllRecords() {
         }
 
         function handleRefresh() {
-            if (airtableConnector) {
+            if (airtableConnector && airtableConnector.baseId && airtableConnector.tableId && airtableConnector.apiKey) {
                 airtableConnector.loadData();
+            } else {
+                openSettings();
             }
         }
 
@@ -1958,10 +1844,17 @@ async loadAllRecords() {
         document.addEventListener('DOMContentLoaded', () => {
             airtableConnector = new AirtableConnector();
             
-            // Set default values for testing
-            document.getElementById('baseId').value = 'appxvOE27PFbq5z9J';
-            document.getElementById('tableId').value = 'tbloSMtX2CV0yHAg8';
-            document.getElementById('apiKey').value = 'pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99';
+            // Set default values
+            airtableConnector.baseId = 'appxvOE27PFbq5z9J';
+            airtableConnector.tableId = 'tbloSMtX2CV0yHAg8';
+            airtableConnector.apiKey = 'pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99';
+            
+            // Close modal when clicking outside
+            document.getElementById('settingsModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeSettings();
+                }
+            });
         });
     </script>
 </body>
