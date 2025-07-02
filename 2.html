@@ -1762,7 +1762,10 @@
             }
 
             showLoading(show) {
-                document.getElementById('loadingMessage').style.display = show ? 'block' : 'none';
+                console.log(`showLoading called with: ${show}`);
+                const loadingMessage = document.getElementById('loadingMessage');
+                loadingMessage.style.display = show ? 'block' : 'none';
+                console.log(`Loading message display set to: ${loadingMessage.style.display}`);
                 // Don't modify the refresh button here - it's handled in loadData()
             }
 
