@@ -810,7 +810,7 @@
                 let allRecords = [];
                 let offset = '';
                 let pageCount = 0;
-                const maxPages = 100; // Safety limit - increased to get more data
+                const maxPages = 400; // Safety limit - increased to get much more data (40,000 records)
                 
                 do {
                     pageCount++;
@@ -1018,9 +1018,9 @@
                 }).length;
 
                 this.debug('סטטיסטיקות סופיות:');
-                this.debug(`חודש נוכחי: ₪${stats.currentMonth.total.toLocaleString()} (${currentMonthTransactions} עסקאות)`);
-                this.debug(`חודש קודם: ₪${stats.lastMonth.total.toLocaleString()} (${lastMonthTransactions} עסקאות)`);
-                this.debug(`שנת 2025: ₪${stats.yearlyData['2025'].toLocaleString()}`);
+                this.debug(`חודש נוכחי: ₪${stats.currentMonth.total.toLocaleString('he-IL')} (${currentMonthTransactions} עסקאות)`);
+                this.debug(`חודש קודם: ₪${stats.lastMonth.total.toLocaleString('he-IL')} (${lastMonthTransactions} עסקאות)`);
+                this.debug(`שנת 2025: ₪${stats.yearlyData['2025'].toLocaleString('he-IL')}`);
                 
                 // Show breakdown by categories for current month
                 this.debug('פירוט קטגוריות חודש נוכחי:', JSON.stringify(stats.currentMonth.categories, null, 2));
@@ -1044,9 +1044,9 @@
             }
 
             displayData(stats) {
-                // Update totals
-                document.getElementById('currentMonthTotal').textContent = stats.currentMonth.total.toLocaleString();
-                document.getElementById('lastMonthTotal').textContent = stats.lastMonth.total.toLocaleString();
+                // Update totals with proper formatting
+                document.getElementById('currentMonthTotal').textContent = stats.currentMonth.total.toLocaleString('he-IL');
+                document.getElementById('lastMonthTotal').textContent = stats.lastMonth.total.toLocaleString('he-IL');
 
                 // Update payment details
                 this.updatePaymentDetails('currentMonthPayments', stats.currentMonth);
@@ -1086,7 +1086,7 @@
                     container.innerHTML += `
                         <div class="stat-card source">
                             <h3>${orgName}</h3>
-                            <div class="amount">₪${amount.toLocaleString()}</div>
+                            <div class="amount">₪${amount.toLocaleString('he-IL')}</div>
                         </div>
                     `;
                 });
@@ -1108,7 +1108,7 @@
                     container.innerHTML += `
                         <div class="stat-card">
                             <h3>${categoryName}</h3>
-                            <div class="amount">₪${amount.toLocaleString()}</div>
+                            <div class="amount">₪${amount.toLocaleString('he-IL')}</div>
                         </div>
                     `;
                 });
@@ -1331,9 +1331,21 @@
 
             formatNumbers() {
                 document.querySelectorAll('.formatted-number').forEach(element => {
-                    const number = parseInt(element.textContent);
+                    const number = parseInt(element.textContent.replace(/,/g, ''));
                     if (!isNaN(number)) {
                         element.textContent = number.toLocaleString('he-IL');
+                    }
+                });
+                
+                // Also format all .amount elements
+                document.querySelectorAll('.amount').forEach(element => {
+                    const text = element.textContent;
+                    const match = text.match(/₪([0-9,]+)/);
+                    if (match) {
+                        const number = parseInt(match[1].replace(/,/g, ''));
+                        if (!isNaN(number)) {
+                            element.textContent = text.replace(/₪[0-9,]+/, '₪' + number.toLocaleString('he-IL'));
+                        }
                     }
                 });
             }
