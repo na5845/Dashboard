@@ -132,7 +132,7 @@
         }
 
         .refresh-button:disabled {
-            opacity: 0.8;
+            opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
@@ -1013,9 +1013,15 @@
 
                 this.showLoading(true);
                 const refreshBtn = document.getElementById('refreshBtn');
+                
+                // בדיקה אם כבר בתהליך רענון
+                if (refreshBtn.classList.contains('loading')) {
+                    console.log('כבר בתהליך רענון, מדלג...');
+                    return;
+                }
+                
                 refreshBtn.classList.add('loading');
                 refreshBtn.disabled = true;
-                // Keep the same text - don't change it to "טוען..."
 
                 this.debug('מתחיל טעינת נתונים...');
 
@@ -1042,7 +1048,6 @@
                     this.showLoading(false);
                     refreshBtn.classList.remove('loading');
                     refreshBtn.disabled = false;
-                    // Keep original text - don't reset to "רענן נתונים"
                 }
             }
 
