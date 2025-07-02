@@ -96,6 +96,9 @@
             height: 50px;
             justify-content: center;
             color: white;
+            min-width: 150px; /* Force consistent width */
+            min-height: 50px; /* Force consistent height */
+            box-sizing: border-box; /* Include padding and border in size */
         }
 
         .refresh-button {
@@ -134,7 +137,12 @@
         .refresh-button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
-            transform: none;
+            transform: none !important;
+        }
+
+        .refresh-button:disabled:hover {
+            transform: none !important;
+            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3) !important;
         }
 
         .refresh-icon, .reports-icon, .settings-icon {
@@ -143,6 +151,24 @@
             transition: transform 0.3s ease;
         }
 
+        .refresh-button.loading {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            pointer-events: none;
+            width: 150px !important; /* Force original width */
+            height: 50px !important; /* Force original height */
+            min-width: 150px !important;
+            min-height: 50px !important;
+            padding: 15px 20px !important; /* Keep original padding */
+        }
+
+        .refresh-button.loading:hover {
+            transform: none !important;
+            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3) !important;
+        }
+
+        /* Animation for loading state - only rotate the icon, keep text same */
         .refresh-button.loading .refresh-icon {
             animation: spin 1s linear infinite;
         }
@@ -151,8 +177,6 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
-
-        .status-message {
             background: #e8f5e8;
             border: 2px solid #4caf50;
             border-radius: 10px;
@@ -385,9 +409,72 @@
 
         .loading {
             text-align: center;
-            padding: 50px;
+            padding: 20px;
             color: #666;
-            font-size: 18px;
+            font-size: 16px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .progress-text {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #27ae60, #2ecc71, #3498db);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.4),
+                transparent
+            );
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-percentage {
+            font-size: 14px;
+            font-weight: bold;
+            color: #495057;
         }
 
         /* Dashboard styles */
@@ -722,7 +809,13 @@
         </div>
 
         <div id="loadingMessage" class="loading" style="display: none;">
-            <div>🔄 טוען נתונים מAirtable...</div>
+            <div class="progress-container">
+                <div class="progress-text">טוען נתונים מAirtable...</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-percentage" id="progressPercentage">0%</div>
+            </div>
         </div>
 
         <!-- Dashboard content -->
@@ -1012,9 +1105,20 @@
 
                 this.showLoading(true);
                 const refreshBtn = document.getElementById('refreshBtn');
+                const refreshBtnText = document.getElementById('refreshBtnText');
+                
+                // בדיקה אם כבר בתהליך רענון
+                if (refreshBtn.classList.contains('loading')) {
+                    console.log('כבר בתהליך רענון, מדלג...');
+                    return;
+                }
+                
+                // שמירת הטקסט המקורי
+                const originalText = refreshBtnText.textContent;
+                
                 refreshBtn.classList.add('loading');
                 refreshBtn.disabled = true;
-                document.getElementById('refreshBtnText').textContent = 'טוען...';
+                refreshBtnText.textContent = 'טוען...';
 
                 this.debug('מתחיל טעינת נתונים...');
 
@@ -1038,10 +1142,10 @@
                     this.debug(`שגיאה בטעינת הנתונים: ${error.message}`);
                     this.showMessage(`שגיאה בטעינת הנתונים: ${error.message}`, 'error');
                 } finally {
-                    this.showLoading(false);
+                    this.completeProgress(); // Complete the progress bar
                     refreshBtn.classList.remove('loading');
                     refreshBtn.disabled = false;
-                    document.getElementById('refreshBtnText').textContent = 'רענן נתונים';
+                    refreshBtnText.textContent = originalText; // החזרת הטקסט המקורי
                 }
             }
 
@@ -1756,7 +1860,71 @@
             }
 
             showLoading(show) {
-                document.getElementById('loadingMessage').style.display = show ? 'block' : 'none';
+                const loadingEl = document.getElementById('loadingMessage');
+                const progressFill = document.getElementById('progressFill');
+                const progressPercentage = document.getElementById('progressPercentage');
+                
+                if (show) {
+                    loadingEl.style.display = 'block';
+                    // Start progress animation
+                    this.animateProgress(progressFill, progressPercentage);
+                } else {
+                    loadingEl.style.display = 'none';
+                    // Reset progress
+                    if (progressFill) {
+                        progressFill.style.width = '0%';
+                    }
+                    if (progressPercentage) {
+                        progressPercentage.textContent = '0%';
+                    }
+                }
+            }
+
+            animateProgress(progressFill, progressPercentage) {
+                if (!progressFill || !progressPercentage) return;
+                
+                let progress = 0;
+                const duration = 8000; // 8 seconds total
+                const interval = 100; // Update every 100ms
+                const increment = (interval / duration) * 100;
+                
+                const progressInterval = setInterval(() => {
+                    progress += increment + Math.random() * 2; // Add some randomness
+                    
+                    if (progress >= 95) {
+                        progress = 95; // Stop at 95% and wait for actual completion
+                    }
+                    
+                    progressFill.style.width = progress + '%';
+                    progressPercentage.textContent = Math.round(progress) + '%';
+                    
+                    if (progress >= 95) {
+                        clearInterval(progressInterval);
+                    }
+                }, interval);
+                
+                // Store interval ID so we can clear it if needed
+                this.progressInterval = progressInterval;
+            }
+
+            completeProgress() {
+                const progressFill = document.getElementById('progressFill');
+                const progressPercentage = document.getElementById('progressPercentage');
+                
+                if (progressFill && progressPercentage) {
+                    progressFill.style.width = '100%';
+                    progressPercentage.textContent = '100%';
+                    
+                    // Clear any existing interval
+                    if (this.progressInterval) {
+                        clearInterval(this.progressInterval);
+                    }
+                    
+                    // Hide loading after a short delay
+                    setTimeout(() => {
+                        this.showLoading(false);
+                    }, 500);
+                }
             }
 
             debug(message, data = null) {
