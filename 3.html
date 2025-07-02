@@ -1036,6 +1036,7 @@
 
                 this.showLoading(true);
                 const refreshBtn = document.getElementById('refreshBtn');
+                const refreshBtnText = document.getElementById('refreshBtnText');
                 
                 // בדיקה אם כבר בתהליך רענון
                 if (refreshBtn.classList.contains('loading')) {
@@ -1043,8 +1044,12 @@
                     return;
                 }
                 
+                // שמירת הטקסט המקורי
+                const originalText = refreshBtnText.textContent;
+                
                 refreshBtn.classList.add('loading');
                 refreshBtn.disabled = true;
+                refreshBtnText.textContent = 'טוען...';
 
                 this.debug('מתחיל טעינת נתונים...');
 
@@ -1071,6 +1076,7 @@
                     this.showLoading(false);
                     refreshBtn.classList.remove('loading');
                     refreshBtn.disabled = false;
+                    refreshBtnText.textContent = originalText; // החזרת הטקסט המקורי
                 }
             }
 
