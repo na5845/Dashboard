@@ -1763,6 +1763,7 @@
 
             showLoading(show) {
                 document.getElementById('loadingMessage').style.display = show ? 'block' : 'none';
+                // Don't modify the refresh button here - it's handled in loadData()
             }
 
             debug(message, data = null) {
