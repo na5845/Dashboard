@@ -1039,8 +1039,7 @@
             loadCachedDataIfExists() {
                 const cachedData = this.loadDataFromCache();
                 if (cachedData) {
-                    const lastUpdate = localStorage.getItem(this.cacheTimestamp);
-                    this.showMessage(`נתונים נטענו מהזיכרון המקומי (עדכון אחרון: ${lastUpdate}) ✅`, 'success');
+                    // הסרת ההודעה על טעינה מהזיכרון
                     
                     // Remove timestamp before displaying
                     const { timestamp, ...dataWithoutTimestamp } = cachedData;
@@ -1896,6 +1895,9 @@
             }
 
             showMessage(message, type = 'success') {
+                // הפונקציה לא מציגה הודעות - מבוטלת
+                return;
+                
                 const statusEl = document.getElementById('statusMessage');
                 statusEl.textContent = message;
                 statusEl.className = `status-message ${type === 'error' ? 'error' : ''}`;
@@ -1943,7 +1945,9 @@
                     }
                     
                     progressFill.style.width = progress + '%';
-                    progressPercentage.textContent = Math.round(progress) + '%';
+                    if (progressPercentage) {
+                        progressPercentage.textContent = Math.round(progress) + '%';
+                    }
                     
                     if (progress >= 95) {
                         clearInterval(progressInterval);
@@ -1958,20 +1962,22 @@
                 const progressFill = document.getElementById('progressFill');
                 const progressPercentage = document.getElementById('progressPercentage');
                 
-                if (progressFill && progressPercentage) {
+                if (progressFill) {
                     progressFill.style.width = '100%';
-                    progressPercentage.textContent = '100%';
-                    
-                    // Clear any existing interval
-                    if (this.progressInterval) {
-                        clearInterval(this.progressInterval);
-                    }
-                    
-                    // Hide loading after a short delay
-                    setTimeout(() => {
-                        this.showLoading(false);
-                    }, 500);
                 }
+                if (progressPercentage) {
+                    progressPercentage.textContent = '100%';
+                }
+                
+                // Clear any existing interval
+                if (this.progressInterval) {
+                    clearInterval(this.progressInterval);
+                }
+                
+                // Hide loading after a short delay
+                setTimeout(() => {
+                    this.showLoading(false);
+                }, 500);
             }
 
             debug(message, data = null) {
