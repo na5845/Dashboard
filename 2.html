@@ -839,33 +839,10 @@
                 document.getElementById('refreshBtnText').textContent = 'טוען...';
 
                 try {
-                    // נסה קודם עם Views (מהיר יותר)
-                    try {
-                        const [
-                            currentMonthData,
-                            yearToDateData,
-                            last12MonthsData
-                        ] = await Promise.all([
-                            this.loadFromView('viwrF5Dby6v77rnj2'), // מתחילת החודש
-                            this.loadFromView('viwqls7cGxKYxkA2V'), // מתחילת השנה 
-                            this.loadFromView('viwGBVEUH0gtYEv67')  // שנה אחורה
-                        ]);
-
-                        this.processViewsData({
-                            currentMonth: currentMonthData,
-                            yearToDate: yearToDateData,
-                            last12Months: last12MonthsData
-                        });
-                        
-                        this.showMessage(`נטענו הנתונים מViews בהצלחה! ✅`, 'success');
-                        
-                    } catch (viewError) {
-                        // אם Views לא עובדים, נסה עם כל הנתונים
-                        console.log('Views לא זמינים, טוען כל הנתונים...');
-                        const allRecords = await this.loadAllRecords();
-                        this.processAllData(allRecords);
-                        this.showMessage(`נטענו ${allRecords.length} רשומות בהצלחה! ✅`, 'success');
-                    }
+                    // טעינת כל הנתונים מהטבלה הראשית (ללא Views)
+                    const allRecords = await this.loadAllRecords();
+                    this.processAllData(allRecords);
+                    this.showMessage(`נטענו ${allRecords.length} רשומות בהצלחה! ✅`, 'success');
                     
                 } catch (error) {
                     this.showMessage(`שגיאה בטעינת הנתונים: ${error.message}`, 'error');
@@ -873,7 +850,7 @@
                     this.showLoading(false);
                     refreshBtn.classList.remove('loading');
                     refreshBtn.disabled = false;
-                    document.getElementById('refreshBtnText').textContent = 'רענן נתונים';
+                    document.getElementById('refreshBtnText').textContent = 'טען נתונים';
                 }
             }
 
