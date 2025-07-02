@@ -1052,6 +1052,7 @@
             }
 
             async loadAllRecords() {
+                console.log('loadAllRecords started');
                 let allRecords = [];
                 let offset = '';
                 let pageCount = 0;
@@ -1087,10 +1088,12 @@
                     
                 } while (offset);
 
+                console.log('loadAllRecords finished');
                 return allRecords;
             }
 
             processAllData(allRecords) {
+                console.log('processAllData started');
                 const now = new Date();
                 const currentMonth = now.getMonth();
                 const currentYear = now.getFullYear();
@@ -1275,6 +1278,7 @@
 
                 airtableData = stats;
                 this.displayData(stats);
+                console.log('processAllData finished');
             }
 
             addToMonthStats(monthStats, amount, date, category, organization) {
@@ -1291,6 +1295,7 @@
             }
 
             displayData(stats) {
+                console.log('displayData started');
                 // Update totals with proper formatting
                 document.getElementById('currentMonthTotal').textContent = stats.currentMonth.total.toLocaleString('he-IL');
                 document.getElementById('lastMonthTotal').textContent = stats.lastMonth.total.toLocaleString('he-IL');
@@ -1320,6 +1325,7 @@
                 // Show dashboard
                 document.getElementById('originalDashboard').style.display = 'block';
                 this.formatNumbers();
+                console.log('displayData finished');
             }
 
             createOrganizationBreakdownChart(canvasId, categoryOrgData, orgName) {
