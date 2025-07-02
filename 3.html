@@ -79,7 +79,7 @@
             gap: 10px;
         }
 
-        .refresh-button, .reports-button {
+        .refresh-button, .reports-button, .settings-button {
             border: none;
             padding: 15px 20px;
             border-radius: 50px;
@@ -120,18 +120,30 @@
             background: linear-gradient(135deg, #7d3c98 0%, #8e44ad 100%);
         }
 
+        .settings-button {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            box-shadow: 0 8px 20px rgba(52, 73, 94, 0.3);
+        }
+
+        .settings-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(52, 73, 94, 0.4);
+            background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
+        }
+
         .refresh-button:disabled {
-            opacity: 0.6;
+            opacity: 0.8;
             cursor: not-allowed;
             transform: none;
         }
 
-        .refresh-icon, .reports-icon {
+        .refresh-icon, .reports-icon, .settings-icon {
             width: 20px;
             height: 20px;
             transition: transform 0.3s ease;
         }
 
+        /* Animation for loading state - only rotate the icon, keep text same */
         .refresh-button.loading .refresh-icon {
             animation: spin 1s linear infinite;
         }
@@ -176,12 +188,154 @@
             color: #495057;
         }
 
-        .setup-panel {
+        /* Settings Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
             background: white;
-            border: 2px solid #2196f3;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .modal-title {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 5px;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .close-button:hover {
+            background: #f8f9fa;
+            color: #495057;
+            transform: rotate(90deg);
+        }
+
+        .modal-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .modal-form .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #495057;
+            font-size: 0.9rem;
+        }
+
+        .modal-form .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 14px;
+            direction: ltr;
+            transition: border-color 0.3s ease;
+        }
+
+        .modal-form .form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .modal-button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            min-width: 100px;
+        }
+
+        .modal-button.primary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .modal-button.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .modal-button.secondary {
+            background: #f8f9fa;
+            color: #6c757d;
+            border: 2px solid #e9ecef;
+        }
+
+        .modal-button.secondary:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .setup-panel {
+            display: none;
         }
 
         .setup-panel h3 {
@@ -476,7 +630,7 @@
                 margin: 0;
             }
 
-            .refresh-button, .reports-button {
+            .refresh-button, .reports-button, .settings-button {
                 padding: 10px 20px;
                 font-size: 0.9rem;
             }
@@ -509,6 +663,13 @@
                     </svg>
                     דוחות
                 </a>
+
+                <button class="settings-button" id="settingsBtn" onclick="openSettings()">
+                    <svg class="settings-icon" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path>
+                    </svg>
+                    הגדרות
+                </button>
             </div>
         </div>
 
@@ -519,27 +680,46 @@
             <div id="debugContent"></div>
         </div>
 
-        <div id="setupPanel" class="setup-panel">
-            <h3>🔗 הגדרת חיבור לAirtable</h3>
-            <p style="margin-bottom: 20px; color: #666;">
-                נא להזין את פרטי החיבור שלך לAirtable
-            </p>
-            
-            <div class="form-group">
-                <label for="baseId">Base ID:</label>
-                <input type="text" id="baseId" placeholder="appxxxxxxxxxxxxx">
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">🔗 הגדרות חיבור לAirtable</h3>
+                    <button class="close-button" onclick="closeSettings()">×</button>
+                </div>
+                
+                <form class="modal-form">
+                    <div class="form-group">
+                        <label for="modalBaseId">Base ID:</label>
+                        <input type="text" id="modalBaseId" placeholder="appxxxxxxxxxxxxx">
+                        <small style="color: #6c757d; font-size: 0.8rem; margin-top: 5px; display: block;">
+                            מזהה הבסיס שלך באAirtable
+                        </small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modalTableId">Table ID (או שם הטבלה):</label>
+                        <input type="text" id="modalTableId" placeholder="tblxxxxxxxxxxxxx או שם הטבלה">
+                        <small style="color: #6c757d; font-size: 0.8rem; margin-top: 5px; display: block;">
+                            מזהה הטבלה או שם הטבלה
+                        </small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modalApiKey">Personal Access Token:</label>
+                        <input type="password" id="modalApiKey" placeholder="patxxxxxxxxxxxxxxxxx">
+                        <small style="color: #6c757d; font-size: 0.8rem; margin-top: 5px; display: block;">
+                            טוקן הגישה האישי שלך
+                        </small>
+                    </div>
+                </form>
+                
+                <div class="modal-buttons">
+                    <button class="modal-button secondary" onclick="closeSettings()">ביטול</button>
+                    <button class="modal-button primary" onclick="testConnectionFromModal()">בדוק חיבור</button>
+                    <button class="modal-button primary" onclick="saveSettingsAndLoad()">שמור וטען נתונים</button>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="tableId">Table ID (או שם הטבלה):</label>
-                <input type="text" id="tableId" placeholder="tblxxxxxxxxxxxxx או שם הטבלה">
-            </div>
-            <div class="form-group">
-                <label for="apiKey">Personal Access Token:</label>
-                <input type="password" id="apiKey" placeholder="patxxxxxxxxxxxxxxxxx">
-            </div>
-            <button class="setup-button" onclick="testConnection()">בדוק חיבור</button>
-            <button class="setup-button" onclick="loadAirtableData()">טען נתונים מAirtable</button>
-            <button class="setup-button" onclick="toggleDebug()">הצג דיבאג</button>
         </div>
 
         <div id="loadingMessage" class="loading" style="display: none;">
@@ -547,7 +727,7 @@
         </div>
 
         <!-- Dashboard content -->
-        <div id="originalDashboard" style="display: none;">
+        <div id="originalDashboard">
             <div class="divider">
                 <span class="divider-text">📈 מגמות כלליות</span>
             </div>
@@ -726,12 +906,32 @@
                 this.baseId = '';
                 this.tableId = '';
                 this.apiKey = '';
+                
+                console.log('AirtableConnector נוצר');
             }
 
             updateCredentials() {
-                this.baseId = document.getElementById('baseId').value.trim();
-                this.tableId = document.getElementById('tableId').value.trim();
-                this.apiKey = document.getElementById('apiKey').value.trim();
+                // Only update from modal fields, don't try to read from non-existent fields
+                const modalBaseId = document.getElementById('modalBaseId')?.value?.trim();
+                const modalTableId = document.getElementById('modalTableId')?.value?.trim();
+                const modalApiKey = document.getElementById('modalApiKey')?.value?.trim();
+                
+                // Only update if modal fields have values, otherwise keep current values
+                if (modalBaseId !== undefined && modalBaseId !== '') {
+                    this.baseId = modalBaseId;
+                }
+                if (modalTableId !== undefined && modalTableId !== '') {
+                    this.tableId = modalTableId;
+                }
+                if (modalApiKey !== undefined && modalApiKey !== '') {
+                    this.apiKey = modalApiKey;
+                }
+                
+                console.log('updateCredentials called, current values:', {
+                    baseId: this.baseId,
+                    tableId: this.tableId,
+                    apiKey: this.apiKey ? 'קיים' : 'ריק'
+                });
             }
 
             validateCredentials() {
@@ -754,8 +954,7 @@
             }
 
             async testConnection() {
-                this.updateCredentials();
-                
+                // Don't call updateCredentials here - use current values
                 if (!this.validateCredentials()) {
                     return false;
                 }
@@ -807,8 +1006,7 @@
             }
 
             async loadData() {
-                this.updateCredentials();
-                
+                // Don't call updateCredentials here - use current values
                 if (!this.validateCredentials()) {
                     return;
                 }
@@ -817,7 +1015,7 @@
                 const refreshBtn = document.getElementById('refreshBtn');
                 refreshBtn.classList.add('loading');
                 refreshBtn.disabled = true;
-                document.getElementById('refreshBtnText').textContent = 'טוען...';
+                // Keep the same text - don't change it to "טוען..."
 
                 this.debug('מתחיל טעינת נתונים...');
 
@@ -844,7 +1042,7 @@
                     this.showLoading(false);
                     refreshBtn.classList.remove('loading');
                     refreshBtn.disabled = false;
-                    document.getElementById('refreshBtnText').textContent = 'רענן נתונים';
+                    // Keep original text - don't reset to "רענן נתונים"
                 }
             }
 
@@ -1115,7 +1313,6 @@
                 this.createYearlyChart(stats.yearlyData);
 
                 // Show dashboard
-                document.getElementById('setupPanel').style.display = 'none';
                 document.getElementById('originalDashboard').style.display = 'block';
                 this.formatNumbers();
             }
@@ -1595,6 +1792,84 @@
             }
         }
 
+        function openSettings() {
+            console.log('פותח חלון הגדרות');
+            console.log('הגדרות נוכחיות:', {
+                baseId: airtableConnector?.baseId,
+                tableId: airtableConnector?.tableId,
+                apiKey: airtableConnector?.apiKey ? 'קיים' : 'לא קיים'
+            });
+            
+            // Load current values into modal - show defaults if no current values
+            const modal = document.getElementById('settingsModal');
+            document.getElementById('modalBaseId').value = airtableConnector?.baseId || 'appxvOE27PFbq5z9J';
+            document.getElementById('modalTableId').value = airtableConnector?.tableId || 'tbloSMtX2CV0yHAg8';
+            document.getElementById('modalApiKey').value = airtableConnector?.apiKey || 'pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99';
+            
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Prevent background scroll
+        }
+
+        function closeSettings() {
+            const modal = document.getElementById('settingsModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto'; // Restore scroll
+        }
+
+        function testConnectionFromModal() {
+            console.log('בודק חיבור מהמודל');
+            
+            // Get values from modal
+            const baseId = document.getElementById('modalBaseId').value.trim();
+            const tableId = document.getElementById('modalTableId').value.trim();
+            const apiKey = document.getElementById('modalApiKey').value.trim();
+            
+            // Validate fields
+            if (!baseId || !tableId || !apiKey) {
+                alert('נא למלא את כל השדות לפני בדיקת החיבור');
+                return;
+            }
+            
+            // Update connector credentials from modal
+            airtableConnector.baseId = baseId;
+            airtableConnector.tableId = tableId;
+            airtableConnector.apiKey = apiKey;
+            
+            if (airtableConnector) {
+                airtableConnector.testConnection();
+            }
+        }
+
+        function saveSettingsAndLoad() {
+            console.log('שומר הגדרות וטוען נתונים');
+            
+            // Get values from modal
+            const baseId = document.getElementById('modalBaseId').value.trim();
+            const tableId = document.getElementById('modalTableId').value.trim();
+            const apiKey = document.getElementById('modalApiKey').value.trim();
+            
+            console.log('ערכים חדשים:', { baseId, tableId, apiKey: apiKey ? 'קיים' : 'ריק' });
+            
+            // Update connector credentials from modal
+            airtableConnector.baseId = baseId;
+            airtableConnector.tableId = tableId;
+            airtableConnector.apiKey = apiKey;
+            
+            // Validate before closing
+            if (!baseId || !tableId || !apiKey) {
+                alert('נא למלא את כל השדות');
+                return;
+            }
+            
+            // Close modal
+            closeSettings();
+            
+            // Load data
+            if (airtableConnector) {
+                airtableConnector.loadData();
+            }
+        }
+
         function testConnection() {
             if (airtableConnector) {
                 airtableConnector.testConnection();
@@ -1608,19 +1883,68 @@
         }
 
         function handleRefresh() {
-            if (airtableConnector) {
+            console.log('handleRefresh נקרא');
+            console.log('airtableConnector קיים:', !!airtableConnector);
+            
+            if (!airtableConnector) {
+                console.error('airtableConnector לא קיים!');
+                openSettings();
+                return;
+            }
+            
+            console.log('בודק הגדרות:', {
+                baseId: airtableConnector.baseId,
+                tableId: airtableConnector.tableId,
+                apiKey: airtableConnector.apiKey ? `קיים (${airtableConnector.apiKey.length} תווים)` : 'לא קיים'
+            });
+            
+            // Check if we have valid credentials
+            if (airtableConnector.baseId && 
+                airtableConnector.tableId && 
+                airtableConnector.apiKey &&
+                airtableConnector.baseId.trim() !== '' &&
+                airtableConnector.tableId.trim() !== '' &&
+                airtableConnector.apiKey.trim() !== '') {
+                
+                console.log('יש הגדרות תקפות, טוען נתונים');
                 airtableConnector.loadData();
+            } else {
+                console.log('אין הגדרות תקפות, פותח חלון הגדרות');
+                openSettings();
             }
         }
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
-            airtableConnector = new AirtableConnector();
+            console.log('מאתחל דף');
             
-            // Set default values for testing
-            document.getElementById('baseId').value = 'appxvOE27PFbq5z9J';
-            document.getElementById('tableId').value = 'tbloSMtX2CV0yHAg8';
-            document.getElementById('apiKey').value = 'pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99';
+            try {
+                airtableConnector = new AirtableConnector();
+                console.log('AirtableConnector נוצר בהצלחה');
+                
+                // Set default values and save them to the connector
+                airtableConnector.baseId = 'appxvOE27PFbq5z9J';
+                airtableConnector.tableId = 'tbloSMtX2CV0yHAg8';
+                airtableConnector.apiKey = 'pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99';
+                
+                console.log('ערכי ברירת מחדל נקבעו בהצלחה:', {
+                    baseId: airtableConnector.baseId,
+                    tableId: airtableConnector.tableId,
+                    apiKey: airtableConnector.apiKey ? 'קיים' : 'לא קיים'
+                });
+                
+                // Close modal when clicking outside
+                document.getElementById('settingsModal').addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeSettings();
+                    }
+                });
+                
+                console.log('אתחול הושלם בהצלחה');
+                
+            } catch (error) {
+                console.error('שגיאה באתחול:', error);
+            }
         });
     </script>
 </body>
