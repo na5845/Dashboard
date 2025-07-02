@@ -810,7 +810,7 @@
                 let allRecords = [];
                 let offset = '';
                 let pageCount = 0;
-                const maxPages = 50; // Safety limit
+                const maxPages = 100; // Safety limit - increased to get more data
                 
                 do {
                     pageCount++;
@@ -859,9 +859,23 @@
                 const yearStart = new Date(currentYear, 0, 1);
                 const last12MonthsStart = new Date(currentYear, currentMonth - 11, 1);
 
-                this.debug(`תאריכי סינון:`);
-                this.debug(`חודש נוכחי מ: ${currentMonthStart.toISOString()}`);
-                this.debug(`חודש קודם: ${lastMonthStart.toISOString()} עד ${lastMonthEnd.toISOString()}`);
+                this.debug(`תאריכי סינון - תאריך היום: ${now.toLocaleString('he-IL')}`);
+                this.debug(`חודש נוכחי (${currentMonth + 1}/${currentYear}) מ: ${currentMonthStart.toLocaleString('he-IL')}`);
+                this.debug(`חודש קודם (${lastMonth + 1}/${lastMonthYear}): ${lastMonthStart.toLocaleString('he-IL')} עד ${lastMonthEnd.toLocaleString('he-IL')}`);
+                this.debug(`שנת ${currentYear} מ: ${yearStart.toLocaleString('he-IL')}`);
+                
+                // Show sample transaction dates
+                const sampleDates = allRecords.slice(0, 10)
+                    .filter(r => r.fields['תאריך ושעת ביצוע העסקה'])
+                    .map(r => {
+                        const date = new Date(r.fields['תאריך ושעת ביצוע העסקה']);
+                        return {
+                            original: r.fields['תאריך ושעת ביצוע העסקה'],
+                            parsed: date.toLocaleString('he-IL'),
+                            amount: r.fields['סכום עסקה']
+                        };
+                    });
+                this.debug('דוגמאות תאריכים:', JSON.stringify(sampleDates, null, 2));
 
                 const stats = {
                     currentMonth: { 
@@ -963,14 +977,21 @@
                     const category = fields[categoryField] || 'לא מוגדר';
                     const organization = fields[orgField] || 'אחר';
                     
+                    // Debug first few records
+                    if (index < 10) {
+                        this.debug(`רשומה ${index}: תאריך=${date.toLocaleString('he-IL')}, סכום=${amount}, קטגוריה=${category}, ארגון=${organization}`);
+                    }
+                    
                     // Current month
                     if (date >= currentMonthStart) {
                         this.addToMonthStats(stats.currentMonth, amount, date, category, organization);
+                        if (index < 50) this.debug(`✅ רשומה ${index} נספרה בחודש הנוכחי`);
                     }
                     
                     // Last month
                     if (date >= lastMonthStart && date <= lastMonthEnd) {
                         this.addToMonthStats(stats.lastMonth, amount, date, category, organization);
+                        if (index < 50) this.debug(`✅ רשומה ${index} נספרה בחודש הקודם`);
                     }
                     
                     // Current year data
@@ -985,10 +1006,25 @@
                     }
                 });
 
+                // Add transaction count debugging
+                const currentMonthTransactions = validRecords.filter(record => {
+                    const date = new Date(record.fields[dateField]);
+                    return date >= currentMonthStart;
+                }).length;
+                
+                const lastMonthTransactions = validRecords.filter(record => {
+                    const date = new Date(record.fields[dateField]);
+                    return date >= lastMonthStart && date <= lastMonthEnd;
+                }).length;
+
                 this.debug('סטטיסטיקות סופיות:');
-                this.debug(`חודש נוכחי: ₪${stats.currentMonth.total.toLocaleString()}`);
-                this.debug(`חודש קודם: ₪${stats.lastMonth.total.toLocaleString()}`);
+                this.debug(`חודש נוכחי: ₪${stats.currentMonth.total.toLocaleString()} (${currentMonthTransactions} עסקאות)`);
+                this.debug(`חודש קודם: ₪${stats.lastMonth.total.toLocaleString()} (${lastMonthTransactions} עסקאות)`);
                 this.debug(`שנת 2025: ₪${stats.yearlyData['2025'].toLocaleString()}`);
+                
+                // Show breakdown by categories for current month
+                this.debug('פירוט קטגוריות חודש נוכחי:', JSON.stringify(stats.currentMonth.categories, null, 2));
+                this.debug('פירוט ארגונים חודש נוכחי:', JSON.stringify(stats.currentMonth.organizations, null, 2));
 
                 airtableData = stats;
                 this.displayData(stats);
