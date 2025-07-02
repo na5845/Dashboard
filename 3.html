@@ -134,13 +134,30 @@
         .refresh-button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
-            transform: none;
+            transform: none !important;
+        }
+
+        .refresh-button:disabled:hover {
+            transform: none !important;
+            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3) !important;
         }
 
         .refresh-icon, .reports-icon, .settings-icon {
             width: 20px;
             height: 20px;
             transition: transform 0.3s ease;
+        }
+
+        .refresh-button.loading {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            pointer-events: none;
+        }
+
+        .refresh-button.loading:hover {
+            transform: none !important;
+            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3) !important;
         }
 
         /* Animation for loading state - only rotate the icon, keep text same */
@@ -152,8 +169,6 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
-
-        .status-message {
             background: #e8f5e8;
             border: 2px solid #4caf50;
             border-radius: 10px;
