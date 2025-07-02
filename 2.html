@@ -1778,11 +1778,18 @@
         }
 
         function openSettings() {
-            // Load current values into modal
+            console.log('פותח חלון הגדרות');
+            console.log('הגדרות נוכחיות:', {
+                baseId: airtableConnector?.baseId,
+                tableId: airtableConnector?.tableId,
+                apiKey: airtableConnector?.apiKey ? 'קיים' : 'לא קיים'
+            });
+            
+            // Load current values into modal - show defaults if no current values
             const modal = document.getElementById('settingsModal');
-            document.getElementById('modalBaseId').value = airtableConnector.baseId || 'appxvOE27PFbq5z9J';
-            document.getElementById('modalTableId').value = airtableConnector.tableId || 'tbloSMtX2CV0yHAg8';
-            document.getElementById('modalApiKey').value = airtableConnector.apiKey || 'pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99';
+            document.getElementById('modalBaseId').value = airtableConnector?.baseId || 'appxvOE27PFbq5z9J';
+            document.getElementById('modalTableId').value = airtableConnector?.tableId || 'tbloSMtX2CV0yHAg8';
+            document.getElementById('modalApiKey').value = airtableConnector?.apiKey || 'pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99';
             
             modal.style.display = 'flex';
             document.body.style.overflow = 'hidden'; // Prevent background scroll
@@ -1795,10 +1802,23 @@
         }
 
         function testConnectionFromModal() {
+            console.log('בודק חיבור מהמודל');
+            
+            // Get values from modal
+            const baseId = document.getElementById('modalBaseId').value.trim();
+            const tableId = document.getElementById('modalTableId').value.trim();
+            const apiKey = document.getElementById('modalApiKey').value.trim();
+            
+            // Validate fields
+            if (!baseId || !tableId || !apiKey) {
+                alert('נא למלא את כל השדות לפני בדיקת החיבור');
+                return;
+            }
+            
             // Update connector credentials from modal
-            airtableConnector.baseId = document.getElementById('modalBaseId').value.trim();
-            airtableConnector.tableId = document.getElementById('modalTableId').value.trim();
-            airtableConnector.apiKey = document.getElementById('modalApiKey').value.trim();
+            airtableConnector.baseId = baseId;
+            airtableConnector.tableId = tableId;
+            airtableConnector.apiKey = apiKey;
             
             if (airtableConnector) {
                 airtableConnector.testConnection();
@@ -1806,10 +1826,25 @@
         }
 
         function saveSettingsAndLoad() {
+            console.log('שומר הגדרות וטוען נתונים');
+            
+            // Get values from modal
+            const baseId = document.getElementById('modalBaseId').value.trim();
+            const tableId = document.getElementById('modalTableId').value.trim();
+            const apiKey = document.getElementById('modalApiKey').value.trim();
+            
+            console.log('ערכים חדשים:', { baseId, tableId, apiKey: apiKey ? 'קיים' : 'ריק' });
+            
             // Update connector credentials from modal
-            airtableConnector.baseId = document.getElementById('modalBaseId').value.trim();
-            airtableConnector.tableId = document.getElementById('modalTableId').value.trim();
-            airtableConnector.apiKey = document.getElementById('modalApiKey').value.trim();
+            airtableConnector.baseId = baseId;
+            airtableConnector.tableId = tableId;
+            airtableConnector.apiKey = apiKey;
+            
+            // Validate before closing
+            if (!baseId || !tableId || !apiKey) {
+                alert('נא למלא את כל השדות');
+                return;
+            }
             
             // Close modal
             closeSettings();
@@ -1833,21 +1868,40 @@
         }
 
         function handleRefresh() {
-            if (airtableConnector && airtableConnector.baseId && airtableConnector.tableId && airtableConnector.apiKey) {
+            this.debug('handleRefresh נקרא');
+            
+            // Check if we have valid credentials
+            if (airtableConnector && 
+                airtableConnector.baseId && 
+                airtableConnector.tableId && 
+                airtableConnector.apiKey &&
+                airtableConnector.baseId.trim() !== '' &&
+                airtableConnector.tableId.trim() !== '' &&
+                airtableConnector.apiKey.trim() !== '') {
+                
+                console.log('יש הגדרות תקפות, טוען נתונים');
                 airtableConnector.loadData();
             } else {
+                console.log('אין הגדרות תקפות, פותח חלון הגדרות');
                 openSettings();
             }
         }
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('מאתחל דף');
             airtableConnector = new AirtableConnector();
             
-            // Set default values
+            // Set default values and save them to the connector
             airtableConnector.baseId = 'appxvOE27PFbq5z9J';
             airtableConnector.tableId = 'tbloSMtX2CV0yHAg8';
             airtableConnector.apiKey = 'pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99';
+            
+            console.log('ערכי ברירת מחדל נקבעו:', {
+                baseId: airtableConnector.baseId,
+                tableId: airtableConnector.tableId,
+                apiKey: airtableConnector.apiKey ? 'קיים' : 'לא קיים'
+            });
             
             // Close modal when clicking outside
             document.getElementById('settingsModal').addEventListener('click', function(e) {
