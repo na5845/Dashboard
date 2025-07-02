@@ -598,9 +598,9 @@
         <div id="statusMessage" class="status-message" style="display: none;"></div>
 
         <div id="setupPanel" class="setup-panel">
-            <h3>🔗 הגדרת חיבור לAirtable</h3>
+            <h3>🔗 חיבור לAirtable</h3>
             <p style="margin-bottom: 20px; color: #666;">
-                הטוקן שהזנת נשמר בבטחה. לחץ "טען נתונים" כדי להתחיל.
+                הטוקן והפרטים מוכנים. לחץ על הכפתור כדי לטעון את הנתונים.
             </p>
             
             <div class="form-group">
@@ -616,7 +616,7 @@
                 <input type="password" id="apiKey" value="pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99" readonly style="background: #f5f5f5;">
             </div>
             <button class="setup-button" onclick="testConnection()">בדוק חיבור</button>
-            <button class="setup-button" onclick="loadAirtableData()">טען נתונים מAirtable</button>
+            <button class="setup-button" onclick="loadAirtableData()">טען נתונים</button>
         </div>
 
         <div id="loadingMessage" class="loading" style="display: none;">
@@ -795,7 +795,6 @@
 
     <script>
         // משתנים גלובליים
-        let currentMode = 'airtable';
         let airtableData = null;
         let charts = {};
 
@@ -1578,90 +1577,8 @@
             airtable.loadData();
         }
 
-        function handleRefresh() {
-            if (currentMode === 'airtable') {
-                airtable.loadData();
-            } else {
-                // רענון המקורי של Make.com
-                refreshData();
-            }
-        }
-
-        function toggleMode() {
-            currentMode = currentMode === 'airtable' ? 'make' : 'airtable';
-            document.getElementById('modeText').textContent = currentMode === 'airtable' ? 'Make.com' : 'Airtable';
-            
-            if (currentMode === 'airtable') {
-                document.getElementById('setupPanel').style.display = 'block';
-                document.getElementById('refreshBtnText').textContent = 'טען נתונים';
-            } else {
-                document.getElementById('setupPanel').style.display = 'none';
-                document.getElementById('refreshBtnText').textContent = 'רענן נתונים';
-                // טעינת הקוד המקורי
-                loadOriginalData();
-            }
-        }
-
-        // הפונקציה המקורית לרענון מMake.com
-        function refreshData(event) {
-            if (event) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            
-            const refreshBtn = document.getElementById('refreshBtn');
-            
-            if (refreshBtn.classList.contains('loading')) {
-                return false;
-            }
-            
-            refreshBtn.classList.add('loading');
-            refreshBtn.disabled = true;
-            document.getElementById('refreshBtnText').textContent = 'מרענן...';
-            
-            const webhookUrl = 'https://hook.eu2.make.com/8exu942bcwwrnvxqw701pnnfqwmahvjr';
-            
-            fetch(webhookUrl, {
-                method: 'GET',
-                mode: 'no-cors'
-            })
-            .then(() => {
-                console.log('הוובהוק הופעל בהצלחה');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 120000);
-            })
-            .catch(error => {
-                console.error('שגיאה:', error);
-                setTimeout(() => {
-                    window.location.reload();
-                }, 120000);
-            });
-            
-            return false;
-        }
-
-        // טעינת הנתונים המקוריים מהקוד
-        function loadOriginalData() {
-            // כאן יהיו הנתונים המקוריים שלך מMake.com
-            // זה רק דוגמה - תצטרך להחליף בנתונים האמיתיים
-            const originalData = {
-                currentMonth: 150000,
-                lastMonth: 180000,
-                // ... שאר הנתונים
-            };
-            
-            document.getElementById('currentMonthTotal').textContent = originalData.currentMonth.toLocaleString();
-            document.getElementById('lastMonthTotal').textContent = originalData.lastMonth.toLocaleString();
-            document.getElementById('setupPanel').style.display = 'none';
-            document.getElementById('originalDashboard').style.display = 'block';
-        }
-
         // אתחול הדף
         document.addEventListener('DOMContentLoaded', () => {
-            // התחלה במצב Airtable
-            document.getElementById('refreshBtn').style.display = 'flex';
-            
             // בדיקת חיבור אוטומטית
             setTimeout(() => {
                 testConnection();
