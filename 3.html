@@ -1157,7 +1157,6 @@
 
                 this.showLoading(true);
                 const refreshBtn = document.getElementById('refreshBtn');
-                const refreshBtnText = document.getElementById('refreshBtnText');
                 
                 // בדיקה אם כבר בתהליך רענון
                 if (refreshBtn.classList.contains('loading')) {
@@ -1165,12 +1164,20 @@
                     return;
                 }
                 
-                // שמירת הטקסט המקורי
-                const originalText = refreshBtnText.textContent;
+                // שמירת הטקסט המקורי - בדיקה שהאלמנט קיים
+                let originalText = 'טען נתונים';
+                const refreshBtnText = refreshBtn.querySelector('span');
+                if (refreshBtnText) {
+                    originalText = refreshBtnText.textContent;
+                }
                 
                 refreshBtn.classList.add('loading');
                 refreshBtn.disabled = true;
-                refreshBtnText.textContent = 'טוען...';
+                
+                // שינוי הטקסט רק אם האלמנט קיים
+                if (refreshBtnText) {
+                    refreshBtnText.textContent = 'טוען...';
+                }
 
                 this.debug('מתחיל טעינת נתונים...');
 
@@ -1197,7 +1204,11 @@
                     this.completeProgress(); // Complete the progress bar
                     refreshBtn.classList.remove('loading');
                     refreshBtn.disabled = false;
-                    refreshBtnText.textContent = originalText; // החזרת הטקסט המקורי
+                    
+                    // החזרת הטקסט המקורי רק אם האלמנט קיים
+                    if (refreshBtnText) {
+                        refreshBtnText.textContent = originalText;
+                    }
                 }
             }
 
