@@ -1884,12 +1884,12 @@
                 if (!progressFill || !progressPercentage) return;
                 
                 let progress = 0;
-                const duration = 8000; // 8 seconds total
-                const interval = 100; // Update every 100ms
+                const duration = 45000; // 45 seconds total
+                const interval = 200; // Update every 200ms
                 const increment = (interval / duration) * 100;
                 
                 const progressInterval = setInterval(() => {
-                    progress += increment + Math.random() * 2; // Add some randomness
+                    progress += increment + Math.random() * 1; // Add some randomness
                     
                     if (progress >= 95) {
                         progress = 95; // Stop at 95% and wait for actual completion
