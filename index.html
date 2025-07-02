@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>דוח תרומות - חיבור ישיר לAirtable</title>
+    <title>דוח תרומות - השוואה חודשית</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -109,6 +109,11 @@
             background: linear-gradient(135deg, #229954 0%, #27ae60 100%);
         }
 
+        .refresh-button:active {
+            transform: translateY(0);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+        }
+
         .reports-button {
             background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
             box-shadow: 0 8px 20px rgba(142, 68, 173, 0.3);
@@ -120,16 +125,19 @@
             background: linear-gradient(135deg, #7d3c98 0%, #8e44ad 100%);
         }
 
-        .refresh-button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
+        .reports-button:active {
+            transform: translateY(0);
+            box-shadow: 0 5px 15px rgba(142, 68, 173, 0.3);
         }
 
         .refresh-icon, .reports-icon {
             width: 20px;
             height: 20px;
             transition: transform 0.3s ease;
+        }
+
+        .refresh-button:hover .refresh-icon {
+            transform: rotate(180deg);
         }
 
         .refresh-button.loading .refresh-icon {
@@ -141,103 +149,6 @@
             to { transform: rotate(360deg); }
         }
 
-        .status-message {
-            background: #e8f5e8;
-            border: 2px solid #4caf50;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-            color: #2e7d32;
-            font-weight: bold;
-        }
-
-        .status-message.error {
-            background: #ffebee;
-            border-color: #f44336;
-            color: #c62828;
-        }
-
-        .debug-panel {
-            background: #f8f9fa;
-            border: 2px solid #6c757d;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .debug-panel h4 {
-            margin-bottom: 10px;
-            font-family: inherit;
-            color: #495057;
-        }
-
-        .setup-panel {
-            background: white;
-            border: 2px solid #2196f3;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-        }
-
-        .setup-panel h3 {
-            color: #1976d2;
-            margin-bottom: 15px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            direction: ltr;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #2196f3;
-        }
-
-        .setup-button {
-            background: #2196f3;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.3s;
-            margin-right: 10px;
-        }
-
-        .setup-button:hover {
-            background: #1976d2;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 50px;
-            color: #666;
-            font-size: 18px;
-        }
-
-        /* Dashboard styles */
         .overview-charts {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -282,7 +193,7 @@
 
         .source-details {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 15px;
         }
 
@@ -487,20 +398,21 @@
     <div class="container">
         <div class="header">
             <div class="logo-container">
+                <!-- לוגו מ-GitHub -->
                 <img src="https://raw.githubusercontent.com/na5845/E/main/logo.png" alt="לוגו הארגון" id="organizationLogo">
             </div>
             
             <div class="header-content">
                 <h1>📊<br>דשבורד תרומות</h1>
-                <p class="subtitle">קרן התומך - ניתוח נתונים מפורט</p>
+                <p class="subtitle">ניתוח נתונים מפורט</p>
             </div>
             
             <div class="buttons-container">
-                <button class="refresh-button" id="refreshBtn" onclick="handleRefresh()">
+                <button class="refresh-button" id="refreshBtn" onclick="refreshData(event)">
                     <svg class="refresh-icon" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
                     </svg>
-                    <span id="refreshBtnText">טען נתונים</span>
+                    רענן נתונים
                 </button>
                 
                 <a href="https://na5845.github.io/A/Reports.html#" class="reports-button">
@@ -512,201 +424,208 @@
             </div>
         </div>
 
-        <div id="statusMessage" class="status-message" style="display: none;"></div>
-
-        <div id="debugPanel" class="debug-panel" style="display: none;">
-            <h4>🐛 מידע דיבאג:</h4>
-            <div id="debugContent"></div>
+        <div class="divider">
+            <span class="divider-text">📈 מגמות כלליות</span>
         </div>
 
-        <div id="setupPanel" class="setup-panel">
-            <h3>🔗 הגדרת חיבור לAirtable</h3>
-            <p style="margin-bottom: 20px; color: #666;">
-                נא להזין את פרטי החיבור שלך לAirtable
-            </p>
-            
-            <div class="form-group">
-                <label for="baseId">Base ID:</label>
-                <input type="text" id="baseId" placeholder="appxxxxxxxxxxxxx">
-            </div>
-            <div class="form-group">
-                <label for="tableId">Table ID (או שם הטבלה):</label>
-                <input type="text" id="tableId" placeholder="tblxxxxxxxxxxxxx או שם הטבלה">
-            </div>
-            <div class="form-group">
-                <label for="apiKey">Personal Access Token:</label>
-                <input type="password" id="apiKey" placeholder="patxxxxxxxxxxxxxxxxx">
-            </div>
-            <button class="setup-button" onclick="testConnection()">בדוק חיבור</button>
-            <button class="setup-button" onclick="loadAirtableData()">טען נתונים מAirtable</button>
-            <button class="setup-button" onclick="toggleDebug()">הצג דיבאג</button>
-        </div>
-
-        <div id="loadingMessage" class="loading" style="display: none;">
-            <div>🔄 טוען נתונים מAirtable...</div>
-        </div>
-
-        <!-- Dashboard content -->
-        <div id="originalDashboard" style="display: none;">
-            <div class="divider">
-                <span class="divider-text">📈 מגמות כלליות</span>
-            </div>
-
-            <div class="overview-charts">
-                <div class="chart-container">
-                    <h2 class="chart-title">12 החודשים האחרונים</h2>
-                    <div class="chart-wrapper">
-                        <canvas id="yearlyTrendChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="chart-container">
-                    <h2 class="chart-title">מפתחת הקרן</h2>
-                    <div class="chart-wrapper">
-                        <canvas id="fundDevelopmentChart"></canvas>
-                    </div>
+        <div class="overview-charts">
+            <div class="chart-container">
+                <h2 class="chart-title">12 החודשים האחרונים</h2>
+                <div class="chart-wrapper">
+                    <canvas id="yearlyTrendChart"></canvas>
                 </div>
             </div>
 
-            <div class="divider">
-                <span class="divider-text">📊 פירוט חודשי מפורט</span>
+            <div class="chart-container">
+                <h2 class="chart-title">מפתחת הקרן</h2>
+                <div class="chart-wrapper">
+                    <canvas id="fundDevelopmentChart"></canvas>
+                </div>
             </div>
+        </div>
 
-            <div class="months-container">
-                <!-- Current month -->
-                <div class="month-section">
-                    <h2 class="month-title">מתחילת החודש</h2>
-                    
-                    <div class="stats-grid">
-                        <div class="stat-card total">
-                            <h3>💰 סה"כ תרומות</h3>
-                            <div class="amount">₪<span class="formatted-number" id="currentMonthTotal">0</span></div>
-                        </div>
-                    </div>
+        <div class="divider">
+            <span class="divider-text">📊 פירוט חודשי מפורט</span>
+        </div>
 
-                    <div class="divider">
-                        <span class="divider-text">פירוט לפי אמצעי תשלום</span>
-                    </div>
-
-                    <div class="stats-details" id="currentMonthPayments">
-                        <!-- Will be updated dynamically -->
-                    </div>
-
-                    <div class="divider">
-                        <span class="divider-text">🎯 פירוט לפי מקור הכנסה</span>
-                    </div>
-
-                    <div class="source-details" id="currentMonthSources">
-                        <!-- Will be updated dynamically -->
-                    </div>
-
-                    <div class="divider">
-                        <span class="divider-text">📊 גרפים וניתוחים</span>
-                    </div>
-
-                    <div class="charts-grid">
-                        <div class="chart-container daily">
-                            <h2 class="chart-title">הכנסות יומיות - מתחילת החודש</h2>
-                            <div class="daily-chart-wrapper">
-                                <canvas id="dailyChart1"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="chart-container">
-                            <h2 class="chart-title">התפלגות לפי מקור הכנסה</h2>
-                            <div class="pie-chart-wrapper">
-                                <canvas id="sourceChart1"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="chart-container">
-                            <h2 class="chart-title">התפלגות לפי אמצעי תשלום</h2>
-                            <div class="pie-chart-wrapper">
-                                <canvas id="paymentMethodChart1"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="chart-container">
-                            <h2 class="chart-title">פירוט קשר</h2>
-                            <div class="pie-chart-wrapper">
-                                <canvas id="kesherBreakdownChart1"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="chart-container">
-                            <h2 class="chart-title">פירוט נדרים פלוס</h2>
-                            <div class="pie-chart-wrapper">
-                                <canvas id="nedarimBreakdownChart1"></canvas>
-                            </div>
-                        </div>
+        <div class="months-container">
+            <!-- יוני 2025 -->
+            <div class="month-section">
+                <h2 class="month-title">מתחילת החודש</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card total">
+                        <h3>💰 סה"כ תרומות</h3>
+                        <div class="amount">₪<span class="formatted-number">1212</span></div>
                     </div>
                 </div>
 
-                <!-- Last month -->
-                <div class="month-section">
-                    <h2 class="month-title">חודש קודם</h2>
-                    
-                    <div class="stats-grid">
-                        <div class="stat-card total">
-                            <h3>💰 סה"כ תרומות</h3>
-                            <div class="amount">₪<span class="formatted-number" id="lastMonthTotal">0</span></div>
+                <div class="divider">
+                    <span class="divider-text">פירוט לפי אמצעי תשלום</span>
+                </div>
+
+                <div class="stats-details">
+                    <div class="stat-card">
+                        <h3>אשראי</h3>
+                        <div class="amount">₪<span class="formatted-number">1212</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>הו"ק בנקאי</h3>
+                        <div class="amount">₪<span class="formatted-number">0</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>העברות בנקאיות - המחאות</h3>
+                        <div class="amount">₪<span class="formatted-number"></span></div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>מזומן</h3>
+                        <div class="amount">₪<span class="formatted-number"></span></div>
+                    </div>
+                </div>
+
+                <div class="divider">
+                    <span class="divider-text">🎯 פירוט לפי מקור הכנסה</span>
+                </div>
+
+                <div class="source-details">
+                    <div class="stat-card source">
+                        <h3>קשר</h3>
+                        <div class="amount">₪<span class="formatted-number">202</span></div>
+                    </div>
+                    <div class="stat-card source">
+                        <h3>נדרים פלוס</h3>
+                        <div class="amount">₪<span class="formatted-number">1010</span></div>
+                    </div>
+                </div>
+
+                <div class="divider">
+                    <span class="divider-text">📊 גרפים וניתוחים</span>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-container daily">
+                        <h2 class="chart-title">הכנסות יומיות - מתחילת החודש</h2>
+                        <div class="daily-chart-wrapper">
+                            <canvas id="dailyChart1"></canvas>
                         </div>
                     </div>
 
-                    <div class="divider">
-                        <span class="divider-text">פירוט לפי אמצעי תשלום</span>
-                    </div>
-
-                    <div class="stats-details" id="lastMonthPayments">
-                        <!-- Will be updated dynamically -->
-                    </div>
-
-                    <div class="divider">
-                        <span class="divider-text">🎯 פירוט לפי מקור הכנסה</span>
-                    </div>
-
-                    <div class="source-details" id="lastMonthSources">
-                        <!-- Will be updated dynamically -->
-                    </div>
-
-                    <div class="divider">
-                        <span class="divider-text">📊 גרפים וניתוחים</span>
-                    </div>
-
-                    <div class="charts-grid">
-                        <div class="chart-container daily">
-                            <h2 class="chart-title">הכנסות יומיות - חודש קודם</h2>
-                            <div class="daily-chart-wrapper">
-                                <canvas id="dailyChart2"></canvas>
-                            </div>
+                    <div class="chart-container">
+                        <h2 class="chart-title">התפלגות לפי אמצעי תשלום</h2>
+                        <div class="pie-chart-wrapper">
+                            <canvas id="paymentMethodChart1"></canvas>
                         </div>
+                    </div>
 
-                        <div class="chart-container">
-                            <h2 class="chart-title">התפלגות לפי אמצעי תשלום</h2>
-                            <div class="pie-chart-wrapper">
-                                <canvas id="paymentMethodChart2"></canvas>
-                            </div>
+                    <div class="chart-container">
+                        <h2 class="chart-title">התפלגות לפי מקור הכנסה</h2>
+                        <div class="pie-chart-wrapper">
+                            <canvas id="sourceChart1"></canvas>
                         </div>
+                    </div>
 
-                        <div class="chart-container">
-                            <h2 class="chart-title">התפלגות לפי מקור הכנסה</h2>
-                            <div class="pie-chart-wrapper">
-                                <canvas id="sourceChart2"></canvas>
-                            </div>
+                    <div class="chart-container">
+                        <h2 class="chart-title">פירוט קשר</h2>
+                        <div class="pie-chart-wrapper">
+                            <canvas id="kesherBreakdownChart1"></canvas>
                         </div>
+                    </div>
 
-                        <div class="chart-container">
-                            <h2 class="chart-title">פירוט קשר</h2>
-                            <div class="pie-chart-wrapper">
-                                <canvas id="kesherBreakdownChart2"></canvas>
-                            </div>
+                    <div class="chart-container">
+                        <h2 class="chart-title">פירוט נדרים פלוס</h2>
+                        <div class="pie-chart-wrapper">
+                            <canvas id="nedarimBreakdownChart1"></canvas>
                         </div>
+                    </div>
+                </div>
+            </div>
 
-                        <div class="chart-container">
-                            <h2 class="chart-title">פירוט נדרים פלוס</h2>
-                            <div class="pie-chart-wrapper">
-                                <canvas id="nedarimBreakdownChart2"></canvas>
-                            </div>
+            <!-- מאי 2025 -->
+            <div class="month-section">
+                <h2 class="month-title">חודש קודם</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card total">
+                        <h3>💰 סה"כ תרומות</h3>
+                        <div class="amount">₪<span class="formatted-number">120729</span></div>
+                    </div>
+                </div>
+
+                <div class="divider">
+                    <span class="divider-text">פירוט לפי אמצעי תשלום</span>
+                </div>
+
+                <div class="stats-details">
+                    <div class="stat-card">
+                        <h3>אשראי</h3>
+                        <div class="amount">₪<span class="formatted-number">75046</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>הו"ק בנקאי</h3>
+                        <div class="amount">₪<span class="formatted-number">33823</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>העברות בנקאיות - המחאות</h3>
+                        <div class="amount">₪<span class="formatted-number">4500</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>מזומן</h3>
+                        <div class="amount">₪<span class="formatted-number">7360</span></div>
+                    </div>
+                </div>
+
+                <div class="divider">
+                    <span class="divider-text">🎯 פירוט לפי מקור הכנסה</span>
+                </div>
+
+                <div class="source-details">
+                    <div class="stat-card source">
+                        <h3>קשר</h3>
+                        <div class="amount">₪<span class="formatted-number">77962</span></div>
+                    </div>
+                    <div class="stat-card source">
+                        <h3>נדרים פלוס</h3>
+                        <div class="amount">₪<span class="formatted-number">30907</span></div>
+                    </div>
+                </div>
+
+                <div class="divider">
+                    <span class="divider-text">📊 גרפים וניתוחים</span>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-container daily">
+                        <h2 class="chart-title">הכנסות יומיות - חודש קודם</h2>
+                        <div class="daily-chart-wrapper">
+                            <canvas id="dailyChart2"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <h2 class="chart-title">התפלגות לפי אמצעי תשלום</h2>
+                        <div class="pie-chart-wrapper">
+                            <canvas id="paymentMethodChart2"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <h2 class="chart-title">התפלגות לפי מקור הכנסה</h2>
+                        <div class="pie-chart-wrapper">
+                            <canvas id="sourceChart2"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <h2 class="chart-title">פירוט קשר</h2>
+                        <div class="pie-chart-wrapper">
+                            <canvas id="kesherBreakdownChart2"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <h2 class="chart-title">פירוט נדרים פלוס</h2>
+                        <div class="pie-chart-wrapper">
+                            <canvas id="nedarimBreakdownChart2"></canvas>
                         </div>
                     </div>
                 </div>
@@ -715,913 +634,529 @@
     </div>
 
     <script>
-        // Global variables
-        let airtableData = null;
-        let charts = {};
-        let debugMode = false;
-
-        class AirtableConnector {
-            constructor() {
-                this.baseUrl = 'https://api.airtable.com/v0';
-                this.baseId = '';
-                this.tableId = '';
-                this.apiKey = '';
+        // פונקציית רענון הנתונים
+        function refreshData(event) {
+            // מונע את ההתנהגות הדיפולטיבית
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
             }
-
-            updateCredentials() {
-                this.baseId = document.getElementById('baseId').value.trim();
-                this.tableId = document.getElementById('tableId').value.trim();
-                this.apiKey = document.getElementById('apiKey').value.trim();
+            
+            const refreshBtn = document.getElementById('refreshBtn');
+            
+            // בדיקה אם כבר בתהליך רענון
+            if (refreshBtn.classList.contains('loading')) {
+                console.log('כבר בתהליך רענון, מדלג...');
+                return false;
             }
-
-            validateCredentials() {
-                if (!this.baseId || !this.tableId || !this.apiKey) {
-                    this.showMessage('נא למלא את כל השדות הנדרשים', 'error');
-                    return false;
-                }
-
-                if (!this.baseId.startsWith('app')) {
-                    this.showMessage('Base ID חייב להתחיל ב-app', 'error');
-                    return false;
-                }
-
-                if (!this.apiKey.startsWith('pat')) {
-                    this.showMessage('Personal Access Token חייב להתחיל ב-pat', 'error');
-                    return false;
-                }
-
-                return true;
-            }
-
-            async testConnection() {
-                this.updateCredentials();
+            
+            // הוספת אפקט טעינה
+            refreshBtn.classList.add('loading');
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = `
+                <svg class="refresh-icon" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
+                </svg>
+                מרענן...
+            `;
+            
+            // הווובהוק של Make.com
+            const webhookUrl = 'https://hook.eu2.make.com/8exu942bcwwrnvxqw701pnnfqwmahvjr';
+            
+            // שימוש ב-fetch במקום פתיחת חלון
+            fetch(webhookUrl, {
+                method: 'GET',
+                mode: 'no-cors' // במקרה של בעיות CORS
+            })
+            .then(() => {
+                console.log('הוובהוק הופעל בהצלחה');
                 
-                if (!this.validateCredentials()) {
-                    return false;
-                }
-
-                this.debug('מתחיל בדיקת חיבור...');
-                this.debug(`Base ID: ${this.baseId}`);
-                this.debug(`Table ID: ${this.tableId}`);
-                this.debug(`API Key: ${this.apiKey.substring(0, 10)}...`);
-
-                try {
-                    const url = `${this.baseUrl}/${this.baseId}/${this.tableId}?maxRecords=1`;
-                    this.debug(`URL לבדיקה: ${url}`);
-
-                    const response = await fetch(url, {
-                        headers: {
-                            'Authorization': `Bearer ${this.apiKey}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    this.debug(`Response status: ${response.status}`);
-                    this.debug(`Response headers: ${JSON.stringify([...response.headers.entries()])}`);
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        this.debug('Response data:', JSON.stringify(data, null, 2));
-                        this.showMessage('החיבור לAirtable תקין! ✅', 'success');
-                        return true;
-                    } else {
-                        const errorText = await response.text();
-                        this.debug(`Error response: ${errorText}`);
-                        
-                        let errorMessage = 'שגיאה לא ידועה';
-                        try {
-                            const errorJson = JSON.parse(errorText);
-                            errorMessage = errorJson.error?.message || errorJson.error || errorText;
-                        } catch (e) {
-                            errorMessage = errorText;
-                        }
-                        
-                        this.showMessage(`שגיאה בחיבור (${response.status}): ${errorMessage}`, 'error');
-                        return false;
-                    }
-                } catch (error) {
-                    this.debug(`Network error: ${error.message}`);
-                    this.showMessage(`שגיאת רשת: ${error.message}`, 'error');
-                    return false;
-                }
-            }
-
-            async loadData() {
-                this.updateCredentials();
-                
-                if (!this.validateCredentials()) {
-                    return;
-                }
-
-                this.showLoading(true);
-                const refreshBtn = document.getElementById('refreshBtn');
-                refreshBtn.classList.add('loading');
-                refreshBtn.disabled = true;
-                document.getElementById('refreshBtnText').textContent = 'טוען...';
-
-                this.debug('מתחיל טעינת נתונים...');
-
-                try {
-                    // Try to load all records first
-                    const allRecords = await this.loadAllRecords();
-                    this.debug(`נטענו ${allRecords.length} רשומות בסה"כ`);
-                    
-                    if (allRecords.length === 0) {
-                        this.showMessage('לא נמצאו רשומות בטבלה', 'error');
-                        return;
-                    }
-
-                    // Debug: show first few records
-                    this.debug('דוגמה לרשומות:', JSON.stringify(allRecords.slice(0, 3), null, 2));
-
-                    this.processAllData(allRecords);
-                    this.showMessage(`נטענו ${allRecords.length} רשומות בהצלחה! ✅`, 'success');
-                    
-                } catch (error) {
-                    this.debug(`שגיאה בטעינת הנתונים: ${error.message}`);
-                    this.showMessage(`שגיאה בטעינת הנתונים: ${error.message}`, 'error');
-                } finally {
-                    this.showLoading(false);
-                    refreshBtn.classList.remove('loading');
-                    refreshBtn.disabled = false;
-                    document.getElementById('refreshBtnText').textContent = 'רענן נתונים';
-                }
-            }
-
-            async loadAllRecords() {
-                let allRecords = [];
-                let offset = '';
-                let pageCount = 0;
-                const maxPages = 400; // Safety limit - increased to get much more data (40,000 records)
-                
-                do {
-                    pageCount++;
-                    if (pageCount > maxPages) {
-                        this.debug(`הגעתי למגבלת עמודים (${maxPages}), מפסיק`);
-                        break;
-                    }
-                    
-                    const url = `${this.baseUrl}/${this.baseId}/${this.tableId}?pageSize=100${offset ? `&offset=${offset}` : ''}`;
-                    this.debug(`טוען עמוד ${pageCount}, URL: ${url}`);
-                    
-                    const response = await fetch(url, {
-                        headers: {
-                            'Authorization': `Bearer ${this.apiKey}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`HTTP ${response.status}: ${errorText}`);
-                    }
-
-                    const data = await response.json();
-                    this.debug(`עמוד ${pageCount}: ${data.records.length} רשומות`);
-                    
-                    allRecords = allRecords.concat(data.records);
-                    offset = data.offset;
-                    
-                } while (offset);
-
-                return allRecords;
-            }
-
-            processAllData(allRecords) {
-                const now = new Date();
-                const currentMonth = now.getMonth();
-                const currentYear = now.getFullYear();
-                const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-                const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-                
-                // Date ranges for filtering
-                const currentMonthStart = new Date(currentYear, currentMonth, 1);
-                const lastMonthStart = new Date(lastMonthYear, lastMonth, 1);
-                const lastMonthEnd = new Date(lastMonthYear, lastMonth + 1, 0);
-                const yearStart = new Date(currentYear, 0, 1);
-                const last12MonthsStart = new Date(currentYear, currentMonth - 11, 1);
-
-                this.debug(`תאריכי סינון - תאריך היום: ${now.toLocaleString('he-IL')}`);
-                this.debug(`חודש נוכחי (${currentMonth + 1}/${currentYear}) מ: ${currentMonthStart.toLocaleString('he-IL')}`);
-                this.debug(`חודש קודם (${lastMonth + 1}/${lastMonthYear}): ${lastMonthStart.toLocaleString('he-IL')} עד ${lastMonthEnd.toLocaleString('he-IL')}`);
-                this.debug(`שנת ${currentYear} מ: ${yearStart.toLocaleString('he-IL')}`);
-                
-                // Show sample transaction dates
-                const sampleDates = allRecords.slice(0, 10)
-                    .filter(r => r.fields['תאריך ושעת ביצוע העסקה'])
-                    .map(r => {
-                        const date = new Date(r.fields['תאריך ושעת ביצוע העסקה']);
-                        return {
-                            original: r.fields['תאריך ושעת ביצוע העסקה'],
-                            parsed: date.toLocaleString('he-IL'),
-                            amount: r.fields['סכום עסקה']
-                        };
-                    });
-                this.debug('דוגמאות תאריכים:', JSON.stringify(sampleDates, null, 2));
-
-                const stats = {
-                    currentMonth: { 
-                        total: 0, 
-                        daily: {}, 
-                        categories: {}, 
-                        organizations: {},
-                        categoryOrg: {} 
-                    },
-                    lastMonth: { 
-                        total: 0, 
-                        daily: {}, 
-                        categories: {}, 
-                        organizations: {},
-                        categoryOrg: {} 
-                    },
-                    monthlyData: {},
-                    yearlyData: {
-                        '2022': 413501,
-                        '2023': 527445,
-                        '2024': 913946,
-                        '2025': 0
-                    }
-                };
-
-                // Find available fields in the first record
-                if (allRecords.length > 0) {
-                    const fields = Object.keys(allRecords[0].fields);
-                    this.debug(`שדות זמינים: ${fields.join(', ')}`);
-                }
-
-                // Try different field name combinations
-                const possibleAmountFields = ['סכום עסקה', 'סכום', 'Amount', 'amount'];
-                const possibleDateFields = ['תאריך ושעת ביצוע העסקה', 'תאריך', 'Date', 'date', 'Created'];
-                const possibleCategoryFields = ['קטגוריה', 'Category', 'category', 'סוג'];
-                const possibleOrgFields = ['עמותה', 'Organization', 'organization', 'ארגון'];
-
-                let amountField = null;
-                let dateField = null;
-                let categoryField = null;
-                let orgField = null;
-
-                // Find actual field names
-                for (const record of allRecords.slice(0, 5)) {
-                    const fields = Object.keys(record.fields);
-                    
-                    if (!amountField) {
-                        amountField = possibleAmountFields.find(field => fields.includes(field));
-                    }
-                    if (!dateField) {
-                        dateField = possibleDateFields.find(field => fields.includes(field));
-                    }
-                    if (!categoryField) {
-                        categoryField = possibleCategoryFields.find(field => fields.includes(field));
-                    }
-                    if (!orgField) {
-                        orgField = possibleOrgFields.find(field => fields.includes(field));
-                    }
-                    
-                    if (amountField && dateField) break;
-                }
-
-                this.debug(`שדות שנמצאו:`);
-                this.debug(`סכום: ${amountField}`);
-                this.debug(`תאריך: ${dateField}`);
-                this.debug(`קטגוריה: ${categoryField}`);
-                this.debug(`ארגון: ${orgField}`);
-
-                if (!amountField || !dateField) {
-                    this.showMessage(`לא נמצאו שדות חובה: ${!amountField ? 'סכום' : ''} ${!dateField ? 'תאריך' : ''}`, 'error');
-                    return;
-                }
-
-                const validRecords = allRecords.filter(record => {
-                    const amount = record.fields[amountField];
-                    const date = record.fields[dateField];
-                    return amount && date && parseFloat(amount) > 0;
-                });
-
-                this.debug(`רשומות תקפות: ${validRecords.length} מתוך ${allRecords.length}`);
-
-                validRecords.forEach((record, index) => {
-                    const fields = record.fields;
-                    const amount = parseFloat(fields[amountField]);
-                    const dateStr = fields[dateField];
-                    
-                    let date;
-                    try {
-                        date = new Date(dateStr);
-                        if (isNaN(date.getTime())) {
-                            this.debug(`תאריך לא תקין ברשומה ${index}: ${dateStr}`);
-                            return;
-                        }
-                    } catch (e) {
-                        this.debug(`שגיאה בעיבוד תאריך ברשומה ${index}: ${dateStr}`);
-                        return;
-                    }
-                    
-                    const category = fields[categoryField] || 'לא מוגדר';
-                    const organization = fields[orgField] || 'אחר';
-                    
-                    // Debug first few records
-                    if (index < 10) {
-                        this.debug(`רשומה ${index}: תאריך=${date.toLocaleString('he-IL')}, סכום=${amount}, קטגוריה=${category}, ארגון=${organization}`);
-                    }
-                    
-                    // Current month
-                    if (date >= currentMonthStart) {
-                        this.addToMonthStats(stats.currentMonth, amount, date, category, organization);
-                        if (index < 50) this.debug(`✅ רשומה ${index} נספרה בחודש הנוכחי`);
-                    }
-                    
-                    // Last month
-                    if (date >= lastMonthStart && date <= lastMonthEnd) {
-                        this.addToMonthStats(stats.lastMonth, amount, date, category, organization);
-                        if (index < 50) this.debug(`✅ רשומה ${index} נספרה בחודש הקודם`);
-                    }
-                    
-                    // Current year data
-                    if (date >= yearStart) {
-                        stats.yearlyData['2025'] += amount;
-                    }
-                    
-                    // Last 12 months - make sure we get proper month ordering
-                    if (date >= last12MonthsStart) {
-                        const year = date.getFullYear();
-                        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                        const monthKey = `${month}-${year}`;
-                        stats.monthlyData[monthKey] = (stats.monthlyData[monthKey] || 0) + amount;
-                    }
-                });
-
-                // Add transaction count debugging
-                const currentMonthTransactions = validRecords.filter(record => {
-                    const date = new Date(record.fields[dateField]);
-                    return date >= currentMonthStart;
-                }).length;
-                
-                const lastMonthTransactions = validRecords.filter(record => {
-                    const date = new Date(record.fields[dateField]);
-                    return date >= lastMonthStart && date <= lastMonthEnd;
-                }).length;
-
-                this.debug('סטטיסטיקות סופיות:');
-                this.debug(`חודש נוכחי: ₪${stats.currentMonth.total.toLocaleString('he-IL')} (${currentMonthTransactions} עסקאות)`);
-                this.debug(`חודש קודם: ₪${stats.lastMonth.total.toLocaleString('he-IL')} (${lastMonthTransactions} עסקאות)`);
-                this.debug(`שנת 2025: ₪${stats.yearlyData['2025'].toLocaleString('he-IL')}`);
-                
-                // Show breakdown by categories for current month
-                this.debug('פירוט קטגוריות חודש נוכחי:', JSON.stringify(stats.currentMonth.categories, null, 2));
-                this.debug('פירוט ארגונים חודש נוכחי:', JSON.stringify(stats.currentMonth.organizations, null, 2));
-
-                airtableData = stats;
-                this.displayData(stats);
-            }
-
-            addToMonthStats(monthStats, amount, date, category, organization) {
-                monthStats.total += amount;
-                
-                const dayOfMonth = date.getDate();
-                monthStats.daily[dayOfMonth] = (monthStats.daily[dayOfMonth] || 0) + amount;
-                
-                monthStats.categories[category] = (monthStats.categories[category] || 0) + amount;
-                monthStats.organizations[organization] = (monthStats.organizations[organization] || 0) + amount;
-                
-                const key = `${organization}_${category}`;
-                monthStats.categoryOrg[key] = (monthStats.categoryOrg[key] || 0) + amount;
-            }
-
-            displayData(stats) {
-                // Update totals with proper formatting
-                document.getElementById('currentMonthTotal').textContent = stats.currentMonth.total.toLocaleString('he-IL');
-                document.getElementById('lastMonthTotal').textContent = stats.lastMonth.total.toLocaleString('he-IL');
-
-                // Update payment details
-                this.updatePaymentDetails('currentMonthPayments', stats.currentMonth);
-                this.updatePaymentDetails('lastMonthPayments', stats.lastMonth);
-
-                // Update source details
-                this.updateSourceDetails('currentMonthSources', stats.currentMonth);
-                this.updateSourceDetails('lastMonthSources', stats.lastMonth);
-
-                // Create charts
-                this.createDailyChart('dailyChart1', stats.currentMonth.daily, 'החודש הנוכחי');
-                this.createDailyChart('dailyChart2', stats.lastMonth.daily, 'החודש הקודם');
-                this.createPaymentChart('paymentMethodChart1', stats.currentMonth.categories);
-                this.createPaymentChart('paymentMethodChart2', stats.lastMonth.categories);
-                this.createSourceChart('sourceChart1', stats.currentMonth.organizations);
-                this.createSourceChart('sourceChart2', stats.lastMonth.organizations);
-                this.createOrganizationBreakdownChart('kesherBreakdownChart1', stats.currentMonth.categoryOrg, 'קשר');
-                this.createOrganizationBreakdownChart('kesherBreakdownChart2', stats.lastMonth.categoryOrg, 'קשר');
-                this.createOrganizationBreakdownChart('nedarimBreakdownChart1', stats.currentMonth.categoryOrg, 'נדרים פלוס');
-                this.createOrganizationBreakdownChart('nedarimBreakdownChart2', stats.lastMonth.categoryOrg, 'נדרים פלוס');
-                this.createMonthlyTrendChart(stats.monthlyData);
-                this.createYearlyChart(stats.yearlyData);
-
-                // Show dashboard
-                document.getElementById('setupPanel').style.display = 'none';
-                document.getElementById('originalDashboard').style.display = 'block';
-                this.formatNumbers();
-            }
-
-            createOrganizationBreakdownChart(canvasId, categoryOrgData, orgName) {
-                const ctx = document.getElementById(canvasId);
-                if (!ctx) return;
-
-                // Filter data only for the specific organization
-                const orgData = {};
-                Object.entries(categoryOrgData).forEach(([key, value]) => {
-                    if (key.startsWith(`${orgName}_`)) {
-                        const category = key.replace(`${orgName}_`, '');
-                        orgData[category] = value;
-                    }
-                });
-
-                if (Object.keys(orgData).length === 0) {
-                    orgData['אין נתונים'] = 0;
-                }
-
-                if (charts[canvasId]) {
-                    charts[canvasId].destroy();
-                }
-
-                // Different colors for different organizations
-                const colors = orgName === 'קשר' ? 
-                    ['#3498db', '#e74c3c', '#f39c12', '#2ecc71'] : 
-                    ['#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
-
-                charts[canvasId] = new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: Object.keys(orgData),
-                        datasets: [{
-                            data: Object.values(orgData),
-                            backgroundColor: colors.slice(0, Object.keys(orgData).length),
-                            borderWidth: 2,
-                            borderColor: '#fff'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    padding: 8,
-                                    font: { size: 8 }
-                                }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const label = context.label || '';
-                                        const value = context.parsed || 0;
-                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
-                                        return `${label}: ₪${value.toLocaleString('he-IL')} (${percentage}%)`;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-
-            updateSourceDetails(containerId, monthData) {
-                const container = document.getElementById(containerId);
-                if (!container) return;
-
-                const organizations = monthData.organizations;
-                
-                // Always show these 3 income sources
-                const incomeSources = ['קשר', 'נדרים פלוס', 'אחר'];
-                
-                container.innerHTML = '';
-
-                incomeSources.forEach(sourceName => {
-                    const amount = organizations[sourceName] || 0;
-                    container.innerHTML += `
-                        <div class="stat-card source">
-                            <h3>${sourceName}</h3>
-                            <div class="amount">₪${amount.toLocaleString('he-IL')}</div>
-                        </div>
-                    `;
-                });
-            }
-
-            updatePaymentDetails(containerId, monthData) {
-                const container = document.getElementById(containerId);
-                if (!container) return;
-
-                const categories = monthData.categories;
-                
-                // Always show these 4 payment methods
-                const paymentMethods = ['אשראי', 'בנקאי', 'מזומן', 'העברות'];
-                
-                container.innerHTML = '';
-
-                paymentMethods.forEach(methodName => {
-                    const amount = categories[methodName] || 0;
-                    container.innerHTML += `
-                        <div class="stat-card">
-                            <h3>${methodName}</h3>
-                            <div class="amount">₪${amount.toLocaleString('he-IL')}</div>
-                        </div>
-                    `;
-                });
-            }
-
-            createPaymentChart(canvasId, categoriesData) {
-                const ctx = document.getElementById(canvasId);
-                if (!ctx) return;
-
-                if (charts[canvasId]) {
-                    charts[canvasId].destroy();
-                }
-
-                if (!categoriesData || Object.keys(categoriesData).length === 0) {
-                    // Create empty chart
-                    charts[canvasId] = new Chart(ctx, {
-                        type: 'pie',
-                        data: {
-                            labels: ['אין נתונים'],
-                            datasets: [{
-                                data: [1],
-                                backgroundColor: ['#cccccc'],
-                                borderWidth: 2,
-                                borderColor: '#fff'
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: false }
-                            }
-                        }
-                    });
-                    return;
-                }
-
-                const colors = ['#3498db', '#e74c3c', '#f39c12', '#2ecc71', '#9b59b6', '#1abc9c'];
-
-                charts[canvasId] = new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: Object.keys(categoriesData),
-                        datasets: [{
-                            data: Object.values(categoriesData),
-                            backgroundColor: colors.slice(0, Object.keys(categoriesData).length),
-                            borderWidth: 2,
-                            borderColor: '#fff'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    padding: 8,
-                                    font: { size: 8 }
-                                }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const label = context.label || '';
-                                        const value = context.parsed || 0;
-                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                        const percentage = ((value / total) * 100).toFixed(1);
-                                        return `${label}: ₪${value.toLocaleString('he-IL')} (${percentage}%)`;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-
-            createSourceChart(canvasId, organizationsData) {
-                const ctx = document.getElementById(canvasId);
-                if (!ctx) return;
-
-                if (charts[canvasId]) {
-                    charts[canvasId].destroy();
-                }
-
-                if (!organizationsData || Object.keys(organizationsData).length === 0) {
-                    // Create empty chart
-                    charts[canvasId] = new Chart(ctx, {
-                        type: 'pie',
-                        data: {
-                            labels: ['אין נתונים'],
-                            datasets: [{
-                                data: [1],
-                                backgroundColor: ['#cccccc'],
-                                borderWidth: 2,
-                                borderColor: '#fff'
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: false }
-                            }
-                        }
-                    });
-                    return;
-                }
-
-                const colors = ['#9b59b6', '#1abc9c', '#34495e', '#e67e22', '#95a5a6'];
-
-                charts[canvasId] = new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: Object.keys(organizationsData),
-                        datasets: [{
-                            data: Object.values(organizationsData),
-                            backgroundColor: colors.slice(0, Object.keys(organizationsData).length),
-                            borderWidth: 2,
-                            borderColor: '#fff'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    padding: 8,
-                                    font: { size: 8 }
-                                }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const label = context.label || '';
-                                        const value = context.parsed || 0;
-                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                        const percentage = ((value / total) * 100).toFixed(1);
-                                        return `${label}: ₪${value.toLocaleString()} (${percentage}%)`;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-
-            createDailyChart(canvasId, dailyData, title) {
-                const ctx = document.getElementById(canvasId);
-                if (!ctx) return;
-
-                const daysInMonth = 31;
-                const labels = [];
-                const data = [];
-                
-                for (let day = 1; day <= daysInMonth; day++) {
-                    labels.push(day.toString());
-                    data.push(dailyData[day] || 0);
-                }
-
-                if (charts[canvasId]) {
-                    charts[canvasId].destroy();
-                }
-
-                charts[canvasId] = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: `תרומות יומיות - ${title}`,
-                            data: data,
-                            backgroundColor: canvasId === 'dailyChart1' ? '#3498db' : '#e74c3c',
-                            borderColor: canvasId === 'dailyChart1' ? '#2980b9' : '#c0392b',
-                            borderWidth: 1,
-                            borderRadius: 3
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value) {
-                                        return '₪' + (value >= 1000 ? (value / 1000) + 'K' : value);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-
-            createMonthlyTrendChart(monthlyData) {
-                const ctx = document.getElementById('yearlyTrendChart');
-                if (!ctx) return;
-
-                if (charts.yearlyTrendChart) {
-                    charts.yearlyTrendChart.destroy();
-                }
-
-                if (!monthlyData || Object.keys(monthlyData).length === 0) {
-                    monthlyData = { 'אין נתונים': 0 };
-                }
-
-                // Sort months chronologically
-                const sortedMonths = Object.keys(monthlyData).sort((a, b) => {
-                    // Convert MM-YYYY to Date for proper sorting
-                    const [monthA, yearA] = a.split('-');
-                    const [monthB, yearB] = b.split('-');
-                    const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
-                    const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
-                    return dateA - dateB;
-                });
-
-                const sortedData = sortedMonths.map(month => monthlyData[month]);
-
-                charts.yearlyTrendChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: sortedMonths,
-                        datasets: [{
-                            label: 'תרומות חודשיות',
-                            data: sortedData,
-                            borderColor: '#3498db',
-                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                            borderWidth: 3,
-                            pointBackgroundColor: '#3498db',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 6,
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value) {
-                                        return '₪' + (value / 1000) + 'K';
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-
-            createYearlyChart(yearlyData) {
-                const ctx = document.getElementById('fundDevelopmentChart');
-                if (!ctx) return;
-
-                if (charts.fundDevelopmentChart) {
-                    charts.fundDevelopmentChart.destroy();
-                }
-
-                const colors = ['#95a5a6', '#1abc9c', '#3498db', '#e74c3c', '#f39c12'];
-
-                charts.fundDevelopmentChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: Object.keys(yearlyData),
-                        datasets: [{
-                            label: 'תרומות שנתיות',
-                            data: Object.values(yearlyData),
-                            backgroundColor: colors.slice(0, Object.keys(yearlyData).length),
-                            borderColor: colors.slice(0, Object.keys(yearlyData).length).map(color => color.replace('a6', '8d')),
-                            borderWidth: 1,
-                            borderRadius: 8
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value) {
-                                        return '₪' + (value / 1000) + 'K';
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-
-            formatNumbers() {
-                document.querySelectorAll('.formatted-number').forEach(element => {
-                    const number = parseInt(element.textContent.replace(/,/g, ''));
-                    if (!isNaN(number)) {
-                        element.textContent = number.toLocaleString('he-IL');
-                    }
-                });
-                
-                // Also format all .amount elements
-                document.querySelectorAll('.amount').forEach(element => {
-                    const text = element.textContent;
-                    const match = text.match(/₪([0-9,]+)/);
-                    if (match) {
-                        const number = parseInt(match[1].replace(/,/g, ''));
-                        if (!isNaN(number)) {
-                            element.textContent = text.replace(/₪[0-9,]+/, '₪' + number.toLocaleString('he-IL'));
-                        }
-                    }
-                });
-            }
-
-            showMessage(message, type = 'success') {
-                const statusEl = document.getElementById('statusMessage');
-                statusEl.textContent = message;
-                statusEl.className = `status-message ${type === 'error' ? 'error' : ''}`;
-                statusEl.style.display = 'block';
-                
+                // רענון הדף לאחר 2 דקות
                 setTimeout(() => {
-                    statusEl.style.display = 'none';
-                }, 8000);
-            }
+                    window.location.reload();
+                }, 120000); // 120,000 מילישניות = 2 דקות
+            })
+            .catch(error => {
+                console.error('שגיאה:', error);
+                // גם במקרה של שגיאת CORS, נניח שהבקשה הצליחה
+                console.log('הבקשה נשלחה (ייתכן שגיאת CORS אך הוובהוק עובד)');
+                
+                // רענון הדף לאחר 2 דקות
+                setTimeout(() => {
+                    window.location.reload();
+                }, 120000);
+            });
+            
+            return false; // מונע ניווט
+        }
 
-            showLoading(show) {
-                document.getElementById('loadingMessage').style.display = show ? 'block' : 'none';
+        // נתונים כלליים
+        const overviewData = {
+            yearly: {
+                labels: ['08-2024', '09-2024', '10-2024', '11-2024', '12-2024', '01-2025', '02-2025', '03-2025', '04-2025', '05-2025', '06-2025', '07-2025'],
+                data: [83385,89912,115166,118285,80102,118083,121818.65,137781.08000000002,123818,113256,120729,1212,]
+            },
+            fundDevelopment: {
+                labels: ['2022', '2023', '2024', '2025'],
+                data: [413501, 527445, 913946,732964.73 ]
             }
+        };
 
-            debug(message, data = null) {
-                if (!debugMode) return;
-                
-                const debugContent = document.getElementById('debugContent');
-                const timestamp = new Date().toLocaleTimeString();
-                const logEntry = `[${timestamp}] ${message}`;
-                
-                console.log(logEntry, data);
-                
-                if (debugContent) {
-                    debugContent.innerHTML += `<div>${logEntry}</div>`;
-                    if (data) {
-                        debugContent.innerHTML += `<div style="margin-left: 10px; color: #666; font-size: 10px;">${JSON.stringify(data, null, 2)}</div>`;
+        // נתונים יוני 2025
+        const juneData = {
+            daily: {
+                labels: ['01', '02', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+                data: [582,630,,,,,,,,,,,,,,,,,,,,,,,,,,,]
+            },
+            payment: {
+                labels: ['אשראי', 'הו"ק בנקאי', 'העברות בנקאיות-המחאות', 'מזומן'],
+                data: [1212, , , ],
+                colors: ['#3498db', '#e74c3c', '#f39c12', '#2ecc71']
+            },
+            sources: {
+                labels: ['קשר', 'נדרים פלוס', 'אחר'],
+                data: [202, 1010, ],
+                colors: ['#9b59b6', '#1abc9c', '#34495e']
+            },
+            kesher: {
+                labels: ['אשראי', 'הו"ק בנקאי'],
+                data: [202, ],
+                colors: ['#3498db', '#e74c3c']
+            },
+            nedarim: {
+                labels: ['אשראי', 'הו"ק בנקאי'],
+                data: [1010, ],
+                colors: ['#3498db', '#e74c3c']
+            }
+        };
+
+        // נתונים מאי 2025
+        const mayData = {
+            daily: {
+                labels: ['01', '02', '03', '04', '05', '06', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', ''],
+                data: [10660,371,2370,3069,6447,222,4856,1491,2963,5611,641,250,433,24455,3061,3093,1610,250,22954,326,1222,1801,3007,4707,140,2495,2407,9817,]
+            },
+            payment: {
+                labels: ['אשראי', 'הו"ק בנקאי', 'העברות בנקאיות-המחאות', 'מזומן'],
+                data: [75046, 33823, 4500, 7360],
+                colors: ['#3498db', '#e74c3c', '#f39c12', '#2ecc71']
+            },
+            sources: {
+                labels: ['קשר', 'נדרים פלוס', 'אחר'],
+                data: [77962, 30907, 11860],
+                colors: ['#9b59b6', '#1abc9c', '#34495e']
+            },
+            kesher: {
+                labels: ['אשראי', 'הו"ק בנקאי'],
+                data: [50526, 27436],
+                colors: ['#3498db', '#e74c3c']
+            },
+            nedarim: {
+                labels: ['אשראי', 'הו"ק בנקאי'],
+                data: [24520, 6387],
+                colors: ['#3498db', '#e74c3c']
+            }
+        };
+
+        // הגדרות גרף כלליות
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 8,
+                        font: {
+                            size: 8
+                        },
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map((label, index) => {
+                                    const value = data.datasets[0].data[index];
+                                    const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return {
+                                        text: `${label}: ${percentage}%`,
+                                        fillStyle: data.datasets[0].backgroundColor[index],
+                                        strokeStyle: data.datasets[0].backgroundColor[index],
+                                        lineWidth: 0,
+                                        hidden: false,
+                                        index: index
+                                    };
+                                });
+                            }
+                            return [];
+                        }
                     }
-                    debugContent.scrollTop = debugContent.scrollHeight;
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ₪${value.toLocaleString()} (${percentage}%)`;
+                        }
+                    }
                 }
             }
-        }
+        };
 
-        // Create instance and global functions
-        let airtableConnector;
-
-        function toggleDebug() {
-            debugMode = !debugMode;
-            const debugPanel = document.getElementById('debugPanel');
-            debugPanel.style.display = debugMode ? 'block' : 'none';
-            
-            if (debugMode) {
-                document.getElementById('debugContent').innerHTML = '<div>מצב דיבאג מופעל</div>';
+        const barOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.label}: ₪${context.parsed.y.toLocaleString()}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₪' + value.toLocaleString();
+                        }
+                    }
+                }
             }
-        }
+        };
 
-        function testConnection() {
-            if (airtableConnector) {
-                airtableConnector.testConnection();
+        // גרפים כלליים
+        // גרף 12 החודשים האחרונים
+        new Chart(document.getElementById('yearlyTrendChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: overviewData.yearly.labels,
+                datasets: [{
+                    label: 'תרומות חודשיות (₪)',
+                    data: overviewData.yearly.data,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#3498db',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ₪${context.parsed.y.toLocaleString()}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₪' + (value / 1000) + 'K';
+                            }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45
+                        }
+                    }
+                }
             }
-        }
-
-        function loadAirtableData() {
-            if (airtableConnector) {
-                airtableConnector.loadData();
-            }
-        }
-
-        function handleRefresh() {
-            if (airtableConnector) {
-                airtableConnector.loadData();
-            }
-        }
-
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', () => {
-            airtableConnector = new AirtableConnector();
-            
-            // Set default values for testing
-            document.getElementById('baseId').value = 'appxvOE27PFbq5z9J';
-            document.getElementById('tableId').value = 'tbloSMtX2CV0yHAg8';
-            document.getElementById('apiKey').value = 'pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99';
         });
+
+        // גרף מפתחת הקרן
+        new Chart(document.getElementById('fundDevelopmentChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: overviewData.fundDevelopment.labels,
+                datasets: [{
+                    label: 'סה"כ תרומות שנתיות (₪)',
+                    data: overviewData.fundDevelopment.data,
+                    backgroundColor: ['#95a5a6', '#1abc9c', '#3498db', '#e74c3c'],
+                    borderColor: ['#7f8c8d', '#16a085', '#2980b9', '#c0392b'],
+                    borderWidth: 1,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ₪${context.parsed.y.toLocaleString()}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₪' + (value / 1000) + 'K';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // יוני 2025 - גרפים
+        // גרף יומי
+        new Chart(document.getElementById('dailyChart1').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: juneData.daily.labels,
+                datasets: [{
+                    label: 'הכנסות יומיות (₪)',
+                    data: juneData.daily.data,
+                    backgroundColor: '#3498db',
+                    borderColor: '#2980b9',
+                    borderWidth: 1,
+                    borderRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `יום ${context.label}: ₪${context.parsed.y.toLocaleString()}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₪' + (value / 1000) + 'K';
+                            },
+                            font: {
+                                size: 9
+                            }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            font: {
+                                size: 8
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('paymentMethodChart1').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: juneData.payment.labels,
+                datasets: [{
+                    data: juneData.payment.data,
+                    backgroundColor: juneData.payment.colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: chartOptions
+        });
+
+        new Chart(document.getElementById('sourceChart1').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: juneData.sources.labels,
+                datasets: [{
+                    data: juneData.sources.data,
+                    backgroundColor: juneData.sources.colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: chartOptions
+        });
+
+        new Chart(document.getElementById('kesherBreakdownChart1').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: juneData.kesher.labels,
+                datasets: [{
+                    data: juneData.kesher.data,
+                    backgroundColor: juneData.kesher.colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: chartOptions
+        });
+
+        new Chart(document.getElementById('nedarimBreakdownChart1').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: juneData.nedarim.labels,
+                datasets: [{
+                    data: juneData.nedarim.data,
+                    backgroundColor: juneData.nedarim.colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: chartOptions
+        });
+
+        // מאי 2025 - גרפים
+        // גרף יומי
+        new Chart(document.getElementById('dailyChart2').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: mayData.daily.labels,
+                datasets: [{
+                    label: 'הכנסות יומיות (₪)',
+                    data: mayData.daily.data,
+                    backgroundColor: '#e74c3c',
+                    borderColor: '#c0392b',
+                    borderWidth: 1,
+                    borderRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `יום ${context.label}: ₪${context.parsed.y.toLocaleString()}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₪' + (value / 1000) + 'K';
+                            },
+                            font: {
+                                size: 9
+                            }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            font: {
+                                size: 8
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('paymentMethodChart2').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: mayData.payment.labels,
+                datasets: [{
+                    data: mayData.payment.data,
+                    backgroundColor: mayData.payment.colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: chartOptions
+        });
+
+        new Chart(document.getElementById('sourceChart2').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: mayData.sources.labels,
+                datasets: [{
+                    data: mayData.sources.data,
+                    backgroundColor: mayData.sources.colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: chartOptions
+        });
+
+        new Chart(document.getElementById('kesherBreakdownChart2').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: mayData.kesher.labels,
+                datasets: [{
+                    data: mayData.kesher.data,
+                    backgroundColor: mayData.kesher.colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: chartOptions
+        });
+
+        new Chart(document.getElementById('nedarimBreakdownChart2').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: mayData.nedarim.labels,
+                datasets: [{
+                    data: mayData.nedarim.data,
+                    backgroundColor: mayData.nedarim.colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: chartOptions
+        });
+
+        // פונקציה לפורמט מספרים עם פסיקים
+        function formatNumbers() {
+            document.querySelectorAll('.formatted-number').forEach(element => {
+                const number = parseInt(element.textContent);
+                if (!isNaN(number)) {
+                    element.textContent = number.toLocaleString('he-IL');
+                }
+            });
+        }
+
+        // הפעלת פורמט המספרים כשהעמוד נטען
+        document.addEventListener('DOMContentLoaded', formatNumbers);
     </script>
 </body>
 </html>
