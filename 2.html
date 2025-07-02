@@ -79,7 +79,7 @@
             gap: 10px;
         }
 
-        .refresh-button, .reports-button, .mode-button {
+        .refresh-button, .reports-button {
             border: none;
             padding: 15px 20px;
             border-radius: 50px;
@@ -120,24 +120,13 @@
             background: linear-gradient(135deg, #7d3c98 0%, #8e44ad 100%);
         }
 
-        .mode-button {
-            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
-            box-shadow: 0 8px 20px rgba(243, 156, 18, 0.3);
-        }
-
-        .mode-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 25px rgba(243, 156, 18, 0.4);
-            background: linear-gradient(135deg, #d68910 0%, #ca6f1e 100%);
-        }
-
         .refresh-button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
 
-        .refresh-icon, .reports-icon, .mode-icon {
+        .refresh-icon, .reports-icon {
             width: 20px;
             height: 20px;
             transition: transform 0.3s ease;
@@ -169,41 +158,22 @@
             color: #c62828;
         }
 
-        .mode-selector {
-            background: white;
-            border: 2px solid #3498db;
-            border-radius: 15px;
+        .debug-panel {
+            background: #f8f9fa;
+            border: 2px solid #6c757d;
+            border-radius: 10px;
             padding: 20px;
-            margin-bottom: 30px;
-            text-align: center;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
         }
 
-        .mode-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 15px;
-        }
-
-        .mode-btn {
-            padding: 10px 20px;
-            border: 2px solid #3498db;
-            background: white;
-            color: #3498db;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .mode-btn.active {
-            background: #3498db;
-            color: white;
-        }
-
-        .mode-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        .debug-panel h4 {
+            margin-bottom: 10px;
+            font-family: inherit;
+            color: #495057;
         }
 
         .setup-panel {
@@ -267,7 +237,7 @@
             font-size: 18px;
         }
 
-        /* כל ה-CSS הקיים של הדשבורד המקורי */
+        /* Dashboard styles */
         .overview-charts {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -453,46 +423,6 @@
             margin-bottom: 10px;
         }
 
-        .recent-donations {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-
-        .donation-item {
-            border-bottom: 1px solid #eee;
-            padding: 10px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .donation-item:last-child {
-            border-bottom: none;
-        }
-
-        .donor-info {
-            flex: 1;
-        }
-
-        .donor-name {
-            font-weight: bold;
-            color: #2c3e50;
-        }
-
-        .donation-date {
-            font-size: 0.8rem;
-            color: #7f8c8d;
-        }
-
-        .donation-amount {
-            font-weight: bold;
-            color: #27ae60;
-            font-size: 1.1rem;
-        }
-
         @media (max-width: 1200px) {
             .months-container {
                 grid-template-columns: 1fr;
@@ -546,14 +476,9 @@
                 margin: 0;
             }
 
-            .refresh-button, .reports-button, .mode-button {
+            .refresh-button, .reports-button {
                 padding: 10px 20px;
                 font-size: 0.9rem;
-            }
-
-            .mode-buttons {
-                flex-direction: column;
-                align-items: center;
             }
         }
     </style>
@@ -589,34 +514,40 @@
 
         <div id="statusMessage" class="status-message" style="display: none;"></div>
 
+        <div id="debugPanel" class="debug-panel" style="display: none;">
+            <h4>🐛 מידע דיבאג:</h4>
+            <div id="debugContent"></div>
+        </div>
+
         <div id="setupPanel" class="setup-panel">
             <h3>🔗 הגדרת חיבור לAirtable</h3>
             <p style="margin-bottom: 20px; color: #666;">
-                הטוקן שהזנת נשמר בבטחה. לחץ "טען נתונים" כדי להתחיל.
+                נא להזין את פרטי החיבור שלך לAirtable
             </p>
             
             <div class="form-group">
                 <label for="baseId">Base ID:</label>
-                <input type="text" id="baseId" value="appxvOE27PFbq5z9J" readonly style="background: #f5f5f5;">
+                <input type="text" id="baseId" placeholder="appxxxxxxxxxxxxx">
             </div>
             <div class="form-group">
-                <label for="tableId">Table ID:</label>
-                <input type="text" id="tableId" value="tbloSMtX2CV0yHAg8" readonly style="background: #f5f5f5;">
+                <label for="tableId">Table ID (או שם הטבלה):</label>
+                <input type="text" id="tableId" placeholder="tblxxxxxxxxxxxxx או שם הטבלה">
             </div>
             <div class="form-group">
                 <label for="apiKey">Personal Access Token:</label>
-                <input type="password" id="apiKey" value="pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99" readonly style="background: #f5f5f5;">
+                <input type="password" id="apiKey" placeholder="patxxxxxxxxxxxxxxxxx">
             </div>
             <button class="setup-button" onclick="testConnection()">בדוק חיבור</button>
             <button class="setup-button" onclick="loadAirtableData()">טען נתונים מAirtable</button>
+            <button class="setup-button" onclick="toggleDebug()">הצג דיבאג</button>
         </div>
 
         <div id="loadingMessage" class="loading" style="display: none;">
             <div>🔄 טוען נתונים מAirtable...</div>
         </div>
 
-        <!-- כל התוכן המקורי של הדשבורד -->
-        <div id="originalDashboard">
+        <!-- Dashboard content -->
+        <div id="originalDashboard" style="display: none;">
             <div class="divider">
                 <span class="divider-text">📈 מגמות כלליות</span>
             </div>
@@ -642,7 +573,7 @@
             </div>
 
             <div class="months-container">
-                <!-- יוני 2025 -->
+                <!-- Current month -->
                 <div class="month-section">
                     <h2 class="month-title">מתחילת החודש</h2>
                     
@@ -658,7 +589,7 @@
                     </div>
 
                     <div class="stats-details" id="currentMonthPayments">
-                        <!-- יעודכן דינמית -->
+                        <!-- Will be updated dynamically -->
                     </div>
 
                     <div class="divider">
@@ -666,7 +597,7 @@
                     </div>
 
                     <div class="source-details" id="currentMonthSources">
-                        <!-- יעודכן דינמית -->
+                        <!-- Will be updated dynamically -->
                     </div>
 
                     <div class="divider">
@@ -687,24 +618,10 @@
                                 <canvas id="sourceChart1"></canvas>
                             </div>
                         </div>
-
-                        <div class="chart-container">
-                            <h2 class="chart-title">פירוט קשר</h2>
-                            <div class="pie-chart-wrapper">
-                                <canvas id="kesherBreakdownChart1"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="chart-container">
-                            <h2 class="chart-title">פירוט נדרים פלוס</h2>
-                            <div class="pie-chart-wrapper">
-                                <canvas id="nedarimBreakdownChart1"></canvas>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
-                <!-- חודש קודם -->
+                <!-- Last month -->
                 <div class="month-section">
                     <h2 class="month-title">חודש קודם</h2>
                     
@@ -720,7 +637,7 @@
                     </div>
 
                     <div class="stats-details" id="lastMonthPayments">
-                        <!-- יעודכן דינמית -->
+                        <!-- Will be updated dynamically -->
                     </div>
 
                     <div class="divider">
@@ -728,7 +645,7 @@
                     </div>
 
                     <div class="source-details" id="lastMonthSources">
-                        <!-- יעודכן דינמית -->
+                        <!-- Will be updated dynamically -->
                     </div>
 
                     <div class="divider">
@@ -744,30 +661,9 @@
                         </div>
 
                         <div class="chart-container">
-                            <h2 class="chart-title">התפלגות לפי אמצעי תשלום</h2>
-                            <div class="pie-chart-wrapper">
-                                <canvas id="paymentMethodChart2"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="chart-container">
                             <h2 class="chart-title">התפלגות לפי מקור הכנסה</h2>
                             <div class="pie-chart-wrapper">
                                 <canvas id="sourceChart2"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="chart-container">
-                            <h2 class="chart-title">פירוט קשר</h2>
-                            <div class="pie-chart-wrapper">
-                                <canvas id="kesherBreakdownChart2"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="chart-container">
-                            <h2 class="chart-title">פירוט נדרים פלוס</h2>
-                            <div class="pie-chart-wrapper">
-                                <canvas id="nedarimBreakdownChart2"></canvas>
                             </div>
                         </div>
                     </div>
@@ -777,106 +673,130 @@
     </div>
 
     <script>
-        // משתנים גלובליים
-        let currentMode = 'airtable';
+        // Global variables
         let airtableData = null;
         let charts = {};
+        let debugMode = false;
 
         class AirtableConnector {
             constructor() {
                 this.baseUrl = 'https://api.airtable.com/v0';
-                this.baseId = 'appxvOE27PFbq5z9J';
-                this.tableId = 'tbloSMtX2CV0yHAg8';
-                this.apiKey = 'pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99';
+                this.baseId = '';
+                this.tableId = '';
+                this.apiKey = '';
+            }
+
+            updateCredentials() {
+                this.baseId = document.getElementById('baseId').value.trim();
+                this.tableId = document.getElementById('tableId').value.trim();
+                this.apiKey = document.getElementById('apiKey').value.trim();
+            }
+
+            validateCredentials() {
+                if (!this.baseId || !this.tableId || !this.apiKey) {
+                    this.showMessage('נא למלא את כל השדות הנדרשים', 'error');
+                    return false;
+                }
+
+                if (!this.baseId.startsWith('app')) {
+                    this.showMessage('Base ID חייב להתחיל ב-app', 'error');
+                    return false;
+                }
+
+                if (!this.apiKey.startsWith('pat')) {
+                    this.showMessage('Personal Access Token חייב להתחיל ב-pat', 'error');
+                    return false;
+                }
+
+                return true;
             }
 
             async testConnection() {
+                this.updateCredentials();
+                
+                if (!this.validateCredentials()) {
+                    return false;
+                }
+
+                this.debug('מתחיל בדיקת חיבור...');
+                this.debug(`Base ID: ${this.baseId}`);
+                this.debug(`Table ID: ${this.tableId}`);
+                this.debug(`API Key: ${this.apiKey.substring(0, 10)}...`);
+
                 try {
-                    const response = await fetch(`${this.baseUrl}/${this.baseId}/${this.tableId}?maxRecords=1`, {
+                    const url = `${this.baseUrl}/${this.baseId}/${this.tableId}?maxRecords=1`;
+                    this.debug(`URL לבדיקה: ${url}`);
+
+                    const response = await fetch(url, {
                         headers: {
                             'Authorization': `Bearer ${this.apiKey}`,
                             'Content-Type': 'application/json'
                         }
                     });
 
+                    this.debug(`Response status: ${response.status}`);
+                    this.debug(`Response headers: ${JSON.stringify([...response.headers.entries()])}`);
+
                     if (response.ok) {
+                        const data = await response.json();
+                        this.debug('Response data:', JSON.stringify(data, null, 2));
                         this.showMessage('החיבור לAirtable תקין! ✅', 'success');
-                        document.getElementById('setupPanel').style.display = 'none';
-                        document.getElementById('refreshBtn').style.display = 'flex';
                         return true;
                     } else {
-                        const error = await response.json();
-                        this.showMessage(`שגיאה בחיבור: ${error.error?.message || 'שגיאה לא ידועה'}`, 'error');
+                        const errorText = await response.text();
+                        this.debug(`Error response: ${errorText}`);
+                        
+                        let errorMessage = 'שגיאה לא ידועה';
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorMessage = errorJson.error?.message || errorJson.error || errorText;
+                        } catch (e) {
+                            errorMessage = errorText;
+                        }
+                        
+                        this.showMessage(`שגיאה בחיבור (${response.status}): ${errorMessage}`, 'error');
                         return false;
                     }
                 } catch (error) {
+                    this.debug(`Network error: ${error.message}`);
                     this.showMessage(`שגיאת רשת: ${error.message}`, 'error');
                     return false;
                 }
             }
 
             async loadData() {
+                this.updateCredentials();
+                
+                if (!this.validateCredentials()) {
+                    return;
+                }
+
                 this.showLoading(true);
                 const refreshBtn = document.getElementById('refreshBtn');
                 refreshBtn.classList.add('loading');
                 refreshBtn.disabled = true;
                 document.getElementById('refreshBtnText').textContent = 'טוען...';
 
+                this.debug('מתחיל טעינת נתונים...');
+
                 try {
-                    // נסה תחילה עם שמות Views במקום IDs
-                    console.log('מנסה לטעון עם שמות Views...');
-                    const [
-                        currentMonthData,
-                        yearToDateData,
-                        last12MonthsData
-                    ] = await Promise.all([
-                        this.loadFromView('מתחילת החודש'), // שם במקום ID
-                        this.loadFromView('מתחילת השנה'),   // שם במקום ID
-                        this.loadFromView('שנה אחורה')     // שם במקום ID
-                    ]);
-
-                    this.processViewsData({
-                        currentMonth: currentMonthData,
-                        yearToDate: yearToDateData,
-                        last12Months: last12MonthsData
-                    });
+                    // Try to load all records first
+                    const allRecords = await this.loadAllRecords();
+                    this.debug(`נטענו ${allRecords.length} רשומות בסה"כ`);
                     
-                    this.showMessage(`נטענו הנתונים בהצלחה! ✅`, 'success');
-                    
-                } catch (error) {
-                    console.log('שגיאה עם שמות Views, מנסה עם IDs מהURLs...');
-                    
-                    try {
-                        // אם שמות Views לא עובדים, ננסה להשתמש בחלק האחרון מהURL
-                        const [
-                            currentMonthData,
-                            yearToDateData,
-                            last12MonthsData
-                        ] = await Promise.all([
-                            this.loadFromView('viwrF5Dby6v77rnj2'), 
-                            this.loadFromView('viwqls7cGxKYxkA2V'), 
-                            this.loadFromView('viwGBVEUH0gtYEv67')  
-                        ]);
-
-                        this.processViewsData({
-                            currentMonth: currentMonthData,
-                            yearToDate: yearToDateData,
-                            last12Months: last12MonthsData
-                        });
-                        
-                        this.showMessage(`נטענו הנתונים בהצלחה! ✅`, 'success');
-                        
-                    } catch (secondError) {
-                        console.log('גם IDs לא עובדים, טוען את כל הנתונים...');
-                        
-                        // אם גם זה לא עובד, נטען את כל הנתונים ונסנן בקוד
-                        const allRecords = await this.loadAllRecords();
-                        this.processAllData(allRecords);
-                        this.showMessage(`נטענו ${allRecords.length} רשומות בהצלחה! ✅`, 'success');
+                    if (allRecords.length === 0) {
+                        this.showMessage('לא נמצאו רשומות בטבלה', 'error');
+                        return;
                     }
-                }
+
+                    // Debug: show first few records
+                    this.debug('דוגמה לרשומות:', JSON.stringify(allRecords.slice(0, 3), null, 2));
+
+                    this.processAllData(allRecords);
+                    this.showMessage(`נטענו ${allRecords.length} רשומות בהצלחה! ✅`, 'success');
                     
                 } catch (error) {
+                    this.debug(`שגיאה בטעינת הנתונים: ${error.message}`);
                     this.showMessage(`שגיאה בטעינת הנתונים: ${error.message}`, 'error');
                 } finally {
                     this.showLoading(false);
@@ -889,9 +809,19 @@
             async loadAllRecords() {
                 let allRecords = [];
                 let offset = '';
+                let pageCount = 0;
+                const maxPages = 50; // Safety limit
                 
                 do {
+                    pageCount++;
+                    if (pageCount > maxPages) {
+                        this.debug(`הגעתי למגבלת עמודים (${maxPages}), מפסיק`);
+                        break;
+                    }
+                    
                     const url = `${this.baseUrl}/${this.baseId}/${this.tableId}?pageSize=100${offset ? `&offset=${offset}` : ''}`;
+                    this.debug(`טוען עמוד ${pageCount}, URL: ${url}`);
+                    
                     const response = await fetch(url, {
                         headers: {
                             'Authorization': `Bearer ${this.apiKey}`,
@@ -900,12 +830,16 @@
                     });
 
                     if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        const errorText = await response.text();
+                        throw new Error(`HTTP ${response.status}: ${errorText}`);
                     }
 
                     const data = await response.json();
+                    this.debug(`עמוד ${pageCount}: ${data.records.length} רשומות`);
+                    
                     allRecords = allRecords.concat(data.records);
                     offset = data.offset;
+                    
                 } while (offset);
 
                 return allRecords;
@@ -918,12 +852,16 @@
                 const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
                 const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
                 
-                // תאריכים לסינון
+                // Date ranges for filtering
                 const currentMonthStart = new Date(currentYear, currentMonth, 1);
                 const lastMonthStart = new Date(lastMonthYear, lastMonth, 1);
                 const lastMonthEnd = new Date(lastMonthYear, lastMonth + 1, 0);
                 const yearStart = new Date(currentYear, 0, 1);
                 const last12MonthsStart = new Date(currentYear, currentMonth - 11, 1);
+
+                this.debug(`תאריכי סינון:`);
+                this.debug(`חודש נוכחי מ: ${currentMonthStart.toISOString()}`);
+                this.debug(`חודש קודם: ${lastMonthStart.toISOString()} עד ${lastMonthEnd.toISOString()}`);
 
                 const stats = {
                     currentMonth: { 
@@ -949,40 +887,108 @@
                     }
                 };
 
-                const validRecords = allRecords.filter(record => 
-                    record.fields['סכום עסקה'] && 
-                    record.fields['תאריך ושעת ביצוע העסקה'] &&
-                    parseFloat(record.fields['סכום עסקה']) > 0
-                );
+                // Find available fields in the first record
+                if (allRecords.length > 0) {
+                    const fields = Object.keys(allRecords[0].fields);
+                    this.debug(`שדות זמינים: ${fields.join(', ')}`);
+                }
 
-                validRecords.forEach(record => {
-                    const fields = record.fields;
-                    const amount = parseFloat(fields['סכום עסקה']);
-                    const date = new Date(fields['תאריך ושעת ביצוע העסקה']);
-                    const category = fields['קטגוריה'] || 'לא מוגדר';
-                    const organization = fields['עמותה'] || 'אחר';
+                // Try different field name combinations
+                const possibleAmountFields = ['סכום עסקה', 'סכום', 'Amount', 'amount'];
+                const possibleDateFields = ['תאריך ושעת ביצוע העסקה', 'תאריך', 'Date', 'date', 'Created'];
+                const possibleCategoryFields = ['קטגוריה', 'Category', 'category', 'סוג'];
+                const possibleOrgFields = ['עמותה', 'Organization', 'organization', 'ארגון'];
+
+                let amountField = null;
+                let dateField = null;
+                let categoryField = null;
+                let orgField = null;
+
+                // Find actual field names
+                for (const record of allRecords.slice(0, 5)) {
+                    const fields = Object.keys(record.fields);
                     
-                    // חודש נוכחי
+                    if (!amountField) {
+                        amountField = possibleAmountFields.find(field => fields.includes(field));
+                    }
+                    if (!dateField) {
+                        dateField = possibleDateFields.find(field => fields.includes(field));
+                    }
+                    if (!categoryField) {
+                        categoryField = possibleCategoryFields.find(field => fields.includes(field));
+                    }
+                    if (!orgField) {
+                        orgField = possibleOrgFields.find(field => fields.includes(field));
+                    }
+                    
+                    if (amountField && dateField) break;
+                }
+
+                this.debug(`שדות שנמצאו:`);
+                this.debug(`סכום: ${amountField}`);
+                this.debug(`תאריך: ${dateField}`);
+                this.debug(`קטגוריה: ${categoryField}`);
+                this.debug(`ארגון: ${orgField}`);
+
+                if (!amountField || !dateField) {
+                    this.showMessage(`לא נמצאו שדות חובה: ${!amountField ? 'סכום' : ''} ${!dateField ? 'תאריך' : ''}`, 'error');
+                    return;
+                }
+
+                const validRecords = allRecords.filter(record => {
+                    const amount = record.fields[amountField];
+                    const date = record.fields[dateField];
+                    return amount && date && parseFloat(amount) > 0;
+                });
+
+                this.debug(`רשומות תקפות: ${validRecords.length} מתוך ${allRecords.length}`);
+
+                validRecords.forEach((record, index) => {
+                    const fields = record.fields;
+                    const amount = parseFloat(fields[amountField]);
+                    const dateStr = fields[dateField];
+                    
+                    let date;
+                    try {
+                        date = new Date(dateStr);
+                        if (isNaN(date.getTime())) {
+                            this.debug(`תאריך לא תקין ברשומה ${index}: ${dateStr}`);
+                            return;
+                        }
+                    } catch (e) {
+                        this.debug(`שגיאה בעיבוד תאריך ברשומה ${index}: ${dateStr}`);
+                        return;
+                    }
+                    
+                    const category = fields[categoryField] || 'לא מוגדר';
+                    const organization = fields[orgField] || 'אחר';
+                    
+                    // Current month
                     if (date >= currentMonthStart) {
                         this.addToMonthStats(stats.currentMonth, amount, date, category, organization);
                     }
                     
-                    // חודש קודם
+                    // Last month
                     if (date >= lastMonthStart && date <= lastMonthEnd) {
                         this.addToMonthStats(stats.lastMonth, amount, date, category, organization);
                     }
                     
-                    // נתוני השנה הנוכחית
+                    // Current year data
                     if (date >= yearStart) {
                         stats.yearlyData['2025'] += amount;
                     }
                     
-                    // 12 החודשים האחרונים
+                    // Last 12 months
                     if (date >= last12MonthsStart) {
                         const monthKey = date.toLocaleDateString('he-IL', { year: 'numeric', month: 'long' });
                         stats.monthlyData[monthKey] = (stats.monthlyData[monthKey] || 0) + amount;
                     }
                 });
+
+                this.debug('סטטיסטיקות סופיות:');
+                this.debug(`חודש נוכחי: ₪${stats.currentMonth.total.toLocaleString()}`);
+                this.debug(`חודש קודם: ₪${stats.lastMonth.total.toLocaleString()}`);
+                this.debug(`שנת 2025: ₪${stats.yearlyData['2025'].toLocaleString()}`);
 
                 airtableData = stats;
                 this.displayData(stats);
@@ -1001,214 +1007,28 @@
                 monthStats.categoryOrg[key] = (monthStats.categoryOrg[key] || 0) + amount;
             }
 
-            async loadFromView(viewId) {
-                let allRecords = [];
-                let offset = '';
-                
-                do {
-                    const url = `${this.baseUrl}/${this.baseId}/${this.tableId}/${viewId}?pageSize=100${offset ? `&offset=${offset}` : ''}`;
-                    const response = await fetch(url, {
-                        headers: {
-                            'Authorization': `Bearer ${this.apiKey}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-
-                    const data = await response.json();
-                    allRecords = allRecords.concat(data.records);
-                    offset = data.offset;
-                } while (offset);
-
-                return allRecords;
-            }
-
-            processViewsData(dataSources) {
-                const now = new Date();
-                const currentMonth = now.getMonth();
-                const currentYear = now.getFullYear();
-                const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-                const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-
-                const stats = {
-                    currentMonth: { 
-                        total: 0, 
-                        daily: {}, 
-                        categories: {}, 
-                        organizations: {},
-                        categoryOrg: {} 
-                    },
-                    lastMonth: { 
-                        total: 0, 
-                        daily: {}, 
-                        categories: {}, 
-                        organizations: {},
-                        categoryOrg: {} 
-                    },
-                    monthlyData: {},
-                    yearlyData: {
-                        '2022': 413501,
-                        '2023': 527445,
-                        '2024': 913946,
-                        '2025': 0
-                    },
-                    recentDonations: []
-                };
-
-                // עיבוד נתוני החודש הנוכחי מ-View "מתחילת החודש"
-                this.processMonthData(dataSources.currentMonth, stats.currentMonth);
-
-                // עיבוד נתוני החודש הקודם מ-View "מתחילת השנה" 
-                this.processLastMonthFromYearData(dataSources.yearToDate, stats.lastMonth, lastMonth, lastMonthYear);
-
-                // עיבוד 12 החודשים האחרונים מ-View "שנה אחורה"
-                this.processLast12MonthsData(dataSources.last12Months, stats);
-
-                // חישוב סה"כ 2025 מ-View "מתחילת השנה"
-                stats.yearlyData['2025'] = this.calculateYearTotal(dataSources.yearToDate);
-
-                // תרומות אחרונות מהחודש הנוכחי
-                stats.recentDonations = this.getRecentDonations(dataSources.currentMonth);
-
-                airtableData = stats;
-                this.displayData(stats);
-            }
-
-            processMonthData(records, monthStats) {
-                records
-                    .filter(record => record.fields['סכום עסקה'] && record.fields['תאריך ושעת ביצוע העסקה'])
-                    .forEach(record => {
-                        const fields = record.fields;
-                        const amount = parseFloat(fields['סכום עסקה'] || 0);
-                        const date = new Date(fields['תאריך ושעת ביצוע העסקה']);
-                        const category = fields['קטגוריה'] || 'לא מוגדר';
-                        const organization = fields['עמותה'] || 'אחר';
-                        
-                        if (amount > 0) {
-                            monthStats.total += amount;
-                            
-                            const dayOfMonth = date.getDate();
-                            monthStats.daily[dayOfMonth] = (monthStats.daily[dayOfMonth] || 0) + amount;
-                            
-                            // קיבוץ לפי קטגוריה
-                            monthStats.categories[category] = (monthStats.categories[category] || 0) + amount;
-                            
-                            // קיבוץ לפי עמותה
-                            monthStats.organizations[organization] = (monthStats.organizations[organization] || 0) + amount;
-                            
-                            // קיבוץ משולב קטגוריה ועמותה
-                            const key = `${organization}_${category}`;
-                            monthStats.categoryOrg[key] = (monthStats.categoryOrg[key] || 0) + amount;
-                        }
-                    });
-            }
-
-            processLastMonthFromYearData(yearRecords, lastMonthStats, targetMonth, targetYear) {
-                yearRecords
-                    .filter(record => {
-                        if (!record.fields['סכום עסקה'] || !record.fields['תאריך ושעת ביצוע העסקה']) return false;
-                        
-                        const date = new Date(record.fields['תאריך ושעת ביצוע העסקה']);
-                        return date.getMonth() === targetMonth && date.getFullYear() === targetYear;
-                    })
-                    .forEach(record => {
-                        const fields = record.fields;
-                        const amount = parseFloat(fields['סכום עסקה'] || 0);
-                        const date = new Date(fields['תאריך ושעת ביצוע העסקה']);
-                        const category = fields['קטגוריה'] || 'לא מוגדר';
-                        const organization = fields['עמותה'] || 'אחר';
-                        
-                        if (amount > 0) {
-                            lastMonthStats.total += amount;
-                            
-                            const dayOfMonth = date.getDate();
-                            lastMonthStats.daily[dayOfMonth] = (lastMonthStats.daily[dayOfMonth] || 0) + amount;
-                            
-                            lastMonthStats.categories[category] = (lastMonthStats.categories[category] || 0) + amount;
-                            lastMonthStats.organizations[organization] = (lastMonthStats.organizations[organization] || 0) + amount;
-                            
-                            const key = `${organization}_${category}`;
-                            lastMonthStats.categoryOrg[key] = (lastMonthStats.categoryOrg[key] || 0) + amount;
-                        }
-                    });
-            }
-
-            processLast12MonthsData(records, stats) {
-                records
-                    .filter(record => record.fields['סכום עסקה'] && record.fields['תאריך ושעת ביצוע העסקה'])
-                    .forEach(record => {
-                        const fields = record.fields;
-                        const amount = parseFloat(fields['סכום עסקה'] || 0);
-                        const date = new Date(fields['תאריך ושעת ביצוע העסקה']);
-                        
-                        if (amount > 0) {
-                            const monthKey = date.toLocaleDateString('he-IL', { year: 'numeric', month: 'long' });
-                            stats.monthlyData[monthKey] = (stats.monthlyData[monthKey] || 0) + amount;
-                        }
-                    });
-            }
-
-            calculateYearTotal(yearRecords) {
-                return yearRecords
-                    .filter(record => record.fields['סכום עסקה'])
-                    .reduce((total, record) => {
-                        const amount = parseFloat(record.fields['סכום עסקה'] || 0);
-                        return total + amount;
-                    }, 0);
-            }
-
-            getRecentDonations(currentMonthRecords) {
-                return currentMonthRecords
-                    .filter(record => record.fields['סכום עסקה'] && record.fields['תאריך ושעת ביצוע העסקה'])
-                    .sort((a, b) => {
-                        const dateA = new Date(a.fields['תאריך ושעת ביצוע העסקה']);
-                        const dateB = new Date(b.fields['תאריך ושעת ביצוע העסקה']);
-                        return dateB - dateA;
-                    })
-                    .slice(0, 10)
-                    .map(record => {
-                        const fields = record.fields;
-                        return {
-                            name: fields['שם תורם'] || 'תורם אנונימי',
-                            amount: parseFloat(fields['סכום עסקה'] || 0),
-                            date: new Date(fields['תאריך ושעת ביצוע העסקה']).toLocaleDateString('he-IL')
-                        };
-                    });
-            }
-
             displayData(stats) {
-                // עדכון סה"כ חודש נוכחי וקודם
+                // Update totals
                 document.getElementById('currentMonthTotal').textContent = stats.currentMonth.total.toLocaleString();
                 document.getElementById('lastMonthTotal').textContent = stats.lastMonth.total.toLocaleString();
 
-                // עדכון פירוט תשלומים לחודש הנוכחי
+                // Update payment details
                 this.updatePaymentDetails('currentMonthPayments', stats.currentMonth);
-                
-                // עדכון פירוט תשלומים לחודש הקודם
                 this.updatePaymentDetails('lastMonthPayments', stats.lastMonth);
 
-                // הוספת פירוט מקור הכנסה
+                // Update source details
                 this.updateSourceDetails('currentMonthSources', stats.currentMonth);
                 this.updateSourceDetails('lastMonthSources', stats.lastMonth);
 
-                // יצירת גרפים
+                // Create charts
                 this.createDailyChart('dailyChart1', stats.currentMonth.daily, 'החודש הנוכחי');
                 this.createDailyChart('dailyChart2', stats.lastMonth.daily, 'החודש הקודם');
-                this.createPaymentChart('paymentMethodChart1', stats.currentMonth.categories);
-                this.createPaymentChart('paymentMethodChart2', stats.lastMonth.categories);
                 this.createSourceChart('sourceChart1', stats.currentMonth.organizations);
                 this.createSourceChart('sourceChart2', stats.lastMonth.organizations);
-                this.createKesherChart('kesherBreakdownChart1', stats.currentMonth.categoryOrg, 'קשר');
-                this.createKesherChart('kesherBreakdownChart2', stats.lastMonth.categoryOrg, 'קשר');
-                this.createNedarimChart('nedarimBreakdownChart1', stats.currentMonth.categoryOrg, 'נדרים פלוס');
-                this.createNedarimChart('nedarimBreakdownChart2', stats.lastMonth.categoryOrg, 'נדרים פלוס');
                 this.createMonthlyTrendChart(stats.monthlyData);
                 this.createYearlyChart(stats.yearlyData);
 
-                // הסתרת פאנל ההגדרות והצגת הדשבורד
+                // Show dashboard
                 document.getElementById('setupPanel').style.display = 'none';
                 document.getElementById('originalDashboard').style.display = 'block';
                 this.formatNumbers();
@@ -1219,8 +1039,12 @@
                 if (!container) return;
 
                 const organizations = monthData.organizations;
-
                 container.innerHTML = '';
+
+                if (Object.keys(organizations).length === 0) {
+                    container.innerHTML = '<div class="stat-card source"><h3>אין נתונים</h3><div class="amount">₪0</div></div>';
+                    return;
+                }
 
                 Object.entries(organizations).forEach(([orgName, amount]) => {
                     container.innerHTML += `
@@ -1237,14 +1061,14 @@
                 if (!container) return;
 
                 const categories = monthData.categories;
-
-                // רק 4 הכרטיסים הרלוונטיים
-                const relevantCategories = ['אשראי', 'בנקאי', 'העברות', 'מזומן'];
-                
                 container.innerHTML = '';
 
-                relevantCategories.forEach(categoryName => {
-                    const amount = categories[categoryName] || 0;
+                if (Object.keys(categories).length === 0) {
+                    container.innerHTML = '<div class="stat-card"><h3>אין נתונים</h3><div class="amount">₪0</div></div>';
+                    return;
+                }
+
+                Object.entries(categories).forEach(([categoryName, amount]) => {
                     container.innerHTML += `
                         <div class="stat-card">
                             <h3>${categoryName}</h3>
@@ -1254,60 +1078,36 @@
                 });
             }
 
-            createPaymentChart(canvasId, categoriesData) {
+            createSourceChart(canvasId, organizationsData) {
                 const ctx = document.getElementById(canvasId);
-                if (!ctx || !categoriesData || Object.keys(categoriesData).length === 0) return;
+                if (!ctx) return;
 
                 if (charts[canvasId]) {
                     charts[canvasId].destroy();
                 }
 
-                const colors = ['#3498db', '#e74c3c', '#f39c12', '#2ecc71', '#9b59b6', '#1abc9c'];
-
-                charts[canvasId] = new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: Object.keys(categoriesData),
-                        datasets: [{
-                            data: Object.values(categoriesData),
-                            backgroundColor: colors.slice(0, Object.keys(categoriesData).length),
-                            borderWidth: 2,
-                            borderColor: '#fff'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    padding: 8,
-                                    font: { size: 8 }
-                                }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const label = context.label || '';
-                                        const value = context.parsed || 0;
-                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                        const percentage = ((value / total) * 100).toFixed(1);
-                                        return `${label}: ₪${value.toLocaleString()} (${percentage}%)`;
-                                    }
-                                }
+                if (!organizationsData || Object.keys(organizationsData).length === 0) {
+                    // Create empty chart
+                    charts[canvasId] = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: ['אין נתונים'],
+                            datasets: [{
+                                data: [1],
+                                backgroundColor: ['#cccccc'],
+                                borderWidth: 2,
+                                borderColor: '#fff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
                             }
                         }
-                    }
-                });
-            }
-
-            createSourceChart(canvasId, organizationsData) {
-                const ctx = document.getElementById(canvasId);
-                if (!ctx || !organizationsData || Object.keys(organizationsData).length === 0) return;
-
-                if (charts[canvasId]) {
-                    charts[canvasId].destroy();
+                    });
+                    return;
                 }
 
                 const colors = ['#9b59b6', '#1abc9c', '#34495e', '#e67e22', '#95a5a6'];
@@ -1350,77 +1150,11 @@
                 });
             }
 
-            createKesherChart(canvasId, categoryOrgData, orgName) {
-                const ctx = document.getElementById(canvasId);
-                if (!ctx) return;
-
-                // סינון נתונים רק לעמותת קשר
-                const kesherData = {};
-                Object.entries(categoryOrgData).forEach(([key, value]) => {
-                    if (key.startsWith(`${orgName}_`)) {
-                        const category = key.replace(`${orgName}_`, '');
-                        kesherData[category] = value;
-                    }
-                });
-
-                if (Object.keys(kesherData).length === 0) {
-                    kesherData['אין נתונים'] = 0;
-                }
-
-                if (charts[canvasId]) {
-                    charts[canvasId].destroy();
-                }
-
-                const colors = ['#3498db', '#e74c3c', '#f39c12', '#2ecc71'];
-
-                charts[canvasId] = new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: Object.keys(kesherData),
-                        datasets: [{
-                            data: Object.values(kesherData),
-                            backgroundColor: colors.slice(0, Object.keys(kesherData).length),
-                            borderWidth: 2,
-                            borderColor: '#fff'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    padding: 8,
-                                    font: { size: 8 }
-                                }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const label = context.label || '';
-                                        const value = context.parsed || 0;
-                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
-                                        return `${label}: ₪${value.toLocaleString()} (${percentage}%)`;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-
-            createNedarimChart(canvasId, categoryOrgData, orgName) {
-                this.createKesherChart(canvasId, categoryOrgData, orgName);
-            }
-
             createDailyChart(canvasId, dailyData, title) {
                 const ctx = document.getElementById(canvasId);
                 if (!ctx) return;
 
-                // יצירת מערך של ימים בחודש
-                const daysInMonth = 31; // נניח מקסימום 31 יום
+                const daysInMonth = 31;
                 const labels = [];
                 const data = [];
                 
@@ -1429,7 +1163,6 @@
                     data.push(dailyData[day] || 0);
                 }
 
-                // השמדת גרף קיים
                 if (charts[canvasId]) {
                     charts[canvasId].destroy();
                 }
@@ -1473,6 +1206,10 @@
 
                 if (charts.yearlyTrendChart) {
                     charts.yearlyTrendChart.destroy();
+                }
+
+                if (!monthlyData || Object.keys(monthlyData).length === 0) {
+                    monthlyData = { 'אין נתונים': 0 };
                 }
 
                 charts.yearlyTrendChart = new Chart(ctx, {
@@ -1556,21 +1293,6 @@
                 });
             }
 
-            displayRecentDonations(donations) {
-                const listEl = document.getElementById('recentDonationsList');
-                if (!listEl) return;
-
-                listEl.innerHTML = donations.map(donation => `
-                    <div class="donation-item">
-                        <div class="donor-info">
-                            <div class="donor-name">${donation.name}</div>
-                            <div class="donation-date">${donation.date}</div>
-                        </div>
-                        <div class="donation-amount">₪${donation.amount.toLocaleString()}</div>
-                    </div>
-                `).join('');
-            }
-
             formatNumbers() {
                 document.querySelectorAll('.formatted-number').forEach(element => {
                     const number = parseInt(element.textContent);
@@ -1588,54 +1310,71 @@
                 
                 setTimeout(() => {
                     statusEl.style.display = 'none';
-                }, 5000);
+                }, 8000);
             }
 
             showLoading(show) {
                 document.getElementById('loadingMessage').style.display = show ? 'block' : 'none';
             }
+
+            debug(message, data = null) {
+                if (!debugMode) return;
+                
+                const debugContent = document.getElementById('debugContent');
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = `[${timestamp}] ${message}`;
+                
+                console.log(logEntry, data);
+                
+                if (debugContent) {
+                    debugContent.innerHTML += `<div>${logEntry}</div>`;
+                    if (data) {
+                        debugContent.innerHTML += `<div style="margin-left: 10px; color: #666; font-size: 10px;">${JSON.stringify(data, null, 2)}</div>`;
+                    }
+                    debugContent.scrollTop = debugContent.scrollHeight;
+                }
+            }
         }
 
-        // יצירת מופע של מחלקת Airtable ופונקציות גלובליות
+        // Create instance and global functions
         let airtableConnector;
 
-        // אתחול הדף
+        function toggleDebug() {
+            debugMode = !debugMode;
+            const debugPanel = document.getElementById('debugPanel');
+            debugPanel.style.display = debugMode ? 'block' : 'none';
+            
+            if (debugMode) {
+                document.getElementById('debugContent').innerHTML = '<div>מצב דיבאג מופעל</div>';
+            }
+        }
+
+        function testConnection() {
+            if (airtableConnector) {
+                airtableConnector.testConnection();
+            }
+        }
+
+        function loadAirtableData() {
+            if (airtableConnector) {
+                airtableConnector.loadData();
+            }
+        }
+
+        function handleRefresh() {
+            if (airtableConnector) {
+                airtableConnector.loadData();
+            }
+        }
+
+        // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
-            // יצירת מופע של המחלקה
             airtableConnector = new AirtableConnector();
             
-            // הגדרת פונקציות גלובליות
-            window.testConnection = function() {
-                if (airtableConnector) {
-                    airtableConnector.testConnection();
-                }
-            };
-
-            window.loadAirtableData = function() {
-                if (airtableConnector) {
-                    airtableConnector.loadData();
-                }
-            };
-
-            window.handleRefresh = function() {
-                if (airtableConnector) {
-                    airtableConnector.loadData();
-                }
-            };
-            
-            // בדיקת חיבור אוטומטית
-            setTimeout(() => {
-                window.testConnection();
-            }, 1000);
-        });        // אתחול הדף
-        document.addEventListener('DOMContentLoaded', () => {
-            // הצגת כפתור טעינה
-            document.getElementById('refreshBtn').style.display = 'flex';
-            
-            // בדיקת חיבור אוטומטית
-            setTimeout(() => {
-                testConnection();
-            }, 1000);
+            // Set default values for testing
+            document.getElementById('baseId').value = 'appxvOE27PFbq5z9J';
+            document.getElementById('tableId').value = 'tbloSMtX2CV0yHAg8';
+            document.getElementById('apiKey').value = 'pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99';
         });
     </script>
 </body>
