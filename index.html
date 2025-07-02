@@ -282,7 +282,7 @@
 
         .source-details {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 15px;
         }
 
@@ -1041,9 +1041,11 @@
                         stats.yearlyData['2025'] += amount;
                     }
                     
-                    // Last 12 months
+                    // Last 12 months - make sure we get proper month ordering
                     if (date >= last12MonthsStart) {
-                        const monthKey = date.toLocaleDateString('he-IL', { year: 'numeric', month: 'long' });
+                        const year = date.getFullYear();
+                        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                        const monthKey = `${month}-${year}`;
                         stats.monthlyData[monthKey] = (stats.monthlyData[monthKey] || 0) + amount;
                     }
                 });
@@ -1187,17 +1189,17 @@
                 if (!container) return;
 
                 const organizations = monthData.organizations;
+                
+                // Always show these 3 income sources
+                const incomeSources = ['קשר', 'נדרים פלוס', 'אחר'];
+                
                 container.innerHTML = '';
 
-                if (Object.keys(organizations).length === 0) {
-                    container.innerHTML = '<div class="stat-card source"><h3>אין נתונים</h3><div class="amount">₪0</div></div>';
-                    return;
-                }
-
-                Object.entries(organizations).forEach(([orgName, amount]) => {
+                incomeSources.forEach(sourceName => {
+                    const amount = organizations[sourceName] || 0;
                     container.innerHTML += `
                         <div class="stat-card source">
-                            <h3>${orgName}</h3>
+                            <h3>${sourceName}</h3>
                             <div class="amount">₪${amount.toLocaleString('he-IL')}</div>
                         </div>
                     `;
@@ -1209,17 +1211,17 @@
                 if (!container) return;
 
                 const categories = monthData.categories;
+                
+                // Always show these 4 payment methods
+                const paymentMethods = ['אשראי', 'בנקאי', 'מזומן', 'העברות'];
+                
                 container.innerHTML = '';
 
-                if (Object.keys(categories).length === 0) {
-                    container.innerHTML = '<div class="stat-card"><h3>אין נתונים</h3><div class="amount">₪0</div></div>';
-                    return;
-                }
-
-                Object.entries(categories).forEach(([categoryName, amount]) => {
+                paymentMethods.forEach(methodName => {
+                    const amount = categories[methodName] || 0;
                     container.innerHTML += `
                         <div class="stat-card">
-                            <h3>${categoryName}</h3>
+                            <h3>${methodName}</h3>
                             <div class="amount">₪${amount.toLocaleString('he-IL')}</div>
                         </div>
                     `;
@@ -1432,13 +1434,25 @@
                     monthlyData = { 'אין נתונים': 0 };
                 }
 
+                // Sort months chronologically
+                const sortedMonths = Object.keys(monthlyData).sort((a, b) => {
+                    // Convert MM-YYYY to Date for proper sorting
+                    const [monthA, yearA] = a.split('-');
+                    const [monthB, yearB] = b.split('-');
+                    const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+                    const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+                    return dateA - dateB;
+                });
+
+                const sortedData = sortedMonths.map(month => monthlyData[month]);
+
                 charts.yearlyTrendChart = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: Object.keys(monthlyData),
+                        labels: sortedMonths,
                         datasets: [{
                             label: 'תרומות חודשיות',
-                            data: Object.values(monthlyData),
+                            data: sortedData,
                             borderColor: '#3498db',
                             backgroundColor: 'rgba(52, 152, 219, 0.1)',
                             borderWidth: 3,
