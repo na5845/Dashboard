@@ -1,55 +1,378 @@
 <!DOCTYPE html>
-<html lang="he">
+<html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>התחברות לדשבורד</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>כניסה לדשבורד | קרן התורה</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔐</text></svg>">
+    
     <style>
-        body {
-            font-family: sans-serif;
-            text-align: center;
-            margin-top: 100px;
-            direction: rtl;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        button {
-            font-size: 1.2em;
-            padding: 10px 20px;
-            cursor: pointer;
-            background-color: #4285f4;
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated background elements */
+        .bg-decoration {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .bg-decoration:nth-child(1) {
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+            width: 150px;
+            height: 150px;
+        }
+
+        .bg-decoration:nth-child(2) {
+            top: 70%;
+            right: 10%;
+            animation-delay: 2s;
+            width: 100px;
+            height: 100px;
+        }
+
+        .bg-decoration:nth-child(3) {
+            top: 30%;
+            right: 20%;
+            animation-delay: 4s;
+            width: 80px;
+            height: 80px;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            padding: 50px;
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            animation: slideUp 0.8s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-section {
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease;
+            object-fit: cover;
+        }
+
+        .logo:hover {
+            transform: scale(1.05) rotate(2deg);
+        }
+
+        .welcome-text {
+            color: #2c3e50;
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .login-form {
+            margin-bottom: 30px;
+        }
+
+        .google-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 50%, #ea4335 100%);
             color: white;
             border: none;
-            border-radius: 5px;
-            transition: background-color 0.3s;
+            padding: 18px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(66, 133, 244, 0.3);
+            position: relative;
+            overflow: hidden;
         }
-        button:hover {
-            background-color: #357ae8;
+
+        .google-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(66, 133, 244, 0.4);
         }
-        button:disabled {
-            background-color: #ccc;
+
+        .google-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .google-btn:disabled {
+            opacity: 0.7;
             cursor: not-allowed;
+            transform: none !important;
         }
-        .loading {
+
+        .google-icon {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        .btn-text {
+            transition: all 0.3s ease;
+        }
+
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
             display: none;
-            margin-top: 20px;
         }
-        .error {
-            color: red;
-            margin-top: 20px;
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
+
+        .features {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #ecf0f1;
+        }
+
+        .features h3 {
+            color: #34495e;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            text-align: right;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 12px 15px;
+            border-radius: 12px;
+            transition: transform 0.3s ease;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        .feature-item:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #e9ecef, #dee2e6);
+        }
+
+        .feature-icon {
+            font-size: 1.2rem;
+            min-width: 20px;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            display: none;
+            animation: shake 0.5s ease-in-out;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            display: none;
+            animation: pulse 1s ease-in-out;
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ecf0f1;
+            color: #95a5a6;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .footer a {
+            color: #3498db;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: #2980b9;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 30px 25px;
+                margin: 10px;
+                border-radius: 20px;
+            }
+
+            .welcome-text {
+                font-size: 1.8rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .google-btn {
+                padding: 16px 25px;
+                font-size: 1rem;
+            }
+
+            .bg-decoration {
+                display: none;
+            }
+        }
+
+        /* Dark mode detection */
+        @media (prefers-color-scheme: dark) {
+            .login-container {
+                background: rgba(44, 62, 80, 0.95);
+                color: #ecf0f1;
+            }
+
+            .welcome-text {
+                color: #ecf0f1;
+            }
+
+            .subtitle {
+                color: #bdc3c7;
+            }
+
+            .footer {
+                color: #95a5a6;
+            }
+        }
+
+        /* Additional animations */
     </style>
 </head>
 <body>
-    <h2>כניסה לדשבורד</h2>
-    <p>יש להתחבר עם חשבון Google</p>
-    <button id="signInButton" onclick="signInWithGoogle()">התחברות עם Google</button>
-    <div id="loading" class="loading">מתחבר...</div>
-    <div id="error" class="error"></div>
+    <!-- Background decorations -->
+    <div class="bg-decoration"></div>
+    <div class="bg-decoration"></div>
+    <div class="bg-decoration"></div>
+
+    <div class="login-container">
+        <div class="logo-section">
+            <img src="https://raw.githubusercontent.com/na5845/E/main/logo.png" alt="לוגו קרן התורה" class="logo">
+            <h1 class="welcome-text">ברוכים הבאים</h1>
+            <p class="subtitle">כניסה לדשבורד הניהול<br>מערכת ניתוח נתונים מתקדמת</p>
+        </div>
+
+        <div class="login-form">
+            <button class="google-btn" id="signInButton" onclick="signInWithGoogle()">
+                <svg class="google-icon" viewBox="0 0 24 24">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                <span class="btn-text">התחבר עם Google</span>
+                <div class="loading-spinner" id="loadingSpinner"></div>
+            </button>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <div class="footer">
+            <p>🔐 מערכת מאובטחת עם הצפנה מתקדמת</p>
+            <p>© 2025 קרן התורה - כל הזכויות שמורות</p>
+        </div>
+    </div>
 
     <!-- Firebase v9 modular SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
-        // התצורה הנכונה מהקונסול
         const firebaseConfig = {
             apiKey: "AIzaSyCl9J7h5NOJ5aGHj3_BBw0jzm5iGSE7n20",
             authDomain: "dashboard-3e2a5.firebaseapp.com",
@@ -60,75 +383,95 @@
             measurementId: "G-NV42P569WJ"
         };
 
-        // בדיקה של הדומיין הנוכחי
-        console.log('הדומיין הנוכחי:', window.location.origin);
-        console.log('כתובת מלאה:', window.location.href);
-        console.log('שם הדומיין:', window.location.hostname);
-        console.log('פורט:', window.location.port);
-        
-        // בדיקה שהתצורה תקינה
-        console.log('Firebase Config:', {
-            apiKey: firebaseConfig.apiKey ? 'קיים' : 'חסר',
-            authDomain: firebaseConfig.authDomain,
-            projectId: firebaseConfig.projectId
-        });
-
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
         // Elements
         const signInButton = document.getElementById('signInButton');
-        const loading = document.getElementById('loading');
-        const errorDiv = document.getElementById('error');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const btnText = document.querySelector('.btn-text');
+
+        // Show message function
+        function showMessage(message, type = 'error') {
+            const messageEl = type === 'error' ? errorMessage : successMessage;
+            const otherMessageEl = type === 'error' ? successMessage : errorMessage;
+            
+            otherMessageEl.style.display = 'none';
+            messageEl.textContent = message;
+            messageEl.style.display = 'block';
+            
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // Set loading state
+        function setLoadingState(loading) {
+            signInButton.disabled = loading;
+            if (loading) {
+                btnText.style.display = 'none';
+                loadingSpinner.style.display = 'block';
+                signInButton.style.background = 'linear-gradient(135deg, #95a5a6, #7f8c8d)';
+            } else {
+                btnText.style.display = 'block';
+                loadingSpinner.style.display = 'none';
+                signInButton.style.background = 'linear-gradient(135deg, #4285f4 0%, #34a853 50%, #ea4335 100%)';
+            }
+        }
 
         // Google Sign In function
         window.signInWithGoogle = async function() {
             try {
-                // Clear previous errors
-                errorDiv.textContent = '';
-                
-                // Show loading state
-                signInButton.disabled = true;
-                loading.style.display = 'block';
+                setLoadingState(true);
+                errorMessage.style.display = 'none';
                 
                 const provider = new GoogleAuthProvider();
+                provider.addScope('email');
+                provider.addScope('profile');
+                
                 const result = await signInWithPopup(auth, provider);
                 
                 console.log('התחברות הצליחה:', result.user);
+                showMessage('✅ התחברות הצליחה! מעביר לדשבורד...', 'success');
                 
-                // Redirect to dashboard
-                window.location.href = "3.html";
+                // Redirect to dashboard after short delay
+                setTimeout(() => {
+                    window.location.href = "3.html";
+                }, 1500);
                 
             } catch (error) {
                 console.error('שגיאת התחברות:', error);
+                setLoadingState(false);
                 
-                // Show error message
-                let errorMessage = 'שגיאת התחברות: ';
+                let errorText = 'שגיאה בהתחברות: ';
                 
                 switch (error.code) {
                     case 'auth/popup-closed-by-user':
-                        errorMessage += 'החלון נסגר על ידי המשתמש';
+                        errorText += 'החלון נסגר על ידי המשתמש';
                         break;
                     case 'auth/cancelled-popup-request':
-                        errorMessage += 'בקשת ההתחברות בוטלה';
+                        errorText += 'בקשת ההתחברות בוטלה';
                         break;
                     case 'auth/popup-blocked':
-                        errorMessage += 'החלון נחסם על ידי הדפדפן';
+                        errorText += 'החלון נחסם על ידי הדפדפן. אנא אפשר חלונות קופצים';
                         break;
                     case 'auth/network-request-failed':
-                        errorMessage += 'בעיית רשת';
+                        errorText += 'בעיית רשת. בדוק את החיבור לאינטרנט';
+                        break;
+                    case 'auth/unauthorized-domain':
+                        errorText += 'דומיין לא מורשה. פנה למנהל המערכת';
+                        break;
+                    case 'auth/invalid-api-key':
+                        errorText += 'מפתח API לא תקין. פנה למנהל המערכת';
                         break;
                     default:
-                        errorMessage += error.message;
+                        errorText += error.message;
                 }
                 
-                errorDiv.textContent = errorMessage;
-                
-            } finally {
-                // Reset loading state
-                signInButton.disabled = false;
-                loading.style.display = 'none';
+                showMessage(errorText, 'error');
             }
         };
 
@@ -136,9 +479,39 @@
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 console.log('משתמש כבר מחובר:', user);
-                window.location.href = "3.html";
+                showMessage('✅ כבר מחובר! מעביר לדשבורד...', 'success');
+                setTimeout(() => {
+                    window.location.href = "3.html";
+                }, 1000);
             }
         });
+
+        // Add keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !signInButton.disabled) {
+                signInWithGoogle();
+            }
+        });
+
+        // Add visual feedback on button press
+        signInButton.addEventListener('mousedown', () => {
+            if (!signInButton.disabled) {
+                signInButton.style.transform = 'translateY(-1px) scale(0.98)';
+            }
+        });
+
+        signInButton.addEventListener('mouseup', () => {
+            if (!signInButton.disabled) {
+                signInButton.style.transform = 'translateY(-3px) scale(1)';
+            }
+        });
+
+        // Console welcome message
+        console.log(`
+🔐 דשבורד קרן התורה - מערכת התחברות
+✅ Firebase מאותחל בהצלחה
+🌐 מוכן לקבלת התחברויות
+        `);
     </script>
 </body>
 </html>
