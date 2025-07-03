@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת דוחות - קרן התורה</title>
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCl9J7h5NOJ5aGHj3_BBw0jzm5iGSE7n20",
+            authDomain: "dashboard-3e2a5.firebaseapp.com",
+            projectId: "dashboard-3e2a5",
+            storageBucket: "dashboard-3e2a5.firebasestorage.app",
+            messagingSenderId: "682842596931",
+            appId: "1:682842596931:web:5c0a049a981d750e1e16f6",
+            measurementId: "G-NV42P569WJ"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Check if user is authenticated
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log('משתמש מחובר:', user.email);
+                // Show page content
+                document.getElementById('page-content').style.display = 'block';
+                document.getElementById('loading-auth').style.display = 'none';
+                
+                // Add user info to logout button
+                const logoutBtn = document.getElementById('logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.innerHTML = `התנתק (${user.displayName || user.email.split('@')[0]})`;
+                }
+            } else {
+                console.log('משתמש לא מחובר - מפנה לדף התחברות');
+                // Redirect to login page
+                window.location.href = 'index.html';
+            }
+        });
+
+        // Logout function
+        window.handleLogout = async function() {
+            try {
+                await signOut(auth);
+                console.log('התנתקות הצליחה');
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('שגיאה בהתנתקות:', error);
+                alert('שגיאה בהתנתקות: ' + error.message);
+            }
+        };
+    </script>
+    
+    <style>
+        /* Loading screen styles */
+        #loading-auth {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Hide page content initially */
+        #page-content {
+            display: none;
+        }
+
+        /* User logout button styles */
+        .user-logout-btn {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .user-logout-btn:hover {
+            background: rgba(192, 57, 43, 0.95);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.6);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            z-index: 1000;
+        }
+        
+        .back-button:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .back-button:active {
+            transform: translateY(0);
+        }
+        
+        .back-arrow {
+            font-size: 1.2em;
+            transition: transform 0.3s ease;
+        }
+        
+        .back-button:hover .back-arrow {
+            transform: translateX(3px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            margin-top: 60px;
+        }
+
+        .main-title {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .main-title h1 {
+            font-size: 3.5em;
+            font-weight: 300;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+        }
+
+        .main-title .subtitle {
+            font-size: 1.4em;
+            color: #6c757d;
+            font-weight: 300;
+        }
+
+        .year-selector {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .year-selector h2 {
+            text-align: center;
+            color: #495057;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+        }
+
+        .year-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .year-tab {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border: 2px solid #dee2e6;
+            color: #495057;
+            padding: 15px 30px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1em;
+            font-weight: 600;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .year-tab:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .year-tab.active {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+            border-color: #3498db;
+            box-shadow: 0 10px 25px rgba(52, 152, 219, 0.3);
+        }
+
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .report-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .report-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .report-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .report-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+        }
+
+        .report-card.available {
+            /* הסרת cursor: pointer מהכרטיס */
+        }
+
+        .report-card.unavailable {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .report-card.unavailable::before {
+            background: linear-gradient(90deg, #6c757d, #adb5bd);
+        }
+
+        .month-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .month-name {
+            font-size: 1.8em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .status-available {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .status-upcoming {
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+            color: white;
+        }
+
+        .status-unavailable {
+            background: linear-gradient(135deg, #6c757d, #adb5bd);
+            color: white;
+        }
+
+        .report-info {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .report-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #17a2b8, #20c997);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .footer {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            color: white;
+            margin-top: 50px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .back-button {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 10px 20px;
+                font-size: 0.8em;
+            }
+
+            .user-logout-btn {
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                padding: 10px 16px;
+                font-size: 0.8em;
+            }
+
+            .header {
+                margin-top: 20px;
+            }
+
+            .main-title h1 {
+                font-size: 2.5em;
+            }
+
+            .main-title .subtitle {
+                font-size: 1.1em;
+            }
+
+            .reports-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .year-tabs {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .year-tab {
+                width: 100%;
+                max-width: 200px;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* אנימציות */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .report-card {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .report-card:nth-child(1) { animation-delay: 0.1s; }
+        .report-card:nth-child(2) { animation-delay: 0.2s; }
+        .report-card:nth-child(3) { animation-delay: 0.3s; }
+        .report-card:nth-child(4) { animation-delay: 0.4s; }
+        .report-card:nth-child(5) { animation-delay: 0.5s; }
+        .report-card:nth-child(6) { animation-delay: 0.6s; }
+    </style>
+</head>
+<body>
+    <!-- Loading screen while checking authentication -->
+    <div id="loading-auth">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>בודק הרשאות...</h2>
+            <p>נא המתן...</p>
+        </div>
+    </div>
+
+    <!-- Page content - hidden until user is authenticated -->
+    <div id="page-content">
+        <!-- כפתור התנתקות -->
+        <button class="user-logout-btn" id="logout-btn" onclick="handleLogout()">התנתק</button>
+
+        <div class="container">
+            <!-- כפתור חזרה לדף הקודם -->
+            <a href="https://na5845.github.io/Dashboard/#" class="back-button">
+                <span class="back-arrow">→</span>
+                לדף הקודם
+            </a>
+
+            <!-- כותרת ראשית -->
+            <div class="header">
+                <div class="main-title">
+                    <h1>מערכת דוחות</h1>
+                    <div class="subtitle">קרן התורה - דוחות הכנסות והוצאות חודשיים</div>
+                </div>
+            </div>
+
+            <!-- בחירת שנה -->
+            <div class="year-selector">
+                <h2>בחר שנה</h2>
+                <div class="year-tabs">
+                    <div class="year-tab" data-year="2024">2024</div>
+                    <div class="year-tab active" data-year="2025">2025</div>
+                    <div class="year-tab" data-year="2026">2026</div>
+                </div>
+            </div>
+
+            <!-- רשת דוחות -->
+            <div class="reports-container">
+                <!-- דוחות 2025 -->
+                <div class="reports-grid year-reports" data-year="2025">
+                    <!-- ינואר 2025 -->
+                    <div class="report-card unavailable">
+                        <div class="month-header">
+                            <div class="month-name">ינואר 2025</div>
+                            <div class="status-badge status-unavailable">לא זמין</div>
+                        </div>
+                        <div class="report-info">
+                            דוח זה טרם הוכן או שהמידע עדיין לא זמין.
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" disabled>צפייה בדוח</button>
+                        </div>
+                    </div>
+
+                    <!-- פברואר 2025 -->
+                    <div class="report-card unavailable">
+                        <div class="month-header">
+                            <div class="month-name">פברואר 2025</div>
+                            <div class="status-badge status-unavailable">לא זמין</div>
+                        </div>
+                        <div class="report-info">
+                            דוח זה טרם הוכן או שהמידע עדיין לא זמין.
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" disabled>צפייה בדוח</button>
+                        </div>
+                    </div>
+
+                    <!-- מרץ 2025 -->
+                    <div class="report-card unavailable">
+                        <div class="month-header">
+                            <div class="month-name">מרץ 2025</div>
+                            <div class="status-badge status-unavailable">לא זמין</div>
+                        </div>
+                        <div class="report-info">
+                            דוח זה טרם הוכן או שהמידע עדיין לא זמין.
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" disabled>צפייה בדוח</button>
+                        </div>
+                    </div>
+
+                    <!-- אפריל 2025 -->
+                    <div class="report-card unavailable">
+                        <div class="month-header">
+                            <div class="month-name">אפריל 2025</div>
+                            <div class="status-badge status-unavailable">לא זמין</div>
+                        </div>
+                        <div class="report-info">
+                            דוח זה טרם הוכן או שהמידע עדיין לא זמין.
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" disabled>צפייה בדוח</button>
+                        </div>
+                    </div>
+
+                    <!-- מאי 2025 - זמין -->
+                    <div class="report-card available">
+                        <div class="month-header">
+                            <div class="month-name">מאי 2025</div>
+                            <div class="status-badge status-available">זמין</div>
+                        </div>
+                        <div class="report-info">
+                            דוח מפורט של הכנסות והוצאות חודש מאי, כולל פירוט לפי בנקים ומטרות.
+                        </div>
+                        <div class="report-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">₪109.3K</div>
+                                <div class="stat-label">הכנסות</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">₪144.5K</div>
+                                <div class="stat-label">הוצאות</div>
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <a href="https://na5845.github.io/A/" class="btn btn-primary">צפייה בדוח</a>
+                        </div>
+                    </div>
+
+                    <!-- יוני 2025 -->
+                    <div class="report-card unavailable">
+                        <div class="month-header">
+                            <div class="month-name">יוני 2025</div>
+                            <div class="status-badge status-upcoming">בהכנה</div>
+                        </div>
+                        <div class="report-info">
+                            דוח זה נמצא כעת בתהליך הכנה ויהיה זמין בקרוב.
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" disabled>בהכנה...</button>
+                        </div>
+                    </div>
+
+                    <!-- יולי 2025 -->
+                    <div class="report-card unavailable">
+                        <div class="month-header">
+                            <div class="month-name">יולי 2025</div>
+                            <div class="status-badge status-upcoming">עתידי</div>
+                        </div>
+                        <div class="report-info">
+                            דוח זה יהיה זמין לאחר סיום החודש.
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" disabled>טרם זמין</button>
+                        </div>
+                    </div>
+
+                    <!-- אוגוסט 2025 -->
+                    <div class="report-card unavailable">
+                        <div class="month-header">
+                            <div class="month-name">אוגוסט 2025</div>
+                            <div class="status-badge status-upcoming">עתידי</div>
+                        </div>
+                        <div class="report-info">
+                            דוח זה יהיה זמין לאחר סיום החודש.
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" disabled>טרם זמין</button>
+                        </div>
+                    </div>
+
+                    <!-- ספטמבר 2025 -->
+                    <div class="report-card unavailable">
+                        <div class="month-header">
+                            <div class="month-name">ספטמבר 2025</div>
+                            <div class="status-badge status-upcoming">עתידי</div>
+                        </div>
+                        <div class="report-info">
+                            דוח זה יהיה זמין לאחר סיום החודש.
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" disabled>טרם זמין</button>
+                        </div>
+                    </div>
+
+                    <!-- אוקטובר 2025 -->
+                    <div class="report-card unavailable">
+                        <div class="month-header">
+                            <div class="month-name">אוקטובר 2025</div>
+                            <div class="status-badge status-upcoming">עתידי</div>
+                        </div>
+                        <div class="report-info">
+                            דוח זה יהיה זמין לאחר סיום החודש.
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" disabled>טרם זמין</button>
+                        </div>
+                    </div>
+
+                    <!-- נובמבר 2025 -->
+                    <div class="report-card unavailable">
+                        <div class="month-header">
+                            <div class="month-name">נובמבר 2025</div>
+                            <div class="status-badge status-upcoming">עתידי</div>
+                        </div>
+                        <div class="report-info">
+                            דוח זה יהיה זמין לאחר סיום החודש.
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" disabled>טרם זמין</button>
+                        </div>
+                    </div>
+
+                    <!-- דצמבר 2025 -->
+                    <div class="report-card unavailable">
+                        <div class="month-header">
+                            <div class="month-name">דצמבר 2025</div>
+                            <div class="status-badge status-upcoming">עתידי</div>
+                        </div>
+                        <div class="report-info">
+                            דוח זה יהיה זמין לאחר סיום החודש.
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" disabled>טרם זמין</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- דוחות 2024 -->
+                <div class="reports-grid year-reports hidden" data-year="2024">
+                    <div class="report-card unavailable">
+                        <div class="month-header">
+                            <div class="month-name">כל החודשים 2024</div>
+                            <div class="status-badge status-unavailable">לא זמינים</div>
+                        </div>
+                        <div class="report-info">
+                            דוחות לשנת 2024 טרם הוכנו או לא זמינים במערכת.
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" disabled>לא זמין</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- דוחות 2026 -->
+                <div class="reports-grid year-reports hidden" data-year="2026">
+                    <div class="report-card unavailable">
+                        <div class="month-header">
+                            <div class="month-name">כל החודשים 2026</div>
+                            <div class="status-badge status-upcoming">עתידיים</div>
+                        </div>
+                        <div class="report-info">
+                            דוחות לשנת 2026 יהיו זמינים החל מינואר 2026.
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" disabled>טרם זמין</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- כותרת תחתונה -->
+            <div class="footer">
+                <p>מערכת דוחות קרן התורה • עודכן לאחרונה: יוני 2025</p>
+                <p>לשאלות ובירורים, פנו למחלקת הכספים</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // פונקציית חזרה לדף הקודם
+        function goBack() {
+            window.location.href = 'https://na5845.github.io/Dashboard/#';
+        }
+
+        // פונקציונליות החלפת שנים
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.year-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const selectedYear = this.dataset.year;
+                    
+                    // עדכון טאבים
+                    document.querySelectorAll('.year-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // הצגת דוחות לשנה הנבחרת
+                    document.querySelectorAll('.year-reports').forEach(reports => {
+                        if (reports.dataset.year === selectedYear) {
+                            reports.classList.remove('hidden');
+                        } else {
+                            reports.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            // אפקט hover מתקדם לכרטיסים
+            document.querySelectorAll('.report-card.available').forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-8px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
