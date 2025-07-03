@@ -1,4 +1,8 @@
 <!DOCTYPE html>
+
+<!-- Injection By NetFree -->
+<script src="//wfapi.internal.netfree.link/wifree/go-install-wifree" type="text/javascript" async  ></script>
+
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -254,6 +258,17 @@
             box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
         }
 
+        .warning-message {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            display: none;
+            animation: shake 0.5s ease-in-out;
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3);
+        }
+
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
@@ -361,6 +376,7 @@
 
         <div id="errorMessage" class="error-message"></div>
         <div id="successMessage" class="success-message"></div>
+        <div id="warningMessage" class="warning-message"></div>
 
         <div class="footer">
             <p>🔐 מערכת מאובטחת עם הצפנה מתקדמת</p>
@@ -383,6 +399,15 @@
             measurementId: "G-NV42P569WJ"
         };
 
+        // רשימת מיילים מורשים - רק המיילים האלה יכולים להכנס למערכת
+        const ALLOWED_EMAILS = [
+            'n.a0533153305@gmail.com',
+            '7168512@gmail.com',
+            'k76760@gmail.com',
+            'k76760t@gmail.com',
+            'a172133@gmail.com'
+        ];
+
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -392,20 +417,38 @@
         const loadingSpinner = document.getElementById('loadingSpinner');
         const errorMessage = document.getElementById('errorMessage');
         const successMessage = document.getElementById('successMessage');
+        const warningMessage = document.getElementById('warningMessage');
         const btnText = document.querySelector('.btn-text');
 
         // Show message function
         function showMessage(message, type = 'error') {
-            const messageEl = type === 'error' ? errorMessage : successMessage;
-            const otherMessageEl = type === 'error' ? successMessage : errorMessage;
+            // Hide all messages first
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            warningMessage.style.display = 'none';
             
-            otherMessageEl.style.display = 'none';
+            let messageEl;
+            switch(type) {
+                case 'success':
+                    messageEl = successMessage;
+                    break;
+                case 'warning':
+                    messageEl = warningMessage;
+                    break;
+                case 'error':
+                default:
+                    messageEl = errorMessage;
+            }
+            
             messageEl.textContent = message;
             messageEl.style.display = 'block';
             
-            setTimeout(() => {
-                messageEl.style.display = 'none';
-            }, 5000);
+            // Auto-hide after 5 seconds (except for success messages during redirect)
+            if (type !== 'success') {
+                setTimeout(() => {
+                    messageEl.style.display = 'none';
+                }, 5000);
+            }
         }
 
         // Set loading state
@@ -422,22 +465,48 @@
             }
         }
 
-        // Google Sign In function
+        // Check if email is authorized
+        function isEmailAuthorized(email) {
+            return ALLOWED_EMAILS.includes(email.toLowerCase());
+        }
+
+        // Google Sign In function with email verification
         window.signInWithGoogle = async function() {
             try {
                 setLoadingState(true);
+                
+                // Clear previous messages
                 errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+                warningMessage.style.display = 'none';
                 
                 const provider = new GoogleAuthProvider();
                 provider.addScope('email');
                 provider.addScope('profile');
                 
                 const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                const userEmail = user.email;
                 
-                console.log('התחברות הצליחה:', result.user);
-                showMessage('✅ התחברות הצליחה! מעביר לדשבורד...', 'success');
+                console.log('ניסיון התחברות:', userEmail);
                 
-                // Redirect to dashboard after short delay
+                // בדיקה אם המייל מורשה
+                if (!isEmailAuthorized(userEmail)) {
+                    // מייל לא מורשה - התנתק מיד
+                    await auth.signOut();
+                    setLoadingState(false);
+                    
+                    showMessage(`🚫 כתובת המייל "${userEmail}" אינה מורשת לגשת למערכת. אנא צור קשר עם המנהל לקבלת הרשאה.`, 'warning');
+                    
+                    console.warn('ניסיון כניסה לא מורשה:', userEmail);
+                    return;
+                }
+                
+                // התחברות מורשית
+                console.log('התחברות מורשית הצליחה:', userEmail);
+                showMessage(`✅ ברוך הבא ${user.displayName || userEmail}! מעביר לדשבורד...`, 'success');
+                
+                // המתנה קצרה ומעבר לדשבורד
                 setTimeout(() => {
                     window.location.href = "3.html";
                 }, 1500);
@@ -476,10 +545,19 @@
         };
 
         // Check if user is already signed in
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
-                console.log('משתמש כבר מחובר:', user);
-                showMessage('✅ כבר מחובר! מעביר לדשבורד...', 'success');
+                console.log('משתמש כבר מחובר:', user.email);
+                
+                // בדיקה אם המשתמש הנוכחי מורשה
+                if (!isEmailAuthorized(user.email)) {
+                    console.warn('משתמש מחובר אבל לא מורשה:', user.email);
+                    await auth.signOut();
+                    showMessage('🚫 המשתמש הנוכחי אינו מורשה. אנא התחבר עם משתמש מורשה.', 'warning');
+                    return;
+                }
+                
+                showMessage(`✅ כבר מחובר כ-${user.displayName || user.email}! מעביר לדשבורד...`, 'success');
                 setTimeout(() => {
                     window.location.href = "3.html";
                 }, 1000);
@@ -508,10 +586,14 @@
 
         // Console welcome message
         console.log(`
-🔐 דשבורד קרן התורה - מערכת התחברות
+🔐 דשבורד קרן התורה - מערכת התחברות מוגבלת
 ✅ Firebase מאותחל בהצלחה
+🚫 מורשים רק ${ALLOWED_EMAILS.length} משתמשים
 🌐 מוכן לקבלת התחברויות
         `);
+        
+        // Log allowed emails for debugging (remove in production)
+        console.log('מיילים מורשים:', ALLOWED_EMAILS);
     </script>
 </body>
 </html>
