@@ -1,63 +1,130 @@
 <!DOCTYPE html>
 <html lang="he">
 <head>
-  <meta charset="UTF-8">
-  <title>התחברות לדשבורד</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      margin-top: 100px;
-    }
-    button {
-      font-size: 1.2em;
-      padding: 10px 20px;
-      cursor: pointer;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>התחברות לדשבורד</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            margin-top: 100px;
+            direction: rtl;
+        }
+        button {
+            font-size: 1.2em;
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #357ae8;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .loading {
+            display: none;
+            margin-top: 20px;
+        }
+        .error {
+            color: red;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
+    <h2>כניסה לדשבורד</h2>
+    <p>יש להתחבר עם חשבון Google</p>
+    <button id="signInButton" onclick="signInWithGoogle()">התחברות עם Google</button>
+    <div id="loading" class="loading">מתחבר...</div>
+    <div id="error" class="error"></div>
 
-  <h2>כניסה לדשבורד</h2>
-  <p>יש להתחבר עם חשבון Google</p>
-  <button onclick="signInWithGoogle()">התחברות עם Google</button>
+    <!-- Firebase v9 modular SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
-  <script>
-    // כאן תדביק את קוד ההגדרות ש־Firebase נתן לך (firebaseConfig)
-    const firebaseConfig = {
-      apiKey: "AIzaSyCI9J7h5NOJ5aGHj3_BBw0jzm5iGSE7n20",
-      authDomain: "dashboard-3e2a5.firebaseapp.com",
-      projectId: "dashboard-3e2a5",
-      storageBucket: "dashboard-3e2a5.appspot.com",
-      messagingSenderId: "682842596931",
-      appId: "1:682842596931:web:5c0a049a981d750e1e16f6",
-      measurementId: "G-NV42P56WJW"
-    };
+        const firebaseConfig = {
+            apiKey: "AIzaSyCI9J7h5NOJ5aGHj3_BBw0jzm5iGSE7n20",
+            authDomain: "dashboard-3e2a5.firebaseapp.com",
+            projectId: "dashboard-3e2a5",
+            storageBucket: "dashboard-3e2a5.appspot.com",
+            messagingSenderId: "682842596931",
+            appId: "1:682842596931:web:5c0a049a981d750e1e16f6",
+            measurementId: "G-NV42P56WJW"
+        };
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
 
-    // התחברות עם Google
-    function signInWithGoogle() {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider)
-        .then(result => {
-          window.location.href = "3.html"; // מעבר לדשבורד לאחר התחברות
-        })
-        .catch(error => {
-          alert("שגיאת התחברות: " + error.message);
+        // Elements
+        const signInButton = document.getElementById('signInButton');
+        const loading = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+
+        // Google Sign In function
+        window.signInWithGoogle = async function() {
+            try {
+                // Clear previous errors
+                errorDiv.textContent = '';
+                
+                // Show loading state
+                signInButton.disabled = true;
+                loading.style.display = 'block';
+                
+                const provider = new GoogleAuthProvider();
+                const result = await signInWithPopup(auth, provider);
+                
+                console.log('התחברות הצליחה:', result.user);
+                
+                // Redirect to dashboard
+                window.location.href = "3.html";
+                
+            } catch (error) {
+                console.error('שגיאת התחברות:', error);
+                
+                // Show error message
+                let errorMessage = 'שגיאת התחברות: ';
+                
+                switch (error.code) {
+                    case 'auth/popup-closed-by-user':
+                        errorMessage += 'החלון נסגר על ידי המשתמש';
+                        break;
+                    case 'auth/cancelled-popup-request':
+                        errorMessage += 'בקשת ההתחברות בוטלה';
+                        break;
+                    case 'auth/popup-blocked':
+                        errorMessage += 'החלון נחסם על ידי הדפדפן';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage += 'בעיית רשת';
+                        break;
+                    default:
+                        errorMessage += error.message;
+                }
+                
+                errorDiv.textContent = errorMessage;
+                
+            } finally {
+                // Reset loading state
+                signInButton.disabled = false;
+                loading.style.display = 'none';
+            }
+        };
+
+        // Check if user is already signed in
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log('משתמש כבר מחובר:', user);
+                window.location.href = "3.html";
+            }
         });
-    }
-
-    // אם כבר מחובר – דלג ישירות
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        window.location.href = "3.html";
-      }
-    });
-  </script>
-
+    </script>
 </body>
 </html>
