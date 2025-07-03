@@ -60,6 +60,12 @@
             measurementId: "G-NV42P569WJ"
         };
 
+        // בדיקה של הדומיין הנוכחי
+        console.log('הדומיין הנוכחי:', window.location.origin);
+        console.log('כתובת מלאה:', window.location.href);
+        console.log('שם הדומיין:', window.location.hostname);
+        console.log('פורט:', window.location.port);
+        
         // בדיקה שהתצורה תקינה
         console.log('Firebase Config:', {
             apiKey: firebaseConfig.apiKey ? 'קיים' : 'חסר',
