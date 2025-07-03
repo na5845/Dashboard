@@ -2155,9 +2155,16 @@
                 
                 // Try to load cached data first
                 const hasCachedData = airtableConnector.loadCachedDataIfExists();
-                if (!hasCachedData) {
-                    console.log('אין נתונים שמורים, הדף יישאר ריק עד לטעינה ידנית');
-                }
+                
+                // בכל מקרה - תמיד טען נתונים חדשים אחרי שנייה
+                setTimeout(() => {
+                    if (hasCachedData) {
+                        console.log('יש נתונים שמורים שמוצגים כעת, מתחיל טעינה אוטומטית לעדכון...');
+                    } else {
+                        console.log('אין נתונים שמורים, מתחיל טעינה אוטומטית...');
+                    }
+                    airtableConnector.loadData();
+                }, 1000); // המתנה של שנייה לאחר טעינת הדף
                 
                 // Close modal when clicking outside
                 document.getElementById('settingsModal').addEventListener('click', function(e) {
