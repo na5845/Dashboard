@@ -4,7 +4,127 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>דוח הכנסות והוצאות - חודש 5</title>
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCl9J7h5NOJ5aGHj3_BBw0jzm5iGSE7n20",
+            authDomain: "dashboard-3e2a5.firebaseapp.com",
+            projectId: "dashboard-3e2a5",
+            storageBucket: "dashboard-3e2a5.firebasestorage.app",
+            messagingSenderId: "682842596931",
+            appId: "1:682842596931:web:5c0a049a981d750e1e16f6",
+            measurementId: "G-NV42P569WJ"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Check if user is authenticated
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log('משתמש מחובר:', user.email);
+                // Show page content
+                document.getElementById('page-content').style.display = 'block';
+                document.getElementById('loading-auth').style.display = 'none';
+                
+                // Add user info to logout button
+                const logoutBtn = document.getElementById('logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.innerHTML = `התנתק (${user.displayName || user.email.split('@')[0]})`;
+                }
+            } else {
+                console.log('משתמש לא מחובר - מפנה לדף התחברות');
+                // Redirect to login page
+                window.location.href = 'index.html';
+            }
+        });
+
+        // Logout function
+        window.handleLogout = async function() {
+            try {
+                await signOut(auth);
+                console.log('התנתקות הצליחה');
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('שגיאה בהתנתקות:', error);
+                alert('שגיאה בהתנתקות: ' + error.message);
+            }
+        };
+    </script>
+    
     <style>
+        /* Loading screen styles */
+        #loading-auth {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Hide page content initially */
+        #page-content {
+            display: none;
+        }
+
+        /* User logout button styles */
+        .user-logout-btn {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .user-logout-btn:hover {
+            background: rgba(192, 57, 43, 0.95);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.6);
+        }
+
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             margin: 0;
@@ -425,255 +545,366 @@
                 padding: 8px 15px;
                 font-size: 0.8em;
             }
+
+            .user-logout-btn {
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                padding: 10px 16px;
+                font-size: 0.8em;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <button class="back-button" onclick="goBack()">
-                <span class="back-arrow">→</span>
-                לדף הקודם
-            </button>
-            <a href="https://na5845.github.io/Dashboard/202505-1.html" class="details-button">
-                פירוט פאגי - מרכנתיל
-                <span class="forward-arrow">←</span>
-            </a>
-            <h1>דוח הכנסות והוצאות</h1>
-            <div class="period">חודש מאי 2025</div>
+    <!-- Loading screen while checking authentication -->
+    <div id="loading-auth">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>בודק הרשאות...</h2>
+            <p>נא המתן...</p>
         </div>
-        
-        <div class="content">
-            <!-- הפרדה חזותית עליונה -->
-            <div class="section-divider">
-                <div class="divider-line"></div>
-                <div class="divider-text">נתונים כלליים</div>
-                <div class="divider-line"></div>
+    </div>
+
+    <!-- Page content - hidden until user is authenticated -->
+    <div id="page-content">
+        <!-- כפתור התנתקות -->
+        <button class="user-logout-btn" id="logout-btn" onclick="handleLogout()">התנתק</button>
+
+        <div class="container">
+            <div class="header">
+                <button class="back-button" onclick="goBack()">
+                    <span class="back-arrow">→</span>
+                    לדף הקודם
+                </button>
+                <a href="https://na5845.github.io/A/page2.html" class="details-button">
+                    פירוט פאגי - מרכנתיל
+                    <span class="forward-arrow">←</span>
+                </a>
+                <h1>דוח הכנסות והוצאות</h1>
+                <div class="period">חודש מאי 2025</div>
             </div>
             
-            <!-- סטטיסטיקות עליונות -->
-            <div class="summary-cards">
-                <div class="card info">
-                    <h3>סך תורמים</h3>
-                    <div class="amount">424</div>
-                    <div>תורמים פעילים</div>
+            <div class="content">
+                <!-- הפרדה חזותית עליונה -->
+                <div class="section-divider">
+                    <div class="divider-line"></div>
+                    <div class="divider-text">נתונים כלליים</div>
+                    <div class="divider-line"></div>
                 </div>
-                <div class="card info">
-                    <h3>סך אברכים המקבלים מלגה</h3>
-                    <div class="amount">178</div>
-                    <div>מקבלי מלגות</div>
+                
+                <!-- סטטיסטיקות עליונות -->
+                <div class="summary-cards">
+                    <div class="card info">
+                        <h3>סך תורמים</h3>
+                        <div class="amount">424</div>
+                        <div>תורמים פעילים</div>
+                    </div>
+                    <div class="card info">
+                        <h3>סך אברכים המקבלים מלגה</h3>
+                        <div class="amount">178</div>
+                        <div>מקבלי מלגות</div>
+                    </div>
+                    <div class="card pending">
+                        <h3>חולקו מלגות על סך</h3>
+                        <div class="amount">₪103,091</div>
+                        <div></div>
+                    </div>
+                    <div class="card pending">
+                        <h3>יתרת מלגות קודמות</h3>
+                        <div class="amount">₪68,744</div>
+                        <div>שלא נגבו</div>
+                    </div>
                 </div>
-                <div class="card pending">
-                    <h3>חולקו מלגות על סך</h3>
-                    <div class="amount">₪103,091</div>
-                    <div></div>
+                
+                <!-- הפרדה חזותית -->
+                <div class="section-divider">
+                    <div class="divider-line"></div>
+                    <div class="divider-text">דוח כספים</div>
+                    <div class="divider-line"></div>
                 </div>
-                <div class="card pending">
-                    <h3>יתרת מלגות קודמות</h3>
-                    <div class="amount">₪68,744</div>
-                    <div>שלא נגבו</div>
+                
+                <!-- כרטיסי סיכום כספי -->
+                <div class="summary-cards">
+                    <div class="card revenue">
+                        <h3>סך הכנסות</h3>
+                        <div class="amount">₪109,320</div>
+                        <div>הכנסות חודש מאי</div>
+                    </div>
+                    <div class="card expenses">
+                        <h3>סך הוצאות</h3>
+                        <div class="amount">₪144,505</div>
+                        <div>הוצאות חודש מאי</div>
+                    </div>
+                    <div class="card profit">
+                        <h3>יתרה</h3>
+                        <div class="amount">-₪35,185</div>
+                        <div>יתרה חודש מאי</div>
+                    </div>
+                    <div class="card pending">
+                        <h3>חיובים שנדחו</h3>
+                        <div class="amount">₪7,544</div>
+                        <div></div>
+                    </div>
                 </div>
-            </div>
-            
-            <!-- הפרדה חזותית -->
-            <div class="section-divider">
-                <div class="divider-line"></div>
-                <div class="divider-text">דוח כספים</div>
-                <div class="divider-line"></div>
-            </div>
-            
-            <!-- כרטיסי סיכום כספי -->
-            <div class="summary-cards">
-                <div class="card revenue">
-                    <h3>סך הכנסות</h3>
-                    <div class="amount">₪109,320</div>
-                    <div>הכנסות חודש מאי</div>
-                </div>
-                <div class="card expenses">
-                    <h3>סך הוצאות</h3>
-                    <div class="amount">₪144,505</div>
-                    <div>הוצאות חודש מאי</div>
-                </div>
-                <div class="card profit">
-                    <h3>יתרה</h3>
-                    <div class="amount">-₪35,185</div>
-                    <div>יתרה חודש מאי</div>
-                </div>
-                <div class="card pending">
-                    <h3>חיובים שנדחו</h3>
-                    <div class="amount">₪7,544</div>
-                    <div></div>
-                </div>
-            </div>
-            
-            <!-- גרף השוואה -->
-            <div class="chart-section">
-                <h3>השוואה חזותית - הכנסות לעומת הוצאות</h3>
-                <div class="chart-container">
-                    <div class="bar-chart">
-                        <div class="bar">
-                            <div class="bar-value bar-revenue" style="height: 130px;">
-                                <div class="bar-amount">₪109.3K</div>
+                
+                <!-- גרף השוואה -->
+                <div class="chart-section">
+                    <h3>השוואה חזותית - הכנסות לעומת הוצאות</h3>
+                    <div class="chart-container">
+                        <div class="bar-chart">
+                            <div class="bar">
+                                <div class="bar-value bar-revenue" style="height: 130px;">
+                                    <div class="bar-amount">₪109.3K</div>
+                                </div>
+                                <div class="bar-label">הכנסות</div>
                             </div>
-                            <div class="bar-label">הכנסות</div>
-                        </div>
-                        <div class="bar">
-                            <div class="bar-value bar-expenses" style="height: 170px;">
-                                <div class="bar-amount">₪144.5K</div>
+                            <div class="bar">
+                                <div class="bar-value bar-expenses" style="height: 170px;">
+                                    <div class="bar-amount">₪144.5K</div>
+                                </div>
+                                <div class="bar-label">הוצאות</div>
                             </div>
-                            <div class="bar-label">הוצאות</div>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- טבלאות מפורטות -->
+                <div class="tables-container">
+                    <div class="table-section">
+                        <h3>פירוט הכנסות</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <td>חוב פסח</td>
+                                    <td>3,500</td>
+                                    <td>2.4%</td>
+                                    <td></td>
+                                </tr>
+                                
+                                <tr class="expandable-row" onclick="toggleDetails('software')">
+                                    <td>תוכנות</td>
+                                    <td>1,729</td>
+                                    <td>1.2%</td>
+                                    <td class="arrow-col">▶</td>
+                                </tr>
+                                <tr class="detail-row" id="software-1">
+                                    <td>&nbsp;&nbsp;&nbsp;סדרים</td>
+                                    <td>1,333</td>
+                                    <td>77.1%</td>
+                                    <td></td>
+                                </tr>
+                                <tr class="detail-row" id="software-2">
+                                    <td>&nbsp;&nbsp;&nbsp;מטרה הפקות חיוב</td>
+                                    <td>396</td>
+                                    <td>22.9%</td>
+                                    <td></td>
+                                </tr>
+                                
+                                <tr>
+                                    <td>עמלות</td>
+                                    <td>582</td>
+                                    <td>0.4%</td>
+                                    <td></td>
+                                </tr>
+                                
+                                <tr class="total-row">
+                                    <td>סך הכל</td>
+                                    <td>144,505</td>
+                                    <td>100%</td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
             
-            <!-- טבלאות מפורטות -->
-            <div class="tables-container">
-                <div class="table-section">
-                    <h3>פירוט הכנסות</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>מקור הכנסה</th>
-                                <th>סכום (₪)</th>
-                                <th>אחוז</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr style="background-color: #f8f9fa; font-weight: bold;">
-                                <td colspan="3">1. תרומות קבועות</td>
-                            </tr>
-                            <tr>
-                                <td>&nbsp;&nbsp;&nbsp;אשראי</td>
-                                <td>64,204</td>
-                                <td>58.7%</td>
-                            </tr>
-                            <tr>
-                                <td>&nbsp;&nbsp;&nbsp;בנקאי</td>
-                                <td>33,846</td>
-                                <td>31.0%</td>
-                            </tr>
-                            <tr>
-                                <td>&nbsp;&nbsp;&nbsp;מזומן</td>
-                                <td>8,450</td>
-                                <td>7.7%</td>
-                            </tr>
-                            <tr>
-                                <td>&nbsp;&nbsp;&nbsp;העברות</td>
-                                <td>2,820</td>
-                                <td>2.6%</td>
-                            </tr>
-                            <tr>
-                                <td>&nbsp;&nbsp;&nbsp;שקים</td>
-                                <td>0</td>
-                                <td>0%</td>
-                            </tr>
-                            <tr style="background-color: #f8f9fa; font-weight: bold;">
-                                <td colspan="3">2. תרומות מזדמנות</td>
-                            </tr>
-                            <tr>
-                                <td>&nbsp;&nbsp;&nbsp;אשראי</td>
-                                <td>0</td>
-                                <td>0%</td>
-                            </tr>
-                            <tr>
-                                <td>&nbsp;&nbsp;&nbsp;מזומן</td>
-                                <td>0</td>
-                                <td>0%</td>
-                            </tr>
-                            <tr>
-                                <td>&nbsp;&nbsp;&nbsp;שקים</td>
-                                <td>0</td>
-                                <td>0%</td>
-                            </tr>
-                            <tr>
-                                <td>&nbsp;&nbsp;&nbsp;בנקאי</td>
-                                <td>0</td>
-                                <td>0%</td>
-                            </tr>
-                            <tr>
-                                <td>&nbsp;&nbsp;&nbsp;העברות</td>
-                                <td>0</td>
-                                <td>0%</td>
-                            </tr>
-                            <tr class="total-row">
-                                <td>סך הכל</td>
-                                <td>109,320</td>
-                                <td>100%</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="table-section">
-                    <h3>פירוט הוצאות</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>סוג הוצאה</th>
-                                <th>סכום (₪)</th>
-                                <th>אחוז</th>
-                                <th class="arrow-col"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>סך המלגות</td>
-                                <td>103,091</td>
-                                <td>71.8%</td>
-                                <td></td>
-                            </tr>
-                            
-                            <tr class="expandable-row" onclick="toggleDetails('salary')">
-                                <td>משכורות</td>
-                                <td>20,550</td>
-                                <td>14.0%</td>
-                                <td class="arrow-col">▶</td>
-                            </tr>
-                            <tr class="detail-row" id="salary-1">
-                                <td>&nbsp;&nbsp;&nbsp;אברהם פלק</td>
-                                <td>9,400</td>
-                                <td>45.7%</td>
-                                <td></td>
-                            </tr>
-                            <tr class="detail-row" id="salary-2">
-                                <td>&nbsp;&nbsp;&nbsp;שלמה מאיר קליין</td>
-                                <td>9,400</td>
-                                <td>45.7%</td>
-                                <td></td>
-                            </tr>
-                            <tr class="detail-row" id="salary-3">
-                                <td>&nbsp;&nbsp;&nbsp;נחמן אייזנבאך</td>
-                                <td>1,750</td>
-                                <td>8.5%</td>
-                                <td></td>
-                            </tr>
-                            
-                            <tr>
-                                <td>חוב לפולק</td>
-                                <td>11,100</td>
-                                <td>7.6%</td>
-                                <td></td>
-                            </tr>
-                            
-                            <tr class="expandable-row" onclick="toggleDetails('office')">
-                                <td>הוצאות משרד</td>
-                                <td>3,000</td>
-                                <td>2.0%</td>
-                                <td class="arrow-col">▶</td>
-                            </tr>
-                            <tr class="detail-row" id="office-1">
-                                <td>&nbsp;&nbsp;&nbsp;שכירות</td>
-                                <td>2,550</td>
-                                <td>85.0%</td>
-                                <td></td>
-                            </tr>
-                            <tr class="detail-row" id="office-2">
-                                <td>&nbsp;&nbsp;&nbsp;חשמל-מים-ועד</td>
-                                <td>450</td>
-                                <td>15.0%</td>
-                                <td></td>
-                            </tr>
+            <div class="footer">
+                <p style="margin-bottom: 20px;">
+                    <a href="https://na5845.github.io/A/page2.html" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-decoration: none; font-weight: 600; padding: 12px 24px; border-radius: 25px; transition: all 0.3s ease; display: inline-block; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+                        פירוט פאגי - מרכנתיל
+                    </a>
+                </p>
+                <p>דוח זה נוצר עבור ההנהלה • תאריך עדכון: יוני 2025</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // פונקציית חזרה לדף הקודם
+        function goBack() {
+            window.location.href = 'https://na5845.github.io/A/Reports.html#';
+        }
+
+        function toggleDetails(category) {
+            const detailRows = document.querySelectorAll('[id^="' + category + '-"]');
+            const expandableRow = event.currentTarget;
+            const arrow = expandableRow.querySelector('.arrow-col');
+            
+            let isVisible = false;
+            detailRows.forEach(row => {
+                if (row.classList.contains('show')) {
+                    isVisible = true;
+                }
+            });
+            
+            if (isVisible) {
+                // הסתרת הפירוט
+                detailRows.forEach(row => {
+                    row.classList.remove('show');
+                });
+                arrow.textContent = '▶';
+            } else {
+                // הצגת הפירוט
+                detailRows.forEach(row => {
+                    row.classList.add('show');
+                });
+                arrow.textContent = '▼';
+            }
+        }
+    </script>
+</body>
+</html>h>מקור הכנסה</th>
+                                    <th>סכום (₪)</th>
+                                    <th>אחוז</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background-color: #f8f9fa; font-weight: bold;">
+                                    <td colspan="3">1. תרומות קבועות</td>
+                                </tr>
+                                <tr>
+                                    <td>&nbsp;&nbsp;&nbsp;אשראי</td>
+                                    <td>64,204</td>
+                                    <td>58.7%</td>
+                                </tr>
+                                <tr>
+                                    <td>&nbsp;&nbsp;&nbsp;בנקאי</td>
+                                    <td>33,846</td>
+                                    <td>31.0%</td>
+                                </tr>
+                                <tr>
+                                    <td>&nbsp;&nbsp;&nbsp;מזומן</td>
+                                    <td>8,450</td>
+                                    <td>7.7%</td>
+                                </tr>
+                                <tr>
+                                    <td>&nbsp;&nbsp;&nbsp;העברות</td>
+                                    <td>2,820</td>
+                                    <td>2.6%</td>
+                                </tr>
+                                <tr>
+                                    <td>&nbsp;&nbsp;&nbsp;שקים</td>
+                                    <td>0</td>
+                                    <td>0%</td>
+                                </tr>
+                                <tr style="background-color: #f8f9fa; font-weight: bold;">
+                                    <td colspan="3">2. תרומות מזדמנות</td>
+                                </tr>
+                                <tr>
+                                    <td>&nbsp;&nbsp;&nbsp;אשראי</td>
+                                    <td>0</td>
+                                    <td>0%</td>
+                                </tr>
+                                <tr>
+                                    <td>&nbsp;&nbsp;&nbsp;מזומן</td>
+                                    <td>0</td>
+                                    <td>0%</td>
+                                </tr>
+                                <tr>
+                                    <td>&nbsp;&nbsp;&nbsp;שקים</td>
+                                    <td>0</td>
+                                    <td>0%</td>
+                                </tr>
+                                <tr>
+                                    <td>&nbsp;&nbsp;&nbsp;בנקאי</td>
+                                    <td>0</td>
+                                    <td>0%</td>
+                                </tr>
+                                <tr>
+                                    <td>&nbsp;&nbsp;&nbsp;העברות</td>
+                                    <td>0</td>
+                                    <td>0%</td>
+                                </tr>
+                                <tr class="total-row">
+                                    <td>סך הכל</td>
+                                    <td>109,320</td>
+                                    <td>100%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="table-section">
+                        <h3>פירוט הוצאות</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>סוג הוצאה</th>
+                                    <th>סכום (₪)</th>
+                                    <th>אחוז</th>
+                                    <th class="arrow-col"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>סך המלגות</td>
+                                    <td>103,091</td>
+                                    <td>71.8%</td>
+                                    <td></td>
+                                </tr>
+                                
+                                <tr class="expandable-row" onclick="toggleDetails('salary')">
+                                    <td>משכורות</td>
+                                    <td>20,550</td>
+                                    <td>14.0%</td>
+                                    <td class="arrow-col">▶</td>
+                                </tr>
+                                <tr class="detail-row" id="salary-1">
+                                    <td>&nbsp;&nbsp;&nbsp;אברהם פלק</td>
+                                    <td>9,400</td>
+                                    <td>45.7%</td>
+                                    <td></td>
+                                </tr>
+                                <tr class="detail-row" id="salary-2">
+                                    <td>&nbsp;&nbsp;&nbsp;שלמה מאיר קליין</td>
+                                    <td>9,400</td>
+                                    <td>45.7%</td>
+                                    <td></td>
+                                </tr>
+                                <tr class="detail-row" id="salary-3">
+                                    <td>&nbsp;&nbsp;&nbsp;נחמן אייזנבאך</td>
+                                    <td>1,750</td>
+                                    <td>8.5%</td>
+                                    <td></td>
+                                </tr>
+                                
+                                <tr>
+                                    <td>חוב לפולק</td>
+                                    <td>11,100</td>
+                                    <td>7.6%</td>
+                                    <td></td>
+                                </tr>
+                                
+                                <tr class="expandable-row" onclick="toggleDetails('office')">
+                                    <td>הוצאות משרד</td>
+                                    <td>3,000</td>
+                                    <td>2.0%</td>
+                                    <td class="arrow-col">▶</td>
+                                </tr>
+                                <tr class="detail-row" id="office-1">
+                                    <td>&nbsp;&nbsp;&nbsp;שכירות</td>
+                                    <td>2,550</td>
+                                    <td>85.0%</td>
+                                    <td></td>
+                                </tr>
+                                <tr class="detail-row" id="office-2">
+                                    <td>&nbsp;&nbsp;&nbsp;חשמל-מים-ועד</td>
+                                    <td>450</td>
+                                    <td>15.0%</td>
+                                    <td></td>
+                                </tr>
                             
                             <tr class="expandable-row" onclick="toggleDetails('advertising')">
                                 <td>הוצאות פרסום</td>
@@ -746,7 +977,7 @@
     <script>
         // פונקציית חזרה לדף הקודם
         function goBack() {
-            window.location.href = 'https://na5845.github.io/Dashboard/Reports.html#';
+            window.location.href = 'https://na5845.github.io/A/Reports.html#';
         }
 
         function toggleDetails(category) {
