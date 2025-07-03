@@ -49,15 +49,23 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
+        // התצורה הנכונה מהקונסול
         const firebaseConfig = {
-            apiKey: "AIzaSyCI9J7h5NOJ5aGHj3_BBw0jzm5iGSE7n20",
+            apiKey: "AIzaSyCl9J7h5NOJ5aGHj3_BBw0jzm5iGSE7n20",
             authDomain: "dashboard-3e2a5.firebaseapp.com",
             projectId: "dashboard-3e2a5",
-            storageBucket: "dashboard-3e2a5.appspot.com",
+            storageBucket: "dashboard-3e2a5.firebasestorage.app",
             messagingSenderId: "682842596931",
             appId: "1:682842596931:web:5c0a049a981d750e1e16f6",
-            measurementId: "G-NV42P56WJW"
+            measurementId: "G-NV42P569WJ"
         };
+
+        // בדיקה שהתצורה תקינה
+        console.log('Firebase Config:', {
+            apiKey: firebaseConfig.apiKey ? 'קיים' : 'חסר',
+            authDomain: firebaseConfig.authDomain,
+            projectId: firebaseConfig.projectId
+        });
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
