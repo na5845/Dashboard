@@ -1296,61 +1296,55 @@
             }
         }
 
-        // חילוץ נתוני חשבון לטבלאות הנפרדות
-        function extractAccountDataToTables(accountName, accountPrefix) {
-            console.log(`Extracting data for ${accountName} to separate tables...`);
-            
-            // חיפוש קטע החשבון
-            const accountSectionRegex = new RegExp(`<h3[^>]*>${accountName}[\\s\\S]*?(?=<h3|<div class="section"|$)`, 'g');
-            const accountMatch = currentPageContent.match(accountSectionRegex);
-            
-            if (!accountMatch) {
-                console.log(`Account section for ${accountName} not found`);
-                return;
-            }
-            
-            const sectionContent = accountMatch[0];
-            
-            // חילוץ הכנסות לטבלה נפרדת
-            const incomeTableRegex = new RegExp(`<h3>הכנסות[^<]*${accountName}[\\s\\S]*?<tbody>([\\s\\S]*?)<\\/tbody>`, 'i');
-            const incomeMatch = sectionContent.match(incomeTableRegex);
-            
-            if (incomeMatch) {
-                const incomeRows = incomeMatch[1];
-                const incomePattern = /<tr[^>]*class="subcategory-row"[^>]*>[\s\S]*?<td[^>]*>([^<]*)<\/td>[\s\S]*?<td[^>]*>([\d,]+)<\/td>/g;
-                let match;
-                
-                while ((match = incomePattern.exec(incomeRows)) !== null) {
-                    const name = match[1].trim();
-                    const amount = match[2].replace(/,/g, '');
-                    
-                    if (amount && amount !== '0') {
-                        addAccountRowWithData(accountPrefix + '-income', name, amount);
-                        console.log(`Added income to ${accountPrefix}: ${name}, ${amount}`);
-                    }
-                }
-            }
-            
-            // חילוץ הוצאות לטבלה נפרדת
-            const expenseTableRegex = new RegExp(`<h3>הוצאות[^<]*${accountName}[\\s\\S]*?<tbody>([\\s\\S]*?)<\\/tbody>`, 'i');
-            const expenseMatch = sectionContent.match(expenseTableRegex);
-            
-            if (expenseMatch) {
-                const expenseRows = expenseMatch[1];
-                const expensePattern = /<tr[^>]*class="subcategory-row"[^>]*>[\s\S]*?<td[^>]*>([^<]*)<\/td>[\s\S]*?<td[^>]*>([\d,]+)<\/td>/g;
-                let match;
-                
-                while ((match = expensePattern.exec(expenseRows)) !== null) {
-                    const name = match[1].trim();
-                    const amount = match[2].replace(/,/g, '');
-                    
-                    if (amount && amount !== '0') {
-                        addAccountRowWithData(accountPrefix + '-expense', name, amount);
-                        console.log(`Added expense to ${accountPrefix}: ${name}, ${amount}`);
-                    }
-                }
-            }
+// חילוץ נתוני חשבון לטבלאות הנפרדות
+function extractAccountDataToTables(accountName, accountPrefix) {
+    console.log(`Extracting data for ${accountName} to separate tables...`);
+    
+    // חיפוש קטע החשבון בצורה גמישה יותר
+    const sectionRegex = new RegExp(`<h3[^>]*[^>]*${accountName}[\\s\\S]*?(?=<h3[^>]*(?:קרן התורה|בית המדרש)|<div class="section-divider">|$)`, 'g');
+    const sectionMatch = currentPageContent.match(sectionRegex);
+    
+    if (!sectionMatch) {
+        console.log(`Account section for ${accountName} not found`);
+        return;
+    }
+    
+    const sectionContent = sectionMatch[0];
+    
+    // חילוץ הכנסות לטבלה נפרדת - חיפוש גמיש יותר
+    const incomeTableRegex = new RegExp(`<h3>הכנסות ${accountName}<\\/h3>[\\s\\S]*?<tbody>([\\s\\S]*?)<\\/tbody>`, 'i');
+    const incomeMatch = sectionContent.match(incomeTableRegex);
+    
+    if (incomeMatch) {
+        const incomeRows = incomeMatch[1];
+        extractAccountRowsToTable(incomeRows, accountPrefix + '-income');
+    }
+    
+    // חילוץ הוצאות לטבלה נפרדת - חיפוש גמיש יותר  
+    const expenseTableRegex = new RegExp(`<h3>הוצאות ${accountName}<\\/h3>[\\s\\S]*?<tbody>([\\s\\S]*?)<\\/tbody>`, 'i');
+    const expenseMatch = sectionContent.match(expenseTableRegex);
+    
+    if (expenseMatch) {
+        const expenseRows = expenseMatch[1];
+        extractAccountRowsToTable(expenseRows, accountPrefix + '-expense');
+    }
+}
+
+// חילוץ שורות מטבלה לחשבון ספציפי - פונקציה מותאמת
+function extractAccountRowsToTable(tableRowsHTML, accountType) {
+    const rowPattern = /<tr[^>]*class="subcategory-row"[^>]*>[\s\S]*?<td[^>]*>([^<]*)<\/td>[\s\S]*?<td[^>]*>([\d,]+)<\/td>/g;
+    let match;
+    
+    while ((match = rowPattern.exec(tableRowsHTML)) !== null) {
+        const name = match[1].trim();
+        const amount = match[2].replace(/,/g, '');
+        
+        if (amount && amount !== '0' && name && !name.includes('סך הכל')) {
+            addAccountRowWithData(accountType, name, amount);
+            console.log(`Added to ${accountType}: ${name}, ${amount}`);
         }
+    }
+}
 
         // חילוץ נתוני פאגי כללי
         function extractPagiGeneralData() {
