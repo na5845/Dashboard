@@ -591,6 +591,7 @@
                         </div>
                     </div>
                     <button type="button" class="button" onclick="testConnection()">בדוק חיבור</button>
+                    <button type="button" class="button" style="background: #dc3545;" onclick="clearSavedToken()">🗑️ נקה Token שמור</button>
                     <div id="connection-status" class="status-message"></div>
                 </div>
                 
@@ -959,6 +960,18 @@
         // פונקציה לקריאת Token מ-localStorage
         function getTokenFromStorage() {
             return localStorage.getItem('githubToken') || '';
+        }
+
+        // פונקציה למחיקת Token שמור
+        function clearSavedToken() {
+            localStorage.removeItem('githubToken');
+            document.getElementById('github-token').value = '';
+            githubConfig.token = '';
+            showStatus('connection-status', 'info', 'ה-Token השמור נמחק');
+            
+            // החזר את צבע השדה לרגיל
+            const tokenField = document.getElementById('github-token');
+            tokenField.style.borderColor = '';
         }
 
         // משתנים גלובליים לעריכה
@@ -2583,13 +2596,21 @@ function extractAccountRowsToTable(tableRowsHTML, accountType) {
             const month = String(now.getMonth() + 1).padStart(2, '0');
             document.getElementById('new-filename').placeholder = `${year}${month}-1.html`;
             
-            // אם יש Token מוגדר מראש, הכנס אותו לשדה והפעל בדיקת חיבור
-            if (githubConfig.token) {
-                document.getElementById('github-token').value = githubConfig.token;
-                // אופציונלי: הפעל בדיקת חיבור אוטומטית
+            // טען Token מ-localStorage אם קיים
+            const savedToken = getTokenFromStorage();
+            if (savedToken) {
+                document.getElementById('github-token').value = savedToken;
+                githubConfig.token = savedToken;
+                
+                // הצג הודעה שה-Token נטען
+                const tokenField = document.getElementById('github-token');
+                tokenField.style.borderColor = '#28a745';
+                
+                // אופציונלי: בדוק חיבור אוטומטית
                 setTimeout(() => {
+                    console.log('טוען Token שמור...');
                     testConnection();
-                }, 1000);
+                }, 500);
             }
         });
     </script>
