@@ -1006,6 +1006,7 @@
                     // פיצול לשורות
                     const rows = tableContent.split(/<\/tr>/);
                     let currentMainItem = null;
+                    let currentCategory = null;
                     
                     rows.forEach(rowHtml => {
                         if (!rowHtml.trim() || !rowHtml.includes('<td')) return;
@@ -1014,35 +1015,39 @@
                         const isExpandableMatch = rowHtml.match(/class="expandable-row"[^>]*onclick="toggleDetails\('([^']+)'\)"/);
                         
                         if (isExpandableMatch) {
-                            // שורה עם פירוט - חילוץ הנתונים
-                            const nameMatch = rowHtml.match(/<td[^>]*>([^<]+)<\/td>/);
-                            const amountMatch = rowHtml.match(/<td[^>]*>([\d,]+)<\/td>/);
+                    // שורה עם פירוט - חילוץ הנתונים
+                    const nameMatch = rowHtml.match(/<td[^>]*>([^<]+)<\/td>/);
+                    const amountMatch = rowHtml.match(/<td[^>]*>([\d,]+)<\/td>/);
+                    
+                    if (nameMatch && amountMatch) {
+                        const name = nameMatch[1].trim();
+                        const amount = amountMatch[1].replace(/,/g, '');
+                        
+                        currentMainItem = addExpenseRowWithData(name, amount, true); // true = יש פירוט
+                        currentCategory = cleanCategoryName(name); // שם נקי לקטגוריה
+                        console.log('Found expandable expense:', name, amount, 'category:', currentCategory);
+                    }
+                }
+                // בדיקה אם זו שורת פירוט (detail-row) עם ID מתאים  
+                else if (rowHtml.includes('class="detail-row"') && currentMainItem && currentCategory) {
+                    // בדיקה שהפריט שייך לקטגוריה הנוכחית
+                    if (rowHtml.includes(`id="${currentCategory}-`) || rowHtml.includes(`"${currentCategory}`)) {
+                        const nameMatch = rowHtml.match(/<td[^>]*>([^<]+)<\/td>/);
+                        const amountMatch = rowHtml.match(/<td[^>]*>([\d,]+)<\/td>/);
+                        
+                        if (nameMatch && amountMatch) {
+                            const name = nameMatch[1].replace(/&nbsp;/g, '').trim();
+                            const amount = amountMatch[1].replace(/,/g, '');
                             
-                            if (nameMatch && amountMatch) {
-                                const name = nameMatch[1].trim();
-                                const amount = amountMatch[1].replace(/,/g, '');
-                                
-                                currentMainItem = addExpenseRowWithData(name, amount, true); // true = יש פירוט
-                                console.log('Found expandable expense:', name, amount);
+                            if (name && amount !== '0') {
+                                addSubItemToExpenseRow(currentMainItem, name, amount);
+                                console.log('Found sub-item for', currentCategory, ':', name, amount);
                             }
                         }
-                        // בדיקה אם זו שורת פירוט (detail-row)
-                        else if (rowHtml.includes('class="detail-row"') && currentMainItem) {
-                            const nameMatch = rowHtml.match(/<td[^>]*>([^<]+)<\/td>/);
-                            const amountMatch = rowHtml.match(/<td[^>]*>([\d,]+)<\/td>/);
-                            
-                            if (nameMatch && amountMatch) {
-                                const name = nameMatch[1].replace(/&nbsp;/g, '').trim();
-                                const amount = amountMatch[1].replace(/,/g, '');
-                                
-                                if (name && amount !== '0') {
-                                    addSubItemToExpenseRow(currentMainItem, name, amount);
-                                    console.log('Found sub-item:', name, amount);
-                                }
-                            }
-                        }
+                    }
+                }
                         // שורה רגילה ללא פירוט
-                        else if (!rowHtml.includes('class="') || (!rowHtml.includes('detail-row') && !rowHtml.includes('total-row'))) {
+                        else if (!rowHtml.includes('class="') || (!rowHtml.includes('detail-row') && !rowHtml.includes('expandable-row') && !rowHtml.includes('total-row'))) {
                             const nameMatch = rowHtml.match(/<td[^>]*>([^<]+)<\/td>/);
                             const amountMatch = rowHtml.match(/<td[^>]*>([\d,]+)<\/td>/);
                             
@@ -1053,9 +1058,15 @@
                                 if (name && amount && !name.includes('סך הכל') && amount !== '0') {
                                     addExpenseRowWithData(name, amount, false); // false = אין פירוט
                                     currentMainItem = null; // איפוס
+                                    currentCategory = null;
                                     console.log('Found regular expense:', name, amount);
                                 }
                             }
+                        }
+                        // אם התחילה קטגוריה חדשה, איפוס המשתנים
+                        else if (rowHtml.includes('expandable-row') && !isExpandableMatch) {
+                            currentMainItem = null;
+                            currentCategory = null;
                         }
                     });
                     
@@ -1107,7 +1118,6 @@
             row.innerHTML = `
                 <td>
                     <input type="text" value="${name}" placeholder="סוג הוצאה" class="expense-name">
-                    // הוספת אינדיקטור לסיכום אוטומטי
                     ${hasSubItems ? '<span class="auto-calc-indicator">🧮 סיכום אוטומטי</span>' : ''}
                     ${hasSubItems ? '<span class="has-subitems-indicator">📋</span>' : ''}
                 </td>
@@ -1591,23 +1601,26 @@
             let tableRows = '';
             
             expenseData.forEach(item => {
-                const percentage = totalExpenses > 0 ? ((Math.max(item.amount, item.subItems ? item.subItems.reduce((sum, si) => sum + si.amount, 0) : 0) / totalExpenses) * 100).toFixed(1) : '0';
+                const actualAmount = item.subItems && item.subItems.length > 0 ? 
+                    item.subItems.reduce((sum, subItem) => sum + subItem.amount, 0) : item.amount;
+                const percentage = totalExpenses > 0 ? ((actualAmount / totalExpenses) * 100).toFixed(1) : '0';
                 
                 if (item.subItems && item.subItems.length > 0) {
-                    // שורה עם פירוט
+                    // שורה עם פירוט - יצירת שם קטגוריה ייחודי
+                    const categoryId = cleanCategoryName(item.name);
                     tableRows += `
-                            <tr class="expandable-row" onclick="toggleDetails('${item.name.replace(/[^a-zA-Z0-9]/g, '')}')">
+                            <tr class="expandable-row" onclick="toggleDetails('${categoryId}')">
                                 <td>${item.name}</td>
-                                <td>${item.amount.toLocaleString('he-IL')}</td>
+                                <td>${actualAmount.toLocaleString('he-IL')}</td>
                                 <td>${percentage}%</td>
                                 <td class="arrow-col">▶</td>
                             </tr>`;
                     
                     // הוספת שורות הפירוט
-                    item.subItems.forEach(subItem => {
-                        const subPercentage = item.amount > 0 ? ((subItem.amount / item.amount) * 100).toFixed(1) : '0';
+                    item.subItems.forEach((subItem, index) => {
+                        const subPercentage = actualAmount > 0 ? ((subItem.amount / actualAmount) * 100).toFixed(1) : '0';
                         tableRows += `
-                            <tr class="detail-row" id="${item.name.replace(/[^a-zA-Z0-9]/g, '')}-${subItem.name.replace(/[^a-zA-Z0-9]/g, '')}">
+                            <tr class="detail-row" id="${categoryId}-${index + 1}">
                                 <td>&nbsp;&nbsp;&nbsp;${subItem.name}</td>
                                 <td>${subItem.amount.toLocaleString('he-IL')}</td>
                                 <td>${subPercentage}%</td>
@@ -1700,7 +1713,7 @@
             window.open(`https://na5845.github.io/Dashboard/${filename}`, '_blank');
         }
 
-        // שכפול דף
+        // שכפול דף עם בחירת שם
         function duplicatePage(filename) {
             // חילוץ התאריך והמספר מהקובץ הנוכחי
             const fileMatch = filename.match(/(\d{6})-(\d+)\.html/);
@@ -1709,12 +1722,37 @@
                 const currentDate = fileMatch[1];
                 const currentNumber = parseInt(fileMatch[2]);
                 const newNumber = currentNumber + 1;
-                const newFilename = `${currentDate}-${newNumber}.html`;
+                const suggestedFilename = `${currentDate}-${newNumber}.html`;
                 
-                document.getElementById('new-filename').value = newFilename;
+                // הצגת prompt לבחירת שם
+                const userFilename = prompt(`שם הקובץ החדש:`, suggestedFilename);
+                
+                if (userFilename && userFilename.trim()) {
+                    let finalFilename = userFilename.trim();
+                    
+                    // וידוא שמסתיים ב-.html
+                    if (!finalFilename.endsWith('.html')) {
+                        finalFilename += '.html';
+                    }
+                    
+                    document.getElementById('new-filename').value = finalFilename;
+                } else {
+                    // אם המשתמש ביטל, לא נמשיך
+                    return;
+                }
             } else {
                 // fallback אם הפורמט לא מזוהה
-                document.getElementById('new-filename').value = filename.replace('.html', '-copy.html');
+                const userFilename = prompt(`שם הקובץ החדש:`, filename.replace('.html', '-copy.html'));
+                
+                if (userFilename && userFilename.trim()) {
+                    let finalFilename = userFilename.trim();
+                    if (!finalFilename.endsWith('.html')) {
+                        finalFilename += '.html';
+                    }
+                    document.getElementById('new-filename').value = finalFilename;
+                } else {
+                    return;
+                }
             }
             
             // עדכון קובץ המקור לשכפול
