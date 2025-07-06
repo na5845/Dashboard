@@ -128,8 +128,8 @@
         /* Settings button styles */
         .settings-btn {
             position: fixed;
-            top: 30px;
-            left: 200px;
+            top: 80px;
+            left: 30px;
             background: rgba(52, 152, 219, 0.9);
             color: white;
             border: none;
@@ -1054,12 +1054,20 @@
                 expenses
             };
             
-            // עדכון התצוגה
-            displayReportsForYear(currentYear);
-            closeSettings();
+            // שמירה ב-localStorage כדי שהשינויים יישמרו
+            localStorage.setItem('reportsData', JSON.stringify(reportsData));
             
-            // הודעה על שמירה מוצלחת
-            alert('השינויים נשמרו בהצלחה!');
+            // עדכון התצוגה מיידי - גם אם השנה הנוכחית שונה
+            displayReportsForYear(currentYear);
+            
+            // אם השנה שנערכה היא לא השנה הנוכחית בתצוגה, נציג הודעה
+            if (selectedYear !== currentYear) {
+                alert(`השינויים נשמרו בהצלחה! עבור לשנת ${selectedYear} כדי לראות את השינויים.`);
+            } else {
+                alert('השינויים נשמרו בהצלחה!');
+            }
+            
+            closeSettings();
         }
 
         // פונקציית חזרה לדף הקודם
@@ -1069,6 +1077,16 @@
 
         // אתחול הדף
         document.addEventListener('DOMContentLoaded', function() {
+            // טעינת נתונים שמורים מ-localStorage
+            const savedData = localStorage.getItem('reportsData');
+            if (savedData) {
+                try {
+                    reportsData = JSON.parse(savedData);
+                } catch (e) {
+                    console.log('שגיאה בטעינת נתונים שמורים, משתמש בנתונים ברירת מחדל');
+                }
+            }
+            
             // טעינה ראשונית של דוחות
             displayReportsForYear(currentYear);
 
