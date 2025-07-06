@@ -501,7 +501,22 @@
                         </div>
                     </div>
                     
-                    <p style="color: #6c757d; font-style: italic;">
+                    <!-- עריכת קישורים -->
+                    <h5 style="margin: 25px 0 15px 0; color: #495057; border-bottom: 1px solid #dee2e6; padding-bottom: 8px;">🔗 קישורי ניווט</h5>
+                    <div class="grid">
+                        <div class="form-group">
+                            <label for="edit-back-link">קישור "לדף הקודם":</label>
+                            <input type="url" id="edit-back-link" placeholder="https://na5845.github.io/Dashboard/Reports.html">
+                            <small style="color: #6c757d;">הקישור שיופיע בכפתור "לדף הקודם"</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-details-link">קישור "פירוט פאגי - מרכנתיל":</label>
+                            <input type="url" id="edit-details-link" placeholder="https://na5845.github.io/Dashboard/202505-2.html">
+                            <small style="color: #6c757d;">הקישור לדף הפירוט המפורט</small>
+                        </div>
+                    </div>
+                    
+                    <p style="color: #6c757d; font-style: italic; margin-top: 20px;">
                         הערה: סך הכנסות והוצאות יחושבו אוטומטית מהטבלאות למטה
                     </p>
                 </div>
@@ -840,6 +855,9 @@
                     recipientsElement.value = recipientsMatch[1].replace(/,/g, '');
                 }
                 
+                // חילוץ קישורי ניווט
+                extractNavigationLinks();
+                
                 // חילוץ נתוני הכנסות והוצאות אמיתיים
                 extractRealIncomeData();
                 extractRealExpensesData();
@@ -853,6 +871,50 @@
                 // במקרה של שגיאה, נוסיף שורות ריקות
                 addRegularIncomeRowWithData('', '');
                 addExpenseRowWithData('', '', false);
+            }
+        }
+
+        // חילוץ קישורי ניווט
+        function extractNavigationLinks() {
+            console.log('Extracting navigation links...');
+            
+            try {
+                // חילוץ קישור "לדף הקודם"
+                const backButtonMatch = currentPageContent.match(/<button class="back-button"[^>]*onclick="goBack\(\)"[\s\S]*?<\/button>/);
+                if (backButtonMatch) {
+                    // חיפוש בפונקציית goBack
+                    const goBackFunctionMatch = currentPageContent.match(/function goBack\(\)\s*\{\s*window\.location\.href\s*=\s*['"`]([^'"`]+)['"`]/);
+                    if (goBackFunctionMatch) {
+                        const backLinkElement = document.getElementById('edit-back-link');
+                        if (backLinkElement) {
+                            backLinkElement.value = goBackFunctionMatch[1];
+                            console.log('Found back link:', goBackFunctionMatch[1]);
+                        }
+                    }
+                }
+                
+                // חילוץ קישור "פירוט פאגי - מרכנתיל"
+                const detailsButtonMatch = currentPageContent.match(/<a href="([^"]+)"[^>]*class="details-button">/);
+                if (detailsButtonMatch) {
+                    const detailsLinkElement = document.getElementById('edit-details-link');
+                    if (detailsLinkElement) {
+                        detailsLinkElement.value = detailsButtonMatch[1];
+                        console.log('Found details link:', detailsButtonMatch[1]);
+                    }
+                }
+                
+                // חילוץ נוסף מהפוטר אם יש
+                const footerLinkMatch = currentPageContent.match(/<a href="([^"]+)"[^>]*>[\s\S]*?פירוט פאגי - מרכנתיל[\s\S]*?<\/a>/);
+                if (footerLinkMatch && !detailsButtonMatch) {
+                    const detailsLinkElement = document.getElementById('edit-details-link');
+                    if (detailsLinkElement && !detailsLinkElement.value) {
+                        detailsLinkElement.value = footerLinkMatch[1];
+                        console.log('Found details link in footer:', footerLinkMatch[1]);
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error extracting navigation links:', error);
             }
         }
 
@@ -1355,6 +1417,8 @@
                 period: document.getElementById('edit-period').value,
                 totalDonors: document.getElementById('edit-total-donors').value,
                 scholarshipRecipients: document.getElementById('edit-scholarship-recipients').value,
+                backLink: document.getElementById('edit-back-link').value,
+                detailsLink: document.getElementById('edit-details-link').value,
                 regularIncomeItems: [],
                 casualIncomeItems: [],
                 expenseItems: []
@@ -1443,6 +1507,29 @@
                 const formattedRecipients = parseInt(data.scholarshipRecipients).toLocaleString('he-IL');
                 updatedContent = updatedContent.replace(/(<h3>סך אברכים המקבלים מלגה<\/h3>[\s\S]*?<div class="amount">).*?(<\/div>)/m, 
                     `$1${formattedRecipients}$2`);
+            }
+            
+            // עדכון קישורי ניווט
+            if (data.backLink) {
+                // עדכון פונקציית goBack
+                updatedContent = updatedContent.replace(
+                    /function goBack\(\)\s*\{\s*window\.location\.href\s*=\s*['"`][^'"`]+['"`];?\s*\}/,
+                    `function goBack() {\n            window.location.href = '${data.backLink}';\n        }`
+                );
+            }
+            
+            if (data.detailsLink) {
+                // עדכון כפתור הפירוט בהדר
+                updatedContent = updatedContent.replace(
+                    /<a href="[^"]*" class="details-button">/,
+                    `<a href="${data.detailsLink}" class="details-button">`
+                );
+                
+                // עדכון קישור בפוטר
+                updatedContent = updatedContent.replace(
+                    /<a href="[^"]*"[^>]*>[\s\S]*?פירוט פאגי - מרכנתיל[\s\S]*?<\/a>/,
+                    (match) => match.replace(/href="[^"]*"/, `href="${data.detailsLink}"`)
+                );
             }
             
             // עדכון טבלת הכנסות
