@@ -2105,41 +2105,57 @@ function extractAccountRowsToTable(tableRowsHTML, accountType) {
             );
             
             // עדכון כרטיסיות סיכום לכל חשבון
+            console.log('Updating sub-cards with values:', {
+                pagiKerenIncome,
+                pagiKerenExpenses,
+                pagiBeitIncome,
+                pagiBeitExpenses,
+                merkantilIncome,
+                merkantilExpenses
+            });
+            
             // הכנסות קרן התורה
-            content = content.replace(
-                /(<div class="sub-card keren-income">[\s\S]*?<div class="amount">).*?(<\/div>)/m,
-                `$1₪${pagiKerenIncome.toLocaleString('he-IL')}$2`
-            );
+            const kerenIncomeRegex = /(<div class="summary-card keren-income">[\s\S]*?<h4>הכנסות קרן התורה<\/h4>[\s\S]*?<div class="amount"[^>]*>)[^<]*(<\/div>)/;
+            if (kerenIncomeRegex.test(content)) {
+                content = content.replace(kerenIncomeRegex, `$1₪${pagiKerenIncome.toLocaleString('he-IL')}$2`);
+                console.log('Updated keren income');
+            }
             
             // הוצאות קרן התורה
-            content = content.replace(
-                /(<div class="sub-card keren-expenses">[\s\S]*?<div class="amount">).*?(<\/div>)/m,
-                `$1₪${pagiKerenExpenses.toLocaleString('he-IL')}$2`
-            );
+            const kerenExpenseRegex = /(<div class="summary-card keren-expenses">[\s\S]*?<h4>הוצאות קרן התורה<\/h4>[\s\S]*?<div class="amount"[^>]*>)[^<]*(<\/div>)/;
+            if (kerenExpenseRegex.test(content)) {
+                content = content.replace(kerenExpenseRegex, `$1₪${pagiKerenExpenses.toLocaleString('he-IL')}$2`);
+                console.log('Updated keren expenses');
+            }
             
             // הכנסות בית המדרש
-            content = content.replace(
-                /(<div class="sub-card beit-income">[\s\S]*?<div class="amount">).*?(<\/div>)/m,
-                `$1₪${pagiBeitIncome.toLocaleString('he-IL')}$2`
-            );
+            const beitIncomeRegex = /(<div class="summary-card beit-income">[\s\S]*?<h4>הכנסות בית המדרש<\/h4>[\s\S]*?<div class="amount"[^>]*>)[^<]*(<\/div>)/;
+            if (beitIncomeRegex.test(content)) {
+                content = content.replace(beitIncomeRegex, `$1₪${pagiBeitIncome.toLocaleString('he-IL')}$2`);
+                console.log('Updated beit income');
+            }
             
-            // הוצאות בית המדרש
-            content = content.replace(
-                /(<div class="sub-card beit-expenses">[\s\S]*?<div class="amount">).*?(<\/div>)/m,
-                `$1₪${pagiBeitExpenses.toLocaleString('he-IL')}$2`
-            );
+            // הוצאות בית המדרש - שימו לב שה-class הוא keren-expenses גם כאן
+            const beitExpenseRegex = /(<h4>הוצאות בית המדרש<\/h4>[\s\S]*?<div class="amount"[^>]*>)[^<]*(<\/div>)/;
+            if (beitExpenseRegex.test(content)) {
+                content = content.replace(beitExpenseRegex, `$1₪${pagiBeitExpenses.toLocaleString('he-IL')}$2`);
+                console.log('Updated beit expenses');
+            }
             
-            // הכנסות מרכנתיל (בכרטיסיות הנפרדות)
-            content = content.replace(
-                /(<div class="sub-card merkantil-income-card">[\s\S]*?<div class="amount">).*?(<\/div>)/m,
-                `$1₪${merkantilIncome.toLocaleString('he-IL')}$2`
-            );
+            // עדכון כרטיסיות מרכנתיל - בדוח המפורט נמצאות בחלק התחתון
+            // הכנסות מרכנתיל
+            const merkantilIncomeCardRegex = /(<div class="summary-card merkantil-income">[\s\S]*?<h4>סך הכנסות בנק מרכנתיל<\/h4>[\s\S]*?<div class="amount">)[^<]*(<\/div>)/;
+            if (merkantilIncomeCardRegex.test(content)) {
+                content = content.replace(merkantilIncomeCardRegex, `$1₪${merkantilIncome.toLocaleString('he-IL')}$2`);
+                console.log('Updated merkantil income card');
+            }
             
-            // הוצאות מרכנתיל (בכרטיסיות הנפרדות)
-            content = content.replace(
-                /(<div class="sub-card merkantil-expenses-card">[\s\S]*?<div class="amount">).*?(<\/div>)/m,
-                `$1₪${merkantilExpenses.toLocaleString('he-IL')}$2`
-            );
+            // הוצאות מרכנתיל - שימו לב שה-class הוא pagi-expenses
+            const merkantilExpenseCardRegex = /(<h4>סך הוצאות בנק מרכנתיל<\/h4>[\s\S]*?<div class="amount">)[^<]*(<\/div>)/;
+            if (merkantilExpenseCardRegex.test(content)) {
+                content = content.replace(merkantilExpenseCardRegex, `$1₪${merkantilExpenses.toLocaleString('he-IL')}$2`);
+                console.log('Updated merkantil expenses card');
+            }
             
             // עדכון טבלאות
             content = updateDetailedAccountTables(content, 'קרן התורה', data.detailedData.pagiKerenIncome, data.detailedData.pagiKerenExpense);
