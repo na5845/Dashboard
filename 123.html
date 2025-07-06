@@ -716,139 +716,161 @@
         function populateEditForm() {
             if (!currentPageContent) return;
             
-            // חילוץ כותרת ותקופה
-            const titleMatch = currentPageContent.match(/<title>(.*?)<\/title>/);
-            const periodMatch = currentPageContent.match(/<div class="period">(.*?)<\/div>/);
+            console.log('Populating edit form...');
             
-            if (titleMatch) {
-                document.getElementById('edit-title').value = titleMatch[1];
+            try {
+                // חילוץ כותרת ותקופה
+                const titleMatch = currentPageContent.match(/<title>(.*?)<\/title>/);
+                const periodMatch = currentPageContent.match(/<div class="period">(.*?)<\/div>/);
+                
+                const titleElement = document.getElementById('edit-title');
+                const periodElement = document.getElementById('edit-period');
+                
+                if (titleMatch && titleElement) {
+                    titleElement.value = titleMatch[1];
+                }
+                if (periodMatch && periodElement) {
+                    periodElement.value = periodMatch[1];
+                }
+                
+                // חילוץ נתונים כספיים
+                const incomeMatch = currentPageContent.match(/<div class="card revenue">[\s\S]*?<div class="amount">₪?([\d,]+)/);
+                const expensesMatch = currentPageContent.match(/<div class="card expenses">[\s\S]*?<div class="amount">₪?([\d,]+)/);
+                
+                const incomeElement = document.getElementById('edit-total-income');
+                const expensesElement = document.getElementById('edit-total-expenses');
+                
+                if (incomeMatch && incomeElement) {
+                    incomeElement.value = incomeMatch[1].replace(/,/g, '');
+                }
+                if (expensesMatch && expensesElement) {
+                    expensesElement.value = expensesMatch[1].replace(/,/g, '');
+                }
+                
+                // חילוץ נתוני תורמים ומקבלי מלגות
+                const donorsMatch = currentPageContent.match(/<h3>סך תורמים<\/h3>[\s\S]*?<div class="amount">([\d,]+)/);
+                const recipientsMatch = currentPageContent.match(/<h3>סך אברכים המקבלים מלגה<\/h3>[\s\S]*?<div class="amount">([\d,]+)/);
+                
+                // הערה: לא ניתן לערוך תורמים ומקבלי מלגות במודול הנוכחי
+                // אבל אפשר להוסיף זאת בעתיד
+                
+                // חילוץ נתוני הכנסות והוצאות אמיתיים
+                extractRealIncomeData();
+                extractRealExpensesData();
+                
+                console.log('Form populated successfully');
+                
+            } catch (error) {
+                console.error('Error populating form:', error);
+                showStatus('edit-status', 'error', `שגיאה במילוי הטופס: ${error.message}`);
+                
+                // במקרה של שגיאה, נוסיף שורות ריקות
+                addIncomeRowWithData('', '');
+                addExpenseRowWithData('', '');
             }
-            if (periodMatch) {
-                document.getElementById('edit-period').value = periodMatch[1];
-            }
-            
-            // חילוץ נתונים כספיים
-            const incomeMatch = currentPageContent.match(/<div class="card revenue">[\s\S]*?<div class="amount">₪?([\d,]+)/);
-            if (incomeMatch) {
-                document.getElementById('edit-total-income').value = incomeMatch[1].replace(/,/g, '');
-            }
-            
-            const expensesMatch = currentPageContent.match(/<div class="card expenses">[\s\S]*?<div class="amount">₪?([\d,]+)/);
-            if (expensesMatch) {
-                document.getElementById('edit-total-expenses').value = expensesMatch[1].replace(/,/g, '');
-            }
-            
-            // חילוץ נתוני תורמים ומקבלי מלגות
-            const donorsMatch = currentPageContent.match(/<h3>סך תורמים<\/h3>[\s\S]*?<div class="amount">([\d,]+)/);
-            if (donorsMatch) {
-                document.getElementById('edit-total-donors').value = donorsMatch[1].replace(/,/g, '');
-            }
-            
-            const recipientsMatch = currentPageContent.match(/<h3>סך אברכים המקבלים מלגה<\/h3>[\s\S]*?<div class="amount">([\d,]+)/);
-            if (recipientsMatch) {
-                document.getElementById('edit-total-expenses').value = recipientsMatch[1].replace(/,/g, '');
-            }
-            
-            // חילוץ נתוני הכנסות והוצאות אמיתיים
-            extractRealIncomeData();
-            extractRealExpensesData();
         }
 
         // חילוץ נתוני הכנסות אמיתיים מהטבלה
         function extractRealIncomeData() {
+            console.log('Extracting real income data...');
+            
             const incomeTbody = document.getElementById('income-tbody');
-            incomeTbody.innerHTML = '';
-            
-            // יצירת DOM parser לחילוץ נתונים מהטבלה
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(currentPageContent, 'text/html');
-            
-            // חיפוש טבלת ההכנסות
-            const incomeTable = doc.querySelector('.table-section:has(h3:contains("פירוט הכנסות"))') || 
-                              Array.from(doc.querySelectorAll('.table-section')).find(section => 
-                                  section.querySelector('h3')?.textContent.includes('הכנסות')
-                              );
-            
-            if (incomeTable) {
-                const rows = incomeTable.querySelectorAll('tbody tr');
-                
-                rows.forEach(row => {
-                    const cells = row.querySelectorAll('td');
-                    if (cells.length >= 2) {
-                        const name = cells[0].textContent.trim();
-                        const amountText = cells[1].textContent.trim();
-                        
-                        // דילוג על שורות כותרת או שורות ריקות
-                        if (name && !name.includes('תרומות קבועות') && !name.includes('תרומות מזדמנות') && 
-                            !name.includes('סך הכל') && amountText && amountText !== '0') {
-                            
-                            // ניקוי שם המקור (הסרת רווחים מיותרים)
-                            const cleanName = name.replace(/&nbsp;/g, '').trim();
-                            
-                            // ניקוי הסכום (הסרת פסיקים ותווים לא רלוונטיים)
-                            const cleanAmount = amountText.replace(/[₪,\s]/g, '');
-                            
-                            if (cleanName && cleanAmount && !isNaN(cleanAmount)) {
-                                addIncomeRowWithData(cleanName, cleanAmount);
-                            }
-                        }
-                    }
-                });
+            if (!incomeTbody) {
+                console.error('Income tbody not found');
+                return;
             }
             
-            // אם לא נמצאו נתונים, הוסף שורה ריקה
-            if (incomeTbody.children.length === 0) {
+            incomeTbody.innerHTML = '';
+            
+            try {
+                // חיפוש פשוט יותר - חיפוש ישיר בטקסט
+                const incomeTablePattern = /<h3>פירוט הכנסות<\/h3>[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/;
+                const tableMatch = currentPageContent.match(incomeTablePattern);
+                
+                if (tableMatch) {
+                    const tableContent = tableMatch[1];
+                    
+                    // חיפוש שורות עם נתונים ממשיים
+                    const rowPattern = /<tr[^>]*>[\s\S]*?<td[^>]*>([^<]*(?:אשראי|בנקאי|מזומן|העברות|שקים)[^<]*)<\/td>[\s\S]*?<td[^>]*>([\d,]+)<\/td>/g;
+                    
+                    let match;
+                    let foundData = false;
+                    
+                    while ((match = rowPattern.exec(tableContent)) !== null) {
+                        const name = match[1].replace(/&nbsp;/g, ' ').trim();
+                        const amount = match[2].replace(/,/g, '');
+                        
+                        if (name && amount && amount !== '0') {
+                            addIncomeRowWithData(name, amount);
+                            foundData = true;
+                            console.log('Found income:', name, amount);
+                        }
+                    }
+                    
+                    if (!foundData) {
+                        console.log('No income data found, adding empty row');
+                        addIncomeRowWithData('', '');
+                    }
+                } else {
+                    console.log('Income table not found, adding empty row');
+                    addIncomeRowWithData('', '');
+                }
+                
+            } catch (error) {
+                console.error('Error extracting income data:', error);
                 addIncomeRowWithData('', '');
             }
         }
 
         // חילוץ נתוני הוצאות אמיתיים מהטבלה
         function extractRealExpensesData() {
+            console.log('Extracting real expenses data...');
+            
             const expenseTbody = document.getElementById('expenses-tbody');
-            expenseTbody.innerHTML = '';
-            
-            // יצירת DOM parser לחילוץ נתונים מהטבלה
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(currentPageContent, 'text/html');
-            
-            // חיפוש טבלת ההוצאות
-            const expenseTable = Array.from(doc.querySelectorAll('.table-section')).find(section => 
-                section.querySelector('h3')?.textContent.includes('הוצאות')
-            );
-            
-            if (expenseTable) {
-                const rows = expenseTable.querySelectorAll('tbody tr');
-                
-                rows.forEach(row => {
-                    // דילוג על שורות עם פונקציונליות פירוט (detail-row)
-                    if (row.classList.contains('detail-row') || row.classList.contains('expandable-row')) {
-                        return;
-                    }
-                    
-                    const cells = row.querySelectorAll('td');
-                    if (cells.length >= 2) {
-                        const name = cells[0].textContent.trim();
-                        const amountText = cells[1].textContent.trim();
-                        
-                        // דילוג על שורת סיכום
-                        if (name && !name.includes('סך הכל') && amountText) {
-                            
-                            // ניקוי שם ההוצאה
-                            const cleanName = name.replace(/&nbsp;/g, '').trim();
-                            
-                            // ניקוי הסכום
-                            const cleanAmount = amountText.replace(/[₪,\s]/g, '');
-                            
-                            if (cleanName && cleanAmount && !isNaN(cleanAmount)) {
-                                addExpenseRowWithData(cleanName, cleanAmount);
-                            }
-                        }
-                    }
-                });
+            if (!expenseTbody) {
+                console.error('Expenses tbody not found');
+                return;
             }
             
-            // אם לא נמצאו נתונים, הוסף שורה ריקה
-            if (expenseTbody.children.length === 0) {
+            expenseTbody.innerHTML = '';
+            
+            try {
+                // חיפוש פשוט יותר - חיפוש ישיר בטקסט
+                const expenseTablePattern = /<h3>פירוט הוצאות<\/h3>[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/;
+                const tableMatch = currentPageContent.match(expenseTablePattern);
+                
+                if (tableMatch) {
+                    const tableContent = tableMatch[1];
+                    
+                    // חיפוש שורות רגילות (לא expandable ולא detail)
+                    const rowPattern = /<tr(?![^>]*class="(?:expandable-row|detail-row)")[^>]*>[\s\S]*?<td[^>]*>([^<]+)<\/td>[\s\S]*?<td[^>]*>([\d,]+)<\/td>/g;
+                    
+                    let match;
+                    let foundData = false;
+                    
+                    while ((match = rowPattern.exec(tableContent)) !== null) {
+                        const name = match[1].replace(/&nbsp;/g, ' ').trim();
+                        const amount = match[2].replace(/,/g, '');
+                        
+                        // דילוג על שורת סיכום
+                        if (name && amount && !name.includes('סך הכל') && amount !== '0') {
+                            addExpenseRowWithData(name, amount);
+                            foundData = true;
+                            console.log('Found expense:', name, amount);
+                        }
+                    }
+                    
+                    if (!foundData) {
+                        console.log('No expense data found, adding empty row');
+                        addExpenseRowWithData('', '');
+                    }
+                } else {
+                    console.log('Expense table not found, adding empty row');
+                    addExpenseRowWithData('', '');
+                }
+                
+            } catch (error) {
+                console.error('Error extracting expense data:', error);
                 addExpenseRowWithData('', '');
             }
         }
