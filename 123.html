@@ -738,36 +738,119 @@
                 document.getElementById('edit-total-expenses').value = expensesMatch[1].replace(/,/g, '');
             }
             
-            // טעינת נתוני הכנסות והוצאות לדוגמה
-            loadSampleData();
+            // חילוץ נתוני תורמים ומקבלי מלגות
+            const donorsMatch = currentPageContent.match(/<h3>סך תורמים<\/h3>[\s\S]*?<div class="amount">([\d,]+)/);
+            if (donorsMatch) {
+                document.getElementById('edit-total-donors').value = donorsMatch[1].replace(/,/g, '');
+            }
+            
+            const recipientsMatch = currentPageContent.match(/<h3>סך אברכים המקבלים מלגה<\/h3>[\s\S]*?<div class="amount">([\d,]+)/);
+            if (recipientsMatch) {
+                document.getElementById('edit-total-expenses').value = recipientsMatch[1].replace(/,/g, '');
+            }
+            
+            // חילוץ נתוני הכנסות והוצאות אמיתיים
+            extractRealIncomeData();
+            extractRealExpensesData();
         }
 
-        function loadSampleData() {
-            // הכנסות לדוגמה
-            const incomeData = [
-                { name: 'אשראי', amount: '64204' },
-                { name: 'בנקאי', amount: '33846' },
-                { name: 'מזומן', amount: '8450' }
-            ];
-            
+        // חילוץ נתוני הכנסות אמיתיים מהטבלה
+        function extractRealIncomeData() {
             const incomeTbody = document.getElementById('income-tbody');
             incomeTbody.innerHTML = '';
-            incomeData.forEach(item => {
-                addIncomeRowWithData(item.name, item.amount);
-            });
             
-            // הוצאות לדוגמה
-            const expenseData = [
-                { name: 'מלגות', amount: '103091' },
-                { name: 'משכורות', amount: '20550' },
-                { name: 'הוצאות משרד', amount: '3000' }
-            ];
+            // יצירת DOM parser לחילוץ נתונים מהטבלה
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(currentPageContent, 'text/html');
             
+            // חיפוש טבלת ההכנסות
+            const incomeTable = doc.querySelector('.table-section:has(h3:contains("פירוט הכנסות"))') || 
+                              Array.from(doc.querySelectorAll('.table-section')).find(section => 
+                                  section.querySelector('h3')?.textContent.includes('הכנסות')
+                              );
+            
+            if (incomeTable) {
+                const rows = incomeTable.querySelectorAll('tbody tr');
+                
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length >= 2) {
+                        const name = cells[0].textContent.trim();
+                        const amountText = cells[1].textContent.trim();
+                        
+                        // דילוג על שורות כותרת או שורות ריקות
+                        if (name && !name.includes('תרומות קבועות') && !name.includes('תרומות מזדמנות') && 
+                            !name.includes('סך הכל') && amountText && amountText !== '0') {
+                            
+                            // ניקוי שם המקור (הסרת רווחים מיותרים)
+                            const cleanName = name.replace(/&nbsp;/g, '').trim();
+                            
+                            // ניקוי הסכום (הסרת פסיקים ותווים לא רלוונטיים)
+                            const cleanAmount = amountText.replace(/[₪,\s]/g, '');
+                            
+                            if (cleanName && cleanAmount && !isNaN(cleanAmount)) {
+                                addIncomeRowWithData(cleanName, cleanAmount);
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // אם לא נמצאו נתונים, הוסף שורה ריקה
+            if (incomeTbody.children.length === 0) {
+                addIncomeRowWithData('', '');
+            }
+        }
+
+        // חילוץ נתוני הוצאות אמיתיים מהטבלה
+        function extractRealExpensesData() {
             const expenseTbody = document.getElementById('expenses-tbody');
             expenseTbody.innerHTML = '';
-            expenseData.forEach(item => {
-                addExpenseRowWithData(item.name, item.amount);
-            });
+            
+            // יצירת DOM parser לחילוץ נתונים מהטבלה
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(currentPageContent, 'text/html');
+            
+            // חיפוש טבלת ההוצאות
+            const expenseTable = Array.from(doc.querySelectorAll('.table-section')).find(section => 
+                section.querySelector('h3')?.textContent.includes('הוצאות')
+            );
+            
+            if (expenseTable) {
+                const rows = expenseTable.querySelectorAll('tbody tr');
+                
+                rows.forEach(row => {
+                    // דילוג על שורות עם פונקציונליות פירוט (detail-row)
+                    if (row.classList.contains('detail-row') || row.classList.contains('expandable-row')) {
+                        return;
+                    }
+                    
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length >= 2) {
+                        const name = cells[0].textContent.trim();
+                        const amountText = cells[1].textContent.trim();
+                        
+                        // דילוג על שורת סיכום
+                        if (name && !name.includes('סך הכל') && amountText) {
+                            
+                            // ניקוי שם ההוצאה
+                            const cleanName = name.replace(/&nbsp;/g, '').trim();
+                            
+                            // ניקוי הסכום
+                            const cleanAmount = amountText.replace(/[₪,\s]/g, '');
+                            
+                            if (cleanName && cleanAmount && !isNaN(cleanAmount)) {
+                                addExpenseRowWithData(cleanName, cleanAmount);
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // אם לא נמצאו נתונים, הוסף שורה ריקה
+            if (expenseTbody.children.length === 0) {
+                addExpenseRowWithData('', '');
+            }
         }
 
         // הוספת שורות
@@ -822,43 +905,11 @@
             
             showStatus('edit-status', 'info', 'שומר שינויים...');
             
+            // איסוף נתונים מהטופס
+            const updatedData = collectFormData();
+            
             // עדכון התוכן
-            let updatedContent = currentPageContent;
-            
-            const title = document.getElementById('edit-title').value;
-            const period = document.getElementById('edit-period').value;
-            const income = document.getElementById('edit-total-income').value;
-            const expenses = document.getElementById('edit-total-expenses').value;
-            
-            if (title) {
-                updatedContent = updatedContent.replace(/<title>.*?<\/title>/g, `<title>${title}</title>`);
-                updatedContent = updatedContent.replace(/<h1>.*?<\/h1>/g, `<h1>${title.split(' - ')[0] || title}</h1>`);
-            }
-            
-            if (period) {
-                updatedContent = updatedContent.replace(/<div class="period">.*?<\/div>/g, `<div class="period">${period}</div>`);
-            }
-            
-            if (income) {
-                const formattedIncome = parseInt(income).toLocaleString('he-IL');
-                updatedContent = updatedContent.replace(/(<div class="card revenue">[\s\S]*?<div class="amount">).*?(₪.*?<\/div>)/m, 
-                    `$1₪${formattedIncome}</div>`);
-            }
-            
-            if (expenses) {
-                const formattedExpenses = parseInt(expenses).toLocaleString('he-IL');
-                updatedContent = updatedContent.replace(/(<div class="card expenses">[\s\S]*?<div class="amount">).*?(₪.*?<\/div>)/m, 
-                    `$1₪${formattedExpenses}</div>`);
-            }
-            
-            // חישוב יתרה
-            if (income && expenses) {
-                const balance = parseInt(income) - parseInt(expenses);
-                const sign = balance < 0 ? '-' : '';
-                const absValue = Math.abs(balance).toLocaleString('he-IL');
-                updatedContent = updatedContent.replace(/(<div class="card profit">[\s\S]*?<div class="amount">).*?(₪.*?<\/div>)/m, 
-                    `$1${sign}₪${absValue}</div>`);
-            }
+            let updatedContent = updatePageContentWithNewData(currentPageContent, updatedData);
             
             // שמירה ב-GitHub
             const utf8Content = new TextEncoder().encode(updatedContent);
@@ -891,6 +942,194 @@
                 console.error('Error saving changes:', error);
                 showStatus('edit-status', 'error', `שגיאה בשמירת השינויים: ${error.message}`);
             });
+        }
+
+        // איסוף נתונים מהטופס
+        function collectFormData() {
+            const data = {
+                title: document.getElementById('edit-title').value,
+                period: document.getElementById('edit-period').value,
+                totalIncome: document.getElementById('edit-total-income').value,
+                totalExpenses: document.getElementById('edit-total-expenses').value,
+                incomeItems: [],
+                expenseItems: []
+            };
+            
+            // איסוף הכנסות
+            const incomeRows = document.querySelectorAll('#income-tbody tr');
+            incomeRows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                if (inputs[0].value.trim()) {
+                    data.incomeItems.push({
+                        name: inputs[0].value.trim(),
+                        amount: parseInt(inputs[1].value) || 0
+                    });
+                }
+            });
+            
+            // איסוף הוצאות
+            const expenseRows = document.querySelectorAll('#expenses-tbody tr');
+            expenseRows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                if (inputs[0].value.trim()) {
+                    data.expenseItems.push({
+                        name: inputs[0].value.trim(),
+                        amount: parseInt(inputs[1].value) || 0
+                    });
+                }
+            });
+            
+            return data;
+        }
+
+        // עדכון תוכן הדף עם הנתונים החדשים
+        function updatePageContentWithNewData(content, data) {
+            let updatedContent = content;
+            
+            // עדכון כותרת
+            if (data.title) {
+                updatedContent = updatedContent.replace(/<title>.*?<\/title>/g, `<title>${data.title}</title>`);
+                updatedContent = updatedContent.replace(/<h1>.*?<\/h1>/g, `<h1>${data.title.split(' - ')[0] || data.title}</h1>`);
+            }
+            
+            // עדכון תקופה
+            if (data.period) {
+                updatedContent = updatedContent.replace(/<div class="period">.*?<\/div>/g, `<div class="period">${data.period}</div>`);
+            }
+            
+            // עדכון נתונים כספיים
+            if (data.totalIncome) {
+                const formattedIncome = parseInt(data.totalIncome).toLocaleString('he-IL');
+                updatedContent = updatedContent.replace(/(<div class="card revenue">[\s\S]*?<div class="amount">).*?(₪.*?<\/div>)/m, 
+                    `$1₪${formattedIncome}</div>`);
+            }
+            
+            if (data.totalExpenses) {
+                const formattedExpenses = parseInt(data.totalExpenses).toLocaleString('he-IL');
+                updatedContent = updatedContent.replace(/(<div class="card expenses">[\s\S]*?<div class="amount">).*?(₪.*?<\/div>)/m, 
+                    `$1₪${formattedExpenses}</div>`);
+            }
+            
+            // חישוב יתרה
+            if (data.totalIncome && data.totalExpenses) {
+                const balance = parseInt(data.totalIncome) - parseInt(data.totalExpenses);
+                const sign = balance < 0 ? '-' : '';
+                const absValue = Math.abs(balance).toLocaleString('he-IL');
+                updatedContent = updatedContent.replace(/(<div class="card profit">[\s\S]*?<div class="amount">).*?(₪.*?<\/div>)/m, 
+                    `$1${sign}₪${absValue}</div>`);
+            }
+            
+            // עדכון טבלת הכנסות
+            if (data.incomeItems.length > 0) {
+                updatedContent = updateIncomeTable(updatedContent, data.incomeItems);
+            }
+            
+            // עדכון טבלת הוצאות
+            if (data.expenseItems.length > 0) {
+                updatedContent = updateExpenseTable(updatedContent, data.expenseItems);
+            }
+            
+            return updatedContent;
+        }
+
+        // עדכון טבלת הכנסות
+        function updateIncomeTable(content, incomeItems) {
+            // חישוב סכום כולל
+            const totalIncome = incomeItems.reduce((sum, item) => sum + item.amount, 0);
+            
+            // יצירת שורות הטבלה
+            let tableRows = '';
+            
+            // הוספת כותרת תרומות קבועות
+            tableRows += `
+                            <tr style="background-color: #f8f9fa; font-weight: bold;">
+                                <td colspan="3">1. תרומות קבועות</td>
+                            </tr>`;
+            
+            // הוספת שורות ההכנסות
+            incomeItems.forEach(item => {
+                const percentage = totalIncome > 0 ? ((item.amount / totalIncome) * 100).toFixed(1) : '0';
+                tableRows += `
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;${item.name}</td>
+                                <td>${item.amount.toLocaleString('he-IL')}</td>
+                                <td>${percentage}%</td>
+                            </tr>`;
+            });
+            
+            // הוספת שורות ריקות לתרומות מזדמנות
+            tableRows += `
+                            <tr style="background-color: #f8f9fa; font-weight: bold;">
+                                <td colspan="3">2. תרומות מזדמנות</td>
+                            </tr>
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;אשראי</td>
+                                <td>0</td>
+                                <td>0%</td>
+                            </tr>
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;מזומן</td>
+                                <td>0</td>
+                                <td>0%</td>
+                            </tr>
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;שקים</td>
+                                <td>0</td>
+                                <td>0%</td>
+                            </tr>
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;בנקאי</td>
+                                <td>0</td>
+                                <td>0%</td>
+                            </tr>
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;העברות</td>
+                                <td>0</td>
+                                <td>0%</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td>סך הכל</td>
+                                <td>${totalIncome.toLocaleString('he-IL')}</td>
+                                <td>100%</td>
+                            </tr>`;
+            
+            // החלפת תוכן הטבלה
+            const tableRegex = /(<h3>פירוט הכנסות<\/h3>[\s\S]*?<tbody>)([\s\S]*?)(<\/tbody>)/;
+            return content.replace(tableRegex, `$1${tableRows}$3`);
+        }
+
+        // עדכון טבלת הוצאות
+        function updateExpenseTable(content, expenseItems) {
+            // חישוב סכום כולל
+            const totalExpenses = expenseItems.reduce((sum, item) => sum + item.amount, 0);
+            
+            // יצירת שורות הטבלה
+            let tableRows = '';
+            
+            // הוספת שורות ההוצאות
+            expenseItems.forEach(item => {
+                const percentage = totalExpenses > 0 ? ((item.amount / totalExpenses) * 100).toFixed(1) : '0';
+                tableRows += `
+                            <tr>
+                                <td>${item.name}</td>
+                                <td>${item.amount.toLocaleString('he-IL')}</td>
+                                <td>${percentage}%</td>
+                                <td></td>
+                            </tr>`;
+            });
+            
+            // הוספת שורת סיכום
+            tableRows += `
+                            <tr class="total-row">
+                                <td>סך הכל</td>
+                                <td>${totalExpenses.toLocaleString('he-IL')}</td>
+                                <td>100%</td>
+                                <td></td>
+                            </tr>`;
+            
+            // החלפת תוכן הטבלה
+            const tableRegex = /(<h3>פירוט הוצאות<\/h3>[\s\S]*?<tbody>)([\s\S]*?)(<\/tbody>)/;
+            return content.replace(tableRegex, `$1${tableRows}$3`);
         }
 
         // ביטול עריכה
