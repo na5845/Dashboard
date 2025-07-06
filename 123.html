@@ -98,6 +98,7 @@
             display: inline-block;
             min-width: 120px;
             text-align: center;
+            margin: 5px;
         }
         
         .button:hover {
@@ -192,7 +193,7 @@
         .edit-subsection {
             margin-bottom: 40px;
             padding: 25px;
-            background: #f8f9fa;
+            background: white;
             border-radius: 10px;
             border: 1px solid #e9ecef;
         }
@@ -206,7 +207,7 @@
         }
         
         .table-editor {
-            background: white;
+            background: #f8f9fa;
             border-radius: 10px;
             padding: 20px;
             border: 1px solid #dee2e6;
@@ -251,6 +252,7 @@
             border-radius: 4px;
             padding: 8px;
             font-size: 0.9em;
+            box-sizing: border-box;
         }
         
         .editable-table input:focus {
@@ -341,6 +343,11 @@
             margin: 0 auto 10px;
         }
         
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         @media (max-width: 768px) {
             .grid {
                 grid-template-columns: 1fr;
@@ -382,8 +389,105 @@
                         <input type="text" id="repo-name" value="Dashboard" placeholder="Dashboard">
                     </div>
                 </div>
-                <button type="button" class="button" id="test-connection-btn">בדוק חיבור</button>
+                <button type="button" class="button" onclick="testConnection()">בדוק חיבור</button>
                 <div id="connection-status" class="status-message"></div>
+            </div>
+            
+            <!-- רשימת דפים קיימים -->
+            <div class="section">
+                <h2>📄 דפים קיימים</h2>
+                <button type="button" class="button" onclick="loadExistingPages()">טען דפים קיימים</button>
+                <div class="loading" id="pages-loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>טוען דפים קיימים...</p>
+                </div>
+                <div class="file-list" id="existing-pages"></div>
+            </div>
+
+            <!-- מודול עריכה -->
+            <div class="section hidden" id="edit-section">
+                <h2>✏️ עריכת דף</h2>
+                <div class="edit-header">
+                    <h3 id="edit-filename">עורך: </h3>
+                    <div class="edit-controls">
+                        <button type="button" class="button success" onclick="saveChanges()">שמור שינויים</button>
+                        <button type="button" class="button" onclick="cancelEdit()">ביטול</button>
+                    </div>
+                </div>
+                
+                <!-- עריכת נתונים כלליים -->
+                <div class="edit-subsection">
+                    <h4>📊 נתונים כלליים</h4>
+                    <div class="grid">
+                        <div class="form-group">
+                            <label for="edit-title">כותרת הדוח:</label>
+                            <input type="text" id="edit-title" placeholder="דוח הכנסות והוצאות">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-period">תקופת הדוח:</label>
+                            <input type="text" id="edit-period" placeholder="חודש מאי 2025">
+                        </div>
+                    </div>
+                    
+                    <div class="grid">
+                        <div class="form-group">
+                            <label for="edit-total-income">סך הכנסות (₪):</label>
+                            <input type="number" id="edit-total-income">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-total-expenses">סך הוצאות (₪):</label>
+                            <input type="number" id="edit-total-expenses">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- עריכת הכנסות -->
+                <div class="edit-subsection">
+                    <h4>💰 עריכת הכנסות</h4>
+                    <div class="table-editor">
+                        <div class="table-controls">
+                            <button type="button" class="button" onclick="addIncomeRow()">➕ הוסף מקור הכנסה</button>
+                        </div>
+                        <div class="editable-table-container">
+                            <table id="income-edit-table" class="editable-table">
+                                <thead>
+                                    <tr>
+                                        <th>מקור הכנסה</th>
+                                        <th>סכום (₪)</th>
+                                        <th>פעולות</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="income-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- עריכת הוצאות -->
+                <div class="edit-subsection">
+                    <h4>💸 עריכת הוצאות</h4>
+                    <div class="table-editor">
+                        <div class="table-controls">
+                            <button type="button" class="button" onclick="addExpenseRow()">➕ הוסף הוצאה</button>
+                        </div>
+                        <div class="editable-table-container">
+                            <table id="expenses-edit-table" class="editable-table">
+                                <thead>
+                                    <tr>
+                                        <th>סוג הוצאה</th>
+                                        <th>סכום (₪)</th>
+                                        <th>פעולות</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expenses-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="edit-status" class="status-message"></div>
             </div>
             
             <!-- יצירת דף חדש -->
@@ -393,17 +497,17 @@
                 <div class="grid">
                     <div class="form-group">
                         <label for="new-filename">שם הקובץ החדש:</label>
-                        <input type="text" id="new-filename" placeholder="202506-1.html">
+                        <input type="text" id="new-filename" placeholder="202507-1.html">
                     </div>
                     <div class="form-group">
                         <label for="new-title">כותרת הדוח:</label>
-                        <input type="text" id="new-title" placeholder="דוח הכנסות והוצאות - חודש יוני 2025">
+                        <input type="text" id="new-title" placeholder="דוח הכנסות והוצאות - חודש יולי 2025">
                     </div>
                 </div>
                 
                 <div class="form-group">
                     <label for="new-period">תקופת הדוח:</label>
-                    <input type="text" id="new-period" placeholder="חודש יוני 2025">
+                    <input type="text" id="new-period" placeholder="חודש יולי 2025">
                 </div>
                 
                 <h3>עדכון נתונים כספיים:</h3>
@@ -429,7 +533,7 @@
                     </div>
                 </div>
                 
-                <button type="button" class="button success" id="create-page-btn">צור דף חדש</button>
+                <button type="button" class="button success" onclick="createNewPage()">צור דף חדש</button>
                 <div class="progress-bar" id="creation-progress">
                     <div class="progress-fill" id="progress-fill"></div>
                 </div>
@@ -445,6 +549,10 @@
             owner: 'na5845',
             repo: 'Dashboard'
         };
+
+        // משתנים גלובליים לעריכה
+        let currentEditingFile = null;
+        let currentPageContent = null;
 
         // פונקציה להצגת הודעות סטטוס
         function showStatus(elementId, type, message) {
@@ -466,16 +574,8 @@
         function testConnection() {
             console.log('Testing connection...');
             
-            const tokenInput = document.getElementById('github-token');
-            const repoInput = document.getElementById('repo-name');
-            
-            if (!tokenInput || !repoInput) {
-                console.error('Elements not found');
-                return;
-            }
-            
-            const token = tokenInput.value.trim();
-            const repoName = repoInput.value.trim();
+            const token = document.getElementById('github-token').value.trim();
+            const repoName = document.getElementById('repo-name').value.trim();
             
             if (!token) {
                 showStatus('connection-status', 'error', 'נא הזן GitHub Token');
@@ -487,10 +587,7 @@
             
             showStatus('connection-status', 'info', 'בודק חיבור...');
             
-            const apiUrl = `https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}`;
-            console.log('API URL:', apiUrl);
-            
-            fetch(apiUrl, {
+            fetch(`https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `token ${token}`,
@@ -498,23 +595,23 @@
                 }
             })
             .then(response => {
-                console.log('Response status:', response.status);
                 if (response.ok) {
                     showStatus('connection-status', 'success', 'חיבור הצליח! ✅');
                     return response.json();
                 } else {
-                    throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+                    throw new Error(`HTTP ${response.status}`);
                 }
             })
             .then(data => {
                 console.log('Repository data:', data);
             })
             .catch(error => {
-                console.error('Connection error:', error);
                 showStatus('connection-status', 'error', `שגיאה בחיבור: ${error.message}`);
             });
         }
-        async function loadExistingPages() {
+
+        // טעינת דפים קיימים
+        function loadExistingPages() {
             if (!githubConfig.token) {
                 showStatus('connection-status', 'error', 'נא בדוק את החיבור ל-GitHub תחילה');
                 return;
@@ -526,19 +623,19 @@
             loading.style.display = 'block';
             pagesList.innerHTML = '';
             
-            try {
-                const response = await fetch(`https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents`, {
-                    headers: {
-                        'Authorization': `token ${githubConfig.token}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                });
-                
+            fetch(`https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents`, {
+                headers: {
+                    'Authorization': `token ${githubConfig.token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            })
+            .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
                 }
-                
-                const files = await response.json();
+                return response.json();
+            })
+            .then(files => {
                 const htmlFiles = files.filter(file => file.name.endsWith('.html'));
                 
                 if (htmlFiles.length === 0) {
@@ -550,41 +647,42 @@
                         fileItem.innerHTML = `
                             <div class="file-name">${file.name}</div>
                             <div class="file-actions">
-                                <button class="button success" onclick="window.editPage('${file.name}')">✏️ ערוך</button>
-                                <button class="button" onclick="window.duplicatePage('${file.name}')">📋 שכפל</button>
-                                <button class="button" onclick="window.viewPage('${file.name}')">👁️ צפה</button>
+                                <button class="button success" onclick="editPage('${file.name}')">✏️ ערוך</button>
+                                <button class="button" onclick="duplicatePage('${file.name}')">📋 שכפל</button>
+                                <button class="button" onclick="viewPage('${file.name}')">👁️ צפה</button>
                             </div>
                         `;
                         pagesList.appendChild(fileItem);
                     });
                 }
-            } catch (error) {
+            })
+            .catch(error => {
                 pagesList.innerHTML = `<p style="text-align: center; color: #dc3545;">שגיאה בטעינת הדפים: ${error.message}</p>`;
-            } finally {
+            })
+            .finally(() => {
                 loading.style.display = 'none';
-            }
+            });
         }
 
         // עריכת דף
-        async function editPage(filename) {
+        function editPage(filename) {
             console.log('Editing page:', filename);
             
-            try {
-                showStatus('edit-status', 'info', 'טוען קובץ לעריכה...');
-                
-                // קריאת תוכן הקובץ
-                const response = await fetch(`https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents/${filename}`, {
-                    headers: {
-                        'Authorization': `token ${githubConfig.token}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                });
-                
+            showStatus('edit-status', 'info', 'טוען קובץ לעריכה...');
+            
+            fetch(`https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents/${filename}`, {
+                headers: {
+                    'Authorization': `token ${githubConfig.token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            })
+            .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
                 }
-                
-                const data = await response.json();
+                return response.json();
+            })
+            .then(data => {
                 const decodedContent = atob(data.content);
                 currentPageContent = new TextDecoder('utf-8').decode(
                     new Uint8Array([...decodedContent].map(char => char.charCodeAt(0)))
@@ -607,21 +705,21 @@
                 // גלילה למודול העריכה
                 document.getElementById('edit-section').scrollIntoView({ behavior: 'smooth' });
                 
-            } catch (error) {
+            })
+            .catch(error => {
                 console.error('Error loading file for edit:', error);
                 showStatus('edit-status', 'error', `שגיאה בטעינת הקובץ: ${error.message}`);
-            }
+            });
         }
 
-        // מילוי טופס העריכה עם נתונים קיימים
+        // מילוי טופס העריכה
         function populateEditForm() {
             if (!currentPageContent) return;
             
-            // חילוץ נתונים מהתוכן
+            // חילוץ כותרת ותקופה
             const titleMatch = currentPageContent.match(/<title>(.*?)<\/title>/);
             const periodMatch = currentPageContent.match(/<div class="period">(.*?)<\/div>/);
             
-            // מילוי השדות הכלליים
             if (titleMatch) {
                 document.getElementById('edit-title').value = titleMatch[1];
             }
@@ -630,249 +728,169 @@
             }
             
             // חילוץ נתונים כספיים
-            extractFinancialData();
-            
-            // חילוץ טבלאות
-            extractIncomeData();
-            extractExpensesData();
-        }
-
-        // חילוץ נתונים כספיים
-        function extractFinancialData() {
-            // חילוץ הכנסות
             const incomeMatch = currentPageContent.match(/<div class="card revenue">[\s\S]*?<div class="amount">₪?([\d,]+)/);
             if (incomeMatch) {
                 document.getElementById('edit-total-income').value = incomeMatch[1].replace(/,/g, '');
             }
             
-            // חילוץ הוצאות
             const expensesMatch = currentPageContent.match(/<div class="card expenses">[\s\S]*?<div class="amount">₪?([\d,]+)/);
             if (expensesMatch) {
                 document.getElementById('edit-total-expenses').value = expensesMatch[1].replace(/,/g, '');
             }
             
-            // חילוץ תורמים
-            const donorsMatch = currentPageContent.match(/<h3>סך תורמים<\/h3>[\s\S]*?<div class="amount">([\d,]+)/);
-            if (donorsMatch) {
-                document.getElementById('edit-total-donors').value = donorsMatch[1].replace(/,/g, '');
-            }
-            
-            // חילוץ מקבלי מלגות
-            const recipientsMatch = currentPageContent.match(/<h3>סך אברכים המקבלים מלגה<\/h3>[\s\S]*?<div class="amount">([\d,]+)/);
-            if (recipientsMatch) {
-                document.getElementById('edit-scholarship-recipients').value = recipientsMatch[1].replace(/,/g, '');
-            }
+            // טעינת נתוני הכנסות והוצאות לדוגמה
+            loadSampleData();
         }
 
-        // חילוץ נתוני הכנסות
-        function extractIncomeData() {
-            const tbody = document.getElementById('income-tbody');
-            tbody.innerHTML = '';
-            
-            // דוגמה בסיסית - ניתן להרחיב
-            const incomeRows = [
+        function loadSampleData() {
+            // הכנסות לדוגמה
+            const incomeData = [
                 { name: 'אשראי', amount: '64204' },
                 { name: 'בנקאי', amount: '33846' },
-                { name: 'מזומן', amount: '8450' },
-                { name: 'העברות', amount: '2820' }
+                { name: 'מזומן', amount: '8450' }
             ];
             
-            incomeRows.forEach(row => {
-                addIncomeRowWithData(row.name, row.amount);
+            const incomeTbody = document.getElementById('income-tbody');
+            incomeTbody.innerHTML = '';
+            incomeData.forEach(item => {
+                addIncomeRowWithData(item.name, item.amount);
             });
-        }
-
-        // חילוץ נתוני הוצאות
-        function extractExpensesData() {
-            const tbody = document.getElementById('expenses-tbody');
-            tbody.innerHTML = '';
             
-            // דוגמה בסיסית - ניתן להרחיב
-            const expenseRows = [
-                { name: 'סך המלגות', amount: '103091' },
+            // הוצאות לדוגמה
+            const expenseData = [
+                { name: 'מלגות', amount: '103091' },
                 { name: 'משכורות', amount: '20550' },
-                { name: 'חוב לפולק', amount: '11100' },
-                { name: 'הוצאות משרד', amount: '3000' },
-                { name: 'הוצאות פרסום', amount: '3500' }
+                { name: 'הוצאות משרד', amount: '3000' }
             ];
             
-            expenseRows.forEach(row => {
-                addExpenseRowWithData(row.name, row.amount);
+            const expenseTbody = document.getElementById('expenses-tbody');
+            expenseTbody.innerHTML = '';
+            expenseData.forEach(item => {
+                addExpenseRowWithData(item.name, item.amount);
             });
         }
 
-        // הוספת שורת הכנסה
-        window.addIncomeRow = function() {
+        // הוספת שורות
+        function addIncomeRow() {
             addIncomeRowWithData('', '');
         }
 
-        // הוספת שורת הוצאה  
-        window.addExpenseRow = function() {
+        function addIncomeRowWithData(name, amount) {
+            const tbody = document.getElementById('income-tbody');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="text" value="${name}" placeholder="מקור הכנסה"></td>
+                <td><input type="number" value="${amount}" placeholder="0"></td>
+                <td>
+                    <div class="row-actions">
+                        <button class="delete-btn" onclick="deleteRow(this)">🗑️</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        function addExpenseRow() {
             addExpenseRowWithData('', '');
         }
 
-        // מחיקת שורה
-        window.deleteRow = function(button) {
+        function addExpenseRowWithData(name, amount) {
+            const tbody = document.getElementById('expenses-tbody');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="text" value="${name}" placeholder="סוג הוצאה"></td>
+                <td><input type="number" value="${amount}" placeholder="0"></td>
+                <td>
+                    <div class="row-actions">
+                        <button class="delete-btn" onclick="deleteRow(this)">🗑️</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        function deleteRow(button) {
             button.closest('tr').remove();
         }
 
-        // צפייה בדף
-        window.viewPage = function(filename) {
-            window.open(`https://na5845.github.io/Dashboard/${filename}`, '_blank');
-        }
-
-        // שכפול דף
-        window.duplicatePage = function(filename) {
-            document.getElementById('new-filename').value = filename.replace('.html', '-copy.html');
-            
-            // גלילה לטופס יצירת דף חדש
-            const createSection = document.querySelector('.section:last-of-type');
-            if (createSection) {
-                createSection.scrollIntoView({ behavior: 'smooth' });
-            }
-        }
-
-        // עריכת דף
-        window.editPage = function(filename) {
-            editPage(filename);
-        }
-        async function saveChanges() {
+        // שמירת שינויים
+        function saveChanges() {
             if (!currentEditingFile || !currentPageContent) {
                 showStatus('edit-status', 'error', 'אין קובץ פתוח לעריכה');
                 return;
             }
             
-            try {
-                showStatus('edit-status', 'info', 'שומר שינויים...');
-                
-                // איסוף הנתונים מהטופס
-                const updatedData = collectFormData();
-                
-                // עדכון התוכן
-                let updatedContent = updatePageContent(currentPageContent, updatedData);
-                
-                // שמירה ב-GitHub
-                const utf8Content = new TextEncoder().encode(updatedContent);
-                const encodedContent = btoa(String.fromCharCode(...utf8Content));
-                
-                const response = await fetch(`https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents/${currentEditingFile.name}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${githubConfig.token}`,
-                        'Accept': 'application/vnd.github.v3+json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: `עדכון דף: ${currentEditingFile.name}`,
-                        content: encodedContent,
-                        sha: currentEditingFile.sha
-                    })
-                });
-                
-                if (response.ok) {
-                    showStatus('edit-status', 'success', 'השינויים נשמרו בהצלחה! 🎉');
-                    cancelEdit();
-                } else {
-                    const errorData = await response.json();
-                    throw new Error(`HTTP ${response.status} - ${errorData.message || response.statusText}`);
-                }
-                
-            } catch (error) {
-                console.error('Error saving changes:', error);
-                showStatus('edit-status', 'error', `שגיאה בשמירת השינויים: ${error.message}`);
-            }
-        }
-
-        // איסוף נתונים מהטופס
-        function collectFormData() {
-            const data = {
-                title: document.getElementById('edit-title').value,
-                period: document.getElementById('edit-period').value,
-                totalIncome: document.getElementById('edit-total-income').value,
-                totalExpenses: document.getElementById('edit-total-expenses').value,
-                totalDonors: document.getElementById('edit-total-donors').value,
-                scholarshipRecipients: document.getElementById('edit-scholarship-recipients').value,
-                incomeItems: [],
-                expenseItems: []
-            };
+            showStatus('edit-status', 'info', 'שומר שינויים...');
             
-            // איסוף הכנסות
-            const incomeRows = document.querySelectorAll('#income-tbody tr');
-            incomeRows.forEach(row => {
-                const inputs = row.querySelectorAll('input');
-                if (inputs[0].value.trim()) {
-                    data.incomeItems.push({
-                        name: inputs[0].value.trim(),
-                        amount: parseInt(inputs[1].value) || 0
-                    });
-                }
-            });
+            // עדכון התוכן
+            let updatedContent = currentPageContent;
             
-            // איסוף הוצאות
-            const expenseRows = document.querySelectorAll('#expenses-tbody tr');
-            expenseRows.forEach(row => {
-                const inputs = row.querySelectorAll('input');
-                if (inputs[0].value.trim()) {
-                    data.expenseItems.push({
-                        name: inputs[0].value.trim(),
-                        amount: parseInt(inputs[1].value) || 0
-                    });
-                }
-            });
+            const title = document.getElementById('edit-title').value;
+            const period = document.getElementById('edit-period').value;
+            const income = document.getElementById('edit-total-income').value;
+            const expenses = document.getElementById('edit-total-expenses').value;
             
-            return data;
-        }
-
-        // עדכון תוכן הדף
-        function updatePageContent(content, data) {
-            let updatedContent = content;
-            
-            // עדכון כותרת
-            if (data.title) {
-                updatedContent = updatedContent.replace(/<title>.*?<\/title>/g, `<title>${data.title}</title>`);
-                updatedContent = updatedContent.replace(/<h1>.*?<\/h1>/g, `<h1>${data.title.split(' - ')[0] || data.title}</h1>`);
+            if (title) {
+                updatedContent = updatedContent.replace(/<title>.*?<\/title>/g, `<title>${title}</title>`);
+                updatedContent = updatedContent.replace(/<h1>.*?<\/h1>/g, `<h1>${title.split(' - ')[0] || title}</h1>`);
             }
             
-            // עדכון תקופה
-            if (data.period) {
-                updatedContent = updatedContent.replace(/<div class="period">.*?<\/div>/g, `<div class="period">${data.period}</div>`);
+            if (period) {
+                updatedContent = updatedContent.replace(/<div class="period">.*?<\/div>/g, `<div class="period">${period}</div>`);
             }
             
-            // עדכון נתונים כספיים
-            if (data.totalIncome) {
-                const formattedIncome = parseInt(data.totalIncome).toLocaleString('he-IL');
+            if (income) {
+                const formattedIncome = parseInt(income).toLocaleString('he-IL');
                 updatedContent = updatedContent.replace(/(<div class="card revenue">[\s\S]*?<div class="amount">).*?(₪.*?<\/div>)/m, 
                     `$1₪${formattedIncome}</div>`);
             }
             
-            if (data.totalExpenses) {
-                const formattedExpenses = parseInt(data.totalExpenses).toLocaleString('he-IL');
+            if (expenses) {
+                const formattedExpenses = parseInt(expenses).toLocaleString('he-IL');
                 updatedContent = updatedContent.replace(/(<div class="card expenses">[\s\S]*?<div class="amount">).*?(₪.*?<\/div>)/m, 
                     `$1₪${formattedExpenses}</div>`);
             }
             
             // חישוב יתרה
-            if (data.totalIncome && data.totalExpenses) {
-                const balance = parseInt(data.totalIncome) - parseInt(data.totalExpenses);
+            if (income && expenses) {
+                const balance = parseInt(income) - parseInt(expenses);
                 const sign = balance < 0 ? '-' : '';
                 const absValue = Math.abs(balance).toLocaleString('he-IL');
                 updatedContent = updatedContent.replace(/(<div class="card profit">[\s\S]*?<div class="amount">).*?(₪.*?<\/div>)/m, 
                     `$1${sign}₪${absValue}</div>`);
             }
             
-            if (data.totalDonors) {
-                const formattedDonors = parseInt(data.totalDonors).toLocaleString('he-IL');
-                updatedContent = updatedContent.replace(/(<h3>סך תורמים<\/h3>[\s\S]*?<div class="amount">).*?(<\/div>)/m, 
-                    `$1${formattedDonors}$2`);
-            }
+            // שמירה ב-GitHub
+            const utf8Content = new TextEncoder().encode(updatedContent);
+            const encodedContent = btoa(String.fromCharCode(...utf8Content));
             
-            if (data.scholarshipRecipients) {
-                const formattedRecipients = parseInt(data.scholarshipRecipients).toLocaleString('he-IL');
-                updatedContent = updatedContent.replace(/(<h3>סך אברכים המקבלים מלגה<\/h3>[\s\S]*?<div class="amount">).*?(<\/div>)/m, 
-                    `$1${formattedRecipients}$2`);
-            }
-            
-            return updatedContent;
+            fetch(`https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents/${currentEditingFile.name}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${githubConfig.token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `עדכון דף: ${currentEditingFile.name}`,
+                    content: encodedContent,
+                    sha: currentEditingFile.sha
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    showStatus('edit-status', 'success', 'השינויים נשמרו בהצלחה! 🎉');
+                    setTimeout(() => {
+                        cancelEdit();
+                    }, 2000);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error saving changes:', error);
+                showStatus('edit-status', 'error', `שגיאה בשמירת השינויים: ${error.message}`);
+            });
         }
 
         // ביטול עריכה
@@ -886,8 +904,6 @@
             document.getElementById('edit-period').value = '';
             document.getElementById('edit-total-income').value = '';
             document.getElementById('edit-total-expenses').value = '';
-            document.getElementById('edit-total-donors').value = '';
-            document.getElementById('edit-scholarship-recipients').value = '';
             document.getElementById('income-tbody').innerHTML = '';
             document.getElementById('expenses-tbody').innerHTML = '';
         }
@@ -900,65 +916,31 @@
         // שכפול דף
         function duplicatePage(filename) {
             document.getElementById('new-filename').value = filename.replace('.html', '-copy.html');
-            
-            // גלילה לטופס יצירת דף חדש
-            document.querySelector('.section:has(#new-filename)').scrollIntoView({ behavior: 'smooth' });
+            document.querySelector('[id="new-filename"]').closest('.section').scrollIntoView({ behavior: 'smooth' });
         }
-            console.log('Testing connection...');
-            
-            const tokenInput = document.getElementById('github-token');
-            const repoInput = document.getElementById('repo-name');
-            
-            if (!tokenInput || !repoInput) {
-                console.error('Elements not found');
-                return;
-            }
-            
-            const token = tokenInput.value.trim();
-            const repoName = repoInput.value.trim();
-            
-            if (!token) {
-                showStatus('connection-status', 'error', 'נא הזן GitHub Token');
-                return;
-            }
-            
-            githubConfig.token = token;
-            githubConfig.repo = repoName;
-            
-            showStatus('connection-status', 'info', 'בודק חיבור...');
-            
-            const apiUrl = `https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}`;
-            console.log('API URL:', apiUrl);
-            
-            fetch(apiUrl, {
-                method: 'GET',
+
+        // קבלת תוכן הדף המקורי מ-GitHub
+        async function getOriginalPageContent() {
+            const response = await fetch(`https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents/202505-1.html`, {
                 headers: {
-                    'Authorization': `token ${token}`,
+                    'Authorization': `token ${githubConfig.token}`,
                     'Accept': 'application/vnd.github.v3+json'
                 }
-            })
-            .then(response => {
-                console.log('Response status:', response.status);
-                if (response.ok) {
-                    showStatus('connection-status', 'success', 'חיבור הצליח! ✅');
-                    return response.json();
-                } else {
-                    throw new Error(`HTTP ${response.status} - ${response.statusText}`);
-                }
-            })
-            .then(data => {
-                console.log('Repository data:', data);
-            })
-            .catch(error => {
-                console.error('Connection error:', error);
-                showStatus('connection-status', 'error', `שגיאה בחיבור: ${error.message}`);
             });
+            
+            if (response.ok) {
+                const data = await response.json();
+                const decodedContent = atob(data.content);
+                return new TextDecoder('utf-8').decode(
+                    new Uint8Array([...decodedContent].map(char => char.charCodeAt(0)))
+                );
+            } else {
+                throw new Error(`לא ניתן לקרוא את הקובץ המקורי - HTTP ${response.status}`);
+            }
         }
 
         // יצירת דף חדש
         async function createNewPage() {
-            console.log('Creating new page...');
-            
             if (!githubConfig.token) {
                 showStatus('creation-status', 'error', 'נא בדוק את החיבור ל-GitHub תחילה');
                 return;
@@ -992,12 +974,9 @@
                 showStatus('creation-status', 'info', 'יוצר דף חדש...');
                 progressFill.style.width = '25%';
                 
-                // קבלת תוכן הדף המקורי
                 const sourceContent = await getOriginalPageContent();
-                
                 progressFill.style.width = '50%';
                 
-                // עדכון התוכן
                 let updatedContent = sourceContent;
                 
                 if (title) {
@@ -1009,7 +988,6 @@
                     updatedContent = updatedContent.replace(/<div class="period">.*?<\/div>/g, `<div class="period">${period}</div>`);
                 }
                 
-                // עדכון נתונים כספיים
                 if (income) {
                     const formattedIncome = parseInt(income).toLocaleString('he-IL');
                     updatedContent = updatedContent.replace(/(<div class="card revenue">[\s\S]*?<div class="amount">).*?(₪.*?<\/div>)/m, 
@@ -1022,7 +1000,6 @@
                         `$1₪${formattedExpenses}</div>`);
                 }
                 
-                // חישוב יתרה
                 if (income && expenses) {
                     const balance = parseInt(income) - parseInt(expenses);
                     const sign = balance < 0 ? '-' : '';
@@ -1045,14 +1022,10 @@
                 
                 progressFill.style.width = '75%';
                 
-                // יצירת הקובץ ב-GitHub
-                // תיקון encoding לעברית
                 const utf8Content = new TextEncoder().encode(updatedContent);
                 const encodedContent = btoa(String.fromCharCode(...utf8Content));
                 
-                const apiUrl = `https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents/${filename}`;
-                
-                const response = await fetch(apiUrl, {
+                const response = await fetch(`https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents/${filename}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `token ${githubConfig.token}`,
@@ -1094,73 +1067,12 @@
             }
         }
 
-        // קבלת תוכן הדף המקורי מ-GitHub
-        async function getOriginalPageContent() {
-            try {
-                // קריאת הקובץ המקורי מהרפוזיטורי
-                const response = await fetch(`https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents/202505-1.html`, {
-                    headers: {
-                        'Authorization': `token ${githubConfig.token}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    // פענוח התוכן מ-base64 עם תמיכה בעברית
-                    const decodedContent = atob(data.content);
-                    // המרה נכונה לעברית
-                    return new TextDecoder('utf-8').decode(
-                        new Uint8Array([...decodedContent].map(char => char.charCodeAt(0)))
-                    );
-                } else {
-                    throw new Error(`לא ניתן לקרוא את הקובץ המקורי - HTTP ${response.status}`);
-                }
-            } catch (error) {
-                console.error('שגיאה בקריאת הקובץ המקורי:', error);
-                throw new Error(`שגיאה בקריאת הקובץ המקורי: ${error.message}`);
-            }
-        }
-
-        // Event listeners
+        // הגדרת שם קובץ אוטומטי
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded');
-            
-            // הוספת event listeners לכפתורים
-            const testBtn = document.getElementById('test-connection-btn');
-            const createBtn = document.getElementById('create-page-btn');
-            const loadPagesBtn = document.getElementById('load-pages-btn');
-            const saveChangesBtn = document.getElementById('save-changes-btn');
-            const cancelEditBtn = document.getElementById('cancel-edit-btn');
-            
-            if (testBtn) {
-                testBtn.addEventListener('click', testConnection);
-            }
-            
-            if (createBtn) {
-                createBtn.addEventListener('click', createNewPage);
-            }
-            
-            if (loadPagesBtn) {
-                loadPagesBtn.addEventListener('click', loadExistingPages);
-            }
-            
-            if (saveChangesBtn) {
-                saveChangesBtn.addEventListener('click', saveChanges);
-            }
-            
-            if (cancelEditBtn) {
-                cancelEditBtn.addEventListener('click', cancelEdit);
-            }
-            
-            // הגדרת שם קובץ אוטומטי בהתבסס על התאריך הנוכחי
             const now = new Date();
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
-            const filenameInput = document.getElementById('new-filename');
-            if (filenameInput) {
-                filenameInput.placeholder = `${year}${month}-1.html`;
-            }
+            document.getElementById('new-filename').placeholder = `${year}${month}-1.html`;
         });
     </script>
 </body>
