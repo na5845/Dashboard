@@ -483,7 +483,7 @@
         // קבלת תוכן הדף המקורי מ-GitHub
         async function getOriginalPageContent() {
             try {
-                // ניסיון לקרוא את הקובץ המקורי מהרפוזיטורי
+                // קריאת הקובץ המקורי מהרפוזיטורי
                 const response = await fetch(`https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents/202505-1.html`, {
                     headers: {
                         'Authorization': `token ${githubConfig.token}`,
@@ -496,48 +496,12 @@
                     // פענוח התוכן מ-base64
                     return atob(data.content);
                 } else {
-                    throw new Error('לא ניתן לקרוא את הקובץ המקורי');
+                    throw new Error(`לא ניתן לקרוא את הקובץ המקורי - HTTP ${response.status}`);
                 }
             } catch (error) {
                 console.error('שגיאה בקריאת הקובץ המקורי:', error);
-                // אם יש שגיאה, נשתמש בתבנית בסיסית
-                return getBasicTemplate();
+                throw new Error(`שגיאה בקריאת הקובץ המקורי: ${error.message}`);
             }
-        }
-        
-        // תבנית בסיסית במקרה של כשל
-        function getBasicTemplate() {
-            return \`<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>דוח הכנסות והוצאות</title>
-    <style>
-        body { font-family: Arial, sans-serif; direction: rtl; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .card { padding: 20px; margin: 10px; border-radius: 10px; background: #f8f9fa; }
-        .amount { font-size: 2em; font-weight: bold; color: #28a745; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>דוח הכנסות והוצאות</h1>
-            <p>תבנית בסיסית</p>
-        </div>
-        <div class="card">
-            <h3>סך הכנסות</h3>
-            <div class="amount">₪0</div>
-        </div>
-        <div class="card">
-            <h3>סך הוצאות</h3>
-            <div class="amount">₪0</div>
-        </div>
-    </div>
-</body>
-</html>\`;
         }
 
         // Event listeners
