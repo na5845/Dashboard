@@ -798,10 +798,13 @@
             <div class="settings-content">
                 <div class="settings-header">
                     <h2 class="settings-title">הגדרות דוחות</h2>
-                    <button class="close-btn" onclick="closeSettings()">×</button>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <a href="https://na5845.github.io/Dashboard/Manager.html" target="_blank" class="btn btn-success" style="text-decoration: none; padding: 8px 16px; font-size: 0.9em;">📊 יצירת דוחות</a>
+                        <button class="close-btn" onclick="closeSettings()">×</button>
+                    </div>
                 </div>
 
-                <div class="github-settings">
+                <div class="github-settings" id="github-settings-section">
                     <h4>🔗 הגדרות GitHub API</h4>
                     <div class="github-row">
                         <input type="text" id="github-username" class="github-input" placeholder="שם משתמש GitHub" value="na5845">
@@ -812,9 +815,13 @@
                     <div style="display: flex; gap: 10px;">
                         <button onclick="loadFromGitHub()" class="btn btn-primary" style="flex: 1;">📥 טען מ-GitHub</button>
                         <button onclick="testConnection()" class="btn btn-secondary" style="flex: 1;">🔗 בדוק חיבור</button>
-                        <a href="https://na5845.github.io/Dashboard/Manager.html" target="_blank" class="btn btn-success" style="flex: 1; text-decoration: none;">📊 יצירת דוחות</a>
                     </div>
                     <div id="api-status" class="api-status" style="display: none;"></div>
+                </div>
+
+                <div id="unauthorized-message" class="github-settings" style="display: none; text-align: center; padding: 30px;">
+                    <h4 style="color: #e74c3c;">🔒 אין הרשאה</h4>
+                    <p style="color: #6c757d; margin: 15px 0;">רק המנהל המורשה יכול לגשת להגדרות GitHub</p>
                 </div>
                 <div class="year-selector-settings" id="editor-section" style="display: none;">
                     <div class="form-row">
@@ -1031,8 +1038,16 @@
             return data;
         }
 
-        // טעינה אוטומטית מ-GitHub
+        // טעינה אוטומטית מ-GitHub (רק למנהל מורשה)
         async function autoLoadFromGitHub() {
+            const hasPermission = await checkUserPermissions();
+            if (!hasPermission) {
+                // אם אין הרשאה, טען נתונים ברירת מחדל
+                reportsData = createDefaultData();
+                displayReportsForYear(currentYear);
+                return;
+            }
+
             const savedConfig = localStorage.getItem('github-config');
             if (!savedConfig) return;
 
@@ -1286,24 +1301,50 @@
             document.getElementById('report-edit-form').innerHTML = formHTML;
         }
 
+        // בדיקת הרשאות משתמש
+        function checkUserPermissions() {
+            return new Promise((resolve) => {
+                onAuthStateChanged(auth, (user) => {
+                    if (user && user.email === 'n.a0533153305@gmail.com') {
+                        resolve(true);
+                    } else {
+                        resolve(false);
+                    }
+                });
+            });
+        }
+
         // פתיחת חלון הגדרות
-        function openSettings() {
+        async function openSettings() {
             document.getElementById('settings-modal').classList.add('show');
             
-            // טעינת הגדרות GitHub שמורות
-            const savedConfig = localStorage.getItem('github-config');
-            if (savedConfig) {
-                try {
-                    const config = JSON.parse(savedConfig);
-                    document.getElementById('github-username').value = config.username || 'na5845';
-                    document.getElementById('github-repo').value = config.repo || 'Dashboard';
-                    document.getElementById('github-file').value = config.filePath || 'data/reports.json';
-                    if (config.token) {
-                        document.getElementById('github-token').value = config.token;
+            // בדיקת הרשאות
+            const hasPermission = await checkUserPermissions();
+            
+            if (hasPermission) {
+                // הצגת הגדרות GitHub
+                document.getElementById('github-settings-section').style.display = 'block';
+                document.getElementById('unauthorized-message').style.display = 'none';
+                
+                // טעינת הגדרות GitHub שמורות
+                const savedConfig = localStorage.getItem('github-config');
+                if (savedConfig) {
+                    try {
+                        const config = JSON.parse(savedConfig);
+                        document.getElementById('github-username').value = config.username || 'na5845';
+                        document.getElementById('github-repo').value = config.repo || 'Dashboard';
+                        document.getElementById('github-file').value = config.filePath || 'data/reports.json';
+                        if (config.token) {
+                            document.getElementById('github-token').value = config.token;
+                        }
+                    } catch (e) {
+                        console.log('שגיאה בטעינת הגדרות שמורות');
                     }
-                } catch (e) {
-                    console.log('שגיאה בטעינת הגדרות שמורות');
                 }
+            } else {
+                // הסתרת הגדרות GitHub והצגת הודעת אי הרשאה
+                document.getElementById('github-settings-section').style.display = 'none';
+                document.getElementById('unauthorized-message').style.display = 'block';
             }
         }
 
