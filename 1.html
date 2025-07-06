@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הגדרות דוחות - קרן התורה</title>
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCl9J7h5NOJ5aGHj3_BBw0jzm5iGSE7n20",
+            authDomain: "dashboard-3e2a5.firebaseapp.com",
+            projectId: "dashboard-3e2a5",
+            storageBucket: "dashboard-3e2a5.firebasestorage.app",
+            messagingSenderId: "682842596931",
+            appId: "1:682842596931:web:5c0a049a981d750e1e16f6",
+            measurementId: "G-NV42P569WJ"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // נתוני דוחות ברירת מחדל
+        const defaultReportsData = {
+            "2024": {},
+            "2025": {
+                "january": {
+                    name: "ינואר 2025",
+                    status: "unavailable",
+                    link: "",
+                    income: 0,
+                    expenses: 0,
+                    description: "דוח זה טרם הוכן או שהמידע עדיין לא זמין."
+                },
+                "february": {
+                    name: "פברואר 2025",
+                    status: "unavailable",
+                    link: "",
+                    income: 0,
+                    expenses: 0,
+                    description: "דוח זה טרם הוכן או שהמידע עדיין לא זמין."
+                },
+                "march": {
+                    name: "מרץ 2025",
+                    status: "unavailable",
+                    link: "",
+                    income: 0,
+                    expenses: 0,
+                    description: "דוח זה טרם הוכן או שהמידע עדיין לא זמין."
+                },
+                "april": {
+                    name: "אפריל 2025",
+                    status: "unavailable",
+                    link: "",
+                    income: 0,
+                    expenses: 0,
+                    description: "דוח זה טרם הוכן או שהמידע עדיין לא זמין."
+                },
+                "may": {
+                    name: "מאי 2025",
+                    status: "available",
+                    link: "https://na5845.github.io/Dashboard/202505-1.html",
+                    income: 109300,
+                    expenses: 144500,
+                    description: "דוח מפורט של הכנסות והוצאות חודש מאי, כולל פירוט לפי בנקים ומטרות."
+                },
+                "june": {
+                    name: "יוני 2025",
+                    status: "preparing",
+                    link: "",
+                    income: 0,
+                    expenses: 0,
+                    description: "דוח זה נמצא כעת בתהליך הכנה ויהיה זמין בקרוב."
+                },
+                "july": {
+                    name: "יולי 2025",
+                    status: "future",
+                    link: "",
+                    income: 0,
+                    expenses: 0,
+                    description: "דוח זה יהיה זמין לאחר סיום החודש."
+                },
+                "august": {
+                    name: "אוגוסט 2025",
+                    status: "future",
+                    link: "",
+                    income: 0,
+                    expenses: 0,
+                    description: "דוח זה יהיה זמין לאחר סיום החודש."
+                },
+                "september": {
+                    name: "ספטמבר 2025",
+                    status: "future",
+                    link: "",
+                    income: 0,
+                    expenses: 0,
+                    description: "דוח זה יהיה זמין לאחר סיום החודש."
+                },
+                "october": {
+                    name: "אוקטובר 2025",
+                    status: "future",
+                    link: "",
+                    income: 0,
+                    expenses: 0,
+                    description: "דוח זה יהיה זמין לאחר סיום החודש."
+                },
+                "november": {
+                    name: "נובמבר 2025",
+                    status: "future",
+                    link: "",
+                    income: 0,
+                    expenses: 0,
+                    description: "דוח זה יהיה זמין לאחר סיום החודש."
+                },
+                "december": {
+                    name: "דצמבר 2025",
+                    status: "future",
+                    link: "",
+                    income: 0,
+                    expenses: 0,
+                    description: "דוח זה יהיה זמין לאחר סיום החודש."
+                }
+            },
+            "2026": {}
+        };
+
+        let reportsData = {};
+
+        // אתחול נתונים
+        async function initializeData() {
+            try {
+                const docRef = doc(db, 'settings', 'reports');
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    reportsData = docSnap.data();
+                } else {
+                    // יצירת נתונים ראשוניים
+                    await setDoc(docRef, defaultReportsData);
+                    reportsData = defaultReportsData;
+                }
+                
+                loadReportsToUI();
+            } catch (error) {
+                console.error('שגיאה באתחול נתונים:', error);
+                reportsData = defaultReportsData;
+                loadReportsToUI();
+            }
+        }
+
+        // טעינת דוחות לממשק
+        function loadReportsToUI() {
+            const container = document.getElementById('reports-container');
+            container.innerHTML = '';
+
+            Object.keys(reportsData).forEach(year => {
+                if (Object.keys(reportsData[year]).length === 0) return;
+
+                const yearSection = createYearSection(year, reportsData[year]);
+                container.appendChild(yearSection);
+            });
+        }
+
+        // יצירת קטע שנה
+        function createYearSection(year, yearData) {
+            const section = document.createElement('div');
+            section.className = 'year-section';
+            section.innerHTML = `
+                <h2 class="year-title">${year}</h2>
+                <div class="reports-grid" id="reports-${year}"></div>
+            `;
+
+            const grid = section.querySelector('.reports-grid');
+            Object.keys(yearData).forEach(monthKey => {
+                const report = yearData[monthKey];
+                const reportCard = createReportCard(year, monthKey, report);
+                grid.appendChild(reportCard);
+            });
+
+            return section;
+        }
+
+        // יצירת כרטיס דוח
+        function createReportCard(year, monthKey, report) {
+            const card = document.createElement('div');
+            card.className = 'report-card';
+            
+            const statusClass = getStatusClass(report.status);
+            const statusText = getStatusText(report.status);
+            
+            card.innerHTML = `
+                <div class="report-header">
+                    <h3>${report.name}</h3>
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                </div>
+                <div class="report-content">
+                    <div class="report-field">
+                        <label>סטטוס:</label>
+                        <select onchange="updateReportField('${year}', '${monthKey}', 'status', this.value)">
+                            <option value="available" ${report.status === 'available' ? 'selected' : ''}>זמין</option>
+                            <option value="unavailable" ${report.status === 'unavailable' ? 'selected' : ''}>לא זמין</option>
+                            <option value="preparing" ${report.status === 'preparing' ? 'selected' : ''}>בהכנה</option>
+                            <option value="future" ${report.status === 'future' ? 'selected' : ''}>עתידי</option>
+                        </select>
+                    </div>
+                    <div class="report-field">
+                        <label>קישור לדוח:</label>
+                        <input type="url" value="${report.link || ''}" 
+                               onchange="updateReportField('${year}', '${monthKey}', 'link', this.value)"
+                               placeholder="https://example.com/report">
+                    </div>
+                    <div class="stats-row">
+                        <div class="report-field">
+                            <label>הכנסות (₪):</label>
+                            <input type="number" value="${report.income || 0}" 
+                                   onchange="updateReportField('${year}', '${monthKey}', 'income', parseInt(this.value) || 0)">
+                        </div>
+                        <div class="report-field">
+                            <label>הוצאות (₪):</label>
+                            <input type="number" value="${report.expenses || 0}" 
+                                   onchange="updateReportField('${year}', '${monthKey}', 'expenses', parseInt(this.value) || 0)">
+                        </div>
+                    </div>
+                    <div class="report-field">
+                        <label>תיאור:</label>
+                        <textarea onchange="updateReportField('${year}', '${monthKey}', 'description', this.value)"
+                                  placeholder="תיאור הדוח...">${report.description || ''}</textarea>
+                    </div>
+                </div>
+                <div class="report-actions">
+                    <button onclick="previewReport('${year}', '${monthKey}')" class="btn btn-preview">
+                        <span class="icon">👁️</span> תצוגה מקדימה
+                    </button>
+                    <button onclick="testLink('${report.link}')" class="btn btn-test" 
+                            ${!report.link ? 'disabled' : ''}>
+                        <span class="icon">🔗</span> בדיקת קישור
+                    </button>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // עדכון שדה בדוח
+        window.updateReportField = async function(year, monthKey, field, value) {
+            try {
+                if (!reportsData[year] || !reportsData[year][monthKey]) return;
+                
+                reportsData[year][monthKey][field] = value;
+                
+                const docRef = doc(db, 'settings', 'reports');
+                await updateDoc(docRef, reportsData);
+                
+                // עדכון תצוגה
+                loadReportsToUI();
+                
+                showNotification('השינוי נשמר בהצלחה', 'success');
+            } catch (error) {
+                console.error('שגיאה בעדכון:', error);
+                showNotification('שגיאה בשמירה: ' + error.message, 'error');
+            }
+        };
+
+        // תצוגה מקדימה של דוח
+        window.previewReport = function(year, monthKey) {
+            const report = reportsData[year][monthKey];
+            if (!report) return;
+
+            const modal = document.getElementById('preview-modal');
+            const content = document.getElementById('preview-content');
+            
+            const statusClass = getStatusClass(report.status);
+            const statusText = getStatusText(report.status);
+            
+            content.innerHTML = `
+                <div class="preview-card">
+                    <div class="month-header">
+                        <div class="month-name">${report.name}</div>
+                        <div class="status-badge ${statusClass}">${statusText}</div>
+                    </div>
+                    <div class="report-info">
+                        ${report.description}
+                    </div>
+                    ${report.status === 'available' && (report.income > 0 || report.expenses > 0) ? `
+                        <div class="report-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">₪${formatNumber(report.income)}</div>
+                                <div class="stat-label">הכנסות</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">₪${formatNumber(report.expenses)}</div>
+                                <div class="stat-label">הוצאות</div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    <div class="action-buttons">
+                        ${report.status === 'available' && report.link ? 
+                            `<a href="${report.link}" target="_blank" class="btn btn-primary">צפייה בדוח</a>` :
+                            `<button class="btn btn-primary" disabled>
+                                ${report.status === 'preparing' ? 'בהכנה...' : 
+                                  report.status === 'future' ? 'טרם זמין' : 'לא זמין'}
+                            </button>`
+                        }
+                    </div>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        };
+
+        // בדיקת קישור
+        window.testLink = function(link) {
+            if (!link) {
+                showNotification('לא הוגדר קישור', 'warning');
+                return;
+            }
+            
+            window.open(link, '_blank');
+        };
+
+        // סגירת מודל
+        window.closeModal = function() {
+            document.getElementById('preview-modal').style.display = 'none';
+        };
+
+        // שמירת כל השינויים
+        window.saveAllChanges = async function() {
+            try {
+                const docRef = doc(db, 'settings', 'reports');
+                await setDoc(docRef, reportsData);
+                showNotification('כל השינויים נשמרו בהצלחה!', 'success');
+            } catch (error) {
+                console.error('שגיאה בשמירה:', error);
+                showNotification('שגיאה בשמירה: ' + error.message, 'error');
+            }
+        };
+
+        // פונקציות עזר
+        function getStatusClass(status) {
+            const statusMap = {
+                'available': 'status-available',
+                'unavailable': 'status-unavailable',
+                'preparing': 'status-preparing',
+                'future': 'status-future'
+            };
+            return statusMap[status] || 'status-unavailable';
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'available': 'זמין',
+                'unavailable': 'לא זמין',
+                'preparing': 'בהכנה',
+                'future': 'עתידי'
+            };
+            return statusMap[status] || 'לא זמין';
+        }
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('he-IL').format(num);
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()">×</button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        // אימות משתמש
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('page-content').style.display = 'block';
+                document.getElementById('loading-auth').style.display = 'none';
+                
+                const logoutBtn = document.getElementById('logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.innerHTML = `התנתק (${user.displayName || user.email.split('@')[0]})`;
+                }
+                
+                initializeData();
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        // התנתקות
+        window.handleLogout = async function() {
+            try {
+                await signOut(auth);
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('שגיאה בהתנתקות:', error);
+                alert('שגיאה בהתנתקות: ' + error.message);
+            }
+        };
+    </script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Loading screen */
+        #loading-auth {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #page-content {
+            display: none;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            color: #6c757d;
+            font-size: 1.2em;
+        }
+
+        /* כפתורים */
+        .user-logout-btn {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            z-index: 1000;
+        }
+
+        .save-all-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(40, 167, 69, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .save-all-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(40, 167, 69, 0.6);
+        }
+
+        /* קטעי שנה */
+        .year-section {
+            margin-bottom: 40px;
+        }
+
+        .year-title {
+            background: rgba(255, 255, 255, 0.9);
+            color: #2c3e50;
+            padding: 20px;
+            border-radius: 15px 15px 0 0;
+            font-size: 1.8em;
+            text-align: center;
+            margin-bottom: 0;
+        }
+
+        /* רשת דוחות */
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 0 0 15px 15px;
+        }
+
+        /* כרטיס דוח */
+        .report-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+
+        .report-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .report-header h3 {
+            color: #2c3e50;
+            font-size: 1.3em;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .status-available { background: #28a745; color: white; }
+        .status-unavailable { background: #6c757d; color: white; }
+        .status-preparing { background: #ffc107; color: #212529; }
+        .status-future { background: #17a2b8; color: white; }
+
+        /* שדות הטופס */
+        .report-content {
+            margin-bottom: 20px;
+        }
+
+        .report-field {
+            margin-bottom: 15px;
+        }
+
+        .report-field label {
+            display: block;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .report-field input,
+        .report-field select,
+        .report-field textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            font-size: 0.9em;
+            transition: border-color 0.3s ease;
+        }
+
+        .report-field input:focus,
+        .report-field select:focus,
+        .report-field textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .report-field textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        /* כפתורי פעולות */
+        .report-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-preview {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-test {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .icon {
+            font-size: 1.1em;
+        }
+
+        /* מודל תצוגה מקדימה */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        /* תצוגה מקדימה */
+        .preview-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid #dee2e6;
+        }
+
+        .month-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .month-name {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .report-info {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .report-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        /* התראות */
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 30px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            z-index: 3000;
+            animation: slideInRight 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 300px;
+        }
+
+        .notification.success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .notification.error {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+        }
+
+        .notification.warning {
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+            color: #212529;
+        }
+
+        .notification button {
+            background: none;
+            border: none;
+            color: inherit;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 0;
+            margin-right: 10px;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* רספונסיביות */
+        @media (max-width: 768px) {
+            .reports-grid {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+
+            .report-card {
+                padding: 20px;
+            }
+
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+
+            .user-logout-btn,
+            .back-button {
+                position: relative;
+                top: auto;
+                left: auto;
+                right: auto;
+                margin-bottom: 20px;
+                display: block;
+                width: fit-content;
+            }
+
+            .save-all-btn {
+                position: relative;
+                bottom: auto;
+                right: auto;
+                width: 100%;
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading screen -->
+    <div id="loading-auth">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>בודק הרשאות...</h2>
+            <p>נא המתן...</p>
+        </div>
+    </div>
+
+    <!-- Page content -->
+    <div id="page-content">
+        <!-- כפתורי ניווט -->
+        <button class="user-logout-btn" id="logout-btn" onclick="handleLogout()">התנתק</button>
+        <a href="reports.html" class="back-button">← חזרה לדוחות</a>
+        <button class="save-all-btn" onclick="saveAllChanges()">
+            💾 שמירת כל השינויים
+        </button>
+
+        <!-- כותרת -->
+        <div class="header">
+            <h1>הגדרות דוחות</h1>
+            <div class="subtitle">ניהול סטטוסים, קישורים ונתונים סטטיסטיים</div>
+        </div>
+
+        <!-- מכל הדוחות -->
+        <div id="reports-container"></div>
+
+        <!-- מודל תצוגה מקדימה -->
+        <div id="preview-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>תצוגה מקדימה</h2>
+                    <button class="close-btn" onclick="closeModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div id="preview-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // סגירת מודל בלחיצה על הרקע
+        document.getElementById('preview-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
