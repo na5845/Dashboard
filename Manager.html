@@ -295,6 +295,13 @@
             <!-- יצירת דף חדש -->
             <div class="section">
                 <h2>➕ יצירת דף חדש</h2>
+                
+                <!-- הודעה על בעיית CORS -->
+                <div class="status-message info" style="display: block;">
+                    <strong>הודעה חשובה:</strong> עקב מגבלות אבטחה של הדפדפן, ייתכן שהחיבור הישיר ל-GitHub לא יעבוד. 
+                    בואו ננסה גישה חלופית - הממשק יכין לך את הקוד המוכן להעתקה ידנית.
+                </div>
+                
                 <div class="grid">
                     <div class="form-group">
                         <label for="source-page">דף מקור לשכפול:</label>
@@ -348,11 +355,39 @@
                     </div>
                 </div>
                 
-                <button class="button success" onclick="createNewPage()">צור דף חדש</button>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <button class="button success" onclick="createNewPage()">נסה יצירה אוטומטית</button>
+                    <button class="button" onclick="generateCode()">הכן קוד להעתקה ידנית</button>
+                </div>
+                
                 <div class="progress-bar" id="creation-progress">
                     <div class="progress-fill" id="progress-fill"></div>
                 </div>
                 <div id="creation-status" class="status-message"></div>
+                
+                <!-- אזור להצגת קוד מוכן -->
+                <div id="generated-code-section" class="hidden" style="margin-top: 30px;">
+                    <h3>📋 קוד מוכן להעתקה</h3>
+                    <p>העתק את הקוד הבא לקובץ HTML חדש ב-GitHub:</p>
+                    <div style="position: relative;">
+                        <textarea id="generated-code" readonly style="height: 200px; font-family: monospace; font-size: 0.9em;"></textarea>
+                        <button class="button" onclick="copyToClipboard()" style="position: absolute; top: 10px; left: 10px; padding: 8px 15px; font-size: 0.8em;">
+                            📋 העתק
+                        </button>
+                    </div>
+                    
+                    <div style="margin-top: 20px; padding: 20px; background: #e3f2fd; border-radius: 10px; border-left: 4px solid #2196f3;">
+                        <h4>📝 הוראות להוספה ידנית:</h4>
+                        <ol style="text-align: right;">
+                            <li>לך לרפוזיטורי שלך ב-GitHub: <strong>na5845/Dashboard</strong></li>
+                            <li>לחץ על "Add file" → "Create new file"</li>
+                            <li>הזן את שם הקובץ: <strong id="manual-filename">קובץ-חדש.html</strong></li>
+                            <li>העתק והדבק את הקוד מהתיבה למעלה</li>
+                            <li>לחץ "Commit new file"</li>
+                            <li>הדף יהיה זמין בכתובת: <strong id="manual-url">https://na5845.github.io/Dashboard/קובץ-חדש.html</strong></li>
+                        </ol>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -380,7 +415,8 @@
             try {
                 showStatus('connection-status', 'info', 'בודק חיבור...');
                 
-                const response = await fetch(`https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}`, {
+                // שימוש ב-proxy לעקיפת CORS
+                const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}`)}`, {
                     headers: {
                         'Authorization': `token ${token}`,
                         'Accept': 'application/vnd.github.v3+json'
@@ -393,7 +429,7 @@
                     throw new Error(`HTTP ${response.status}`);
                 }
             } catch (error) {
-                showStatus('connection-status', 'error', `שגיאה בחיבור: ${error.message}`);
+                showStatus('connection-status', 'error', `שגיאה בחיבור: ${error.message}. נסה את הפתרון החלופי למטה.`);
             }
         }
 
@@ -589,8 +625,929 @@
         }
 
         function getCurrentPageContent() {
-            // החזרת תוכן הדף הנוכחי (מהמסמך שהועלה)
-            return \`${document.querySelector('antml\\:document').innerHTML.replace(/`/g, '\\`')}\`;
+            // תוכן הדף המקורי מהמסמך שהועלה
+            return \`<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>דוח הכנסות והוצאות - חודש 5</title>
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCl9J7h5NOJ5aGHj3_BBw0jzm5iGSE7n20",
+            authDomain: "dashboard-3e2a5.firebaseapp.com",
+            projectId: "dashboard-3e2a5",
+            storageBucket: "dashboard-3e2a5.firebasestorage.app",
+            messagingSenderId: "682842596931",
+            appId: "1:682842596931:web:5c0a049a981d750e1e16f6",
+            measurementId: "G-NV42P569WJ"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Check if user is authenticated
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log('משתמש מחובר:', user.email);
+                // Show page content
+                document.getElementById('page-content').style.display = 'block';
+                document.getElementById('loading-auth').style.display = 'none';
+                
+                // Add user info to logout button
+                const logoutBtn = document.getElementById('logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.innerHTML = \\\`התנתק (\\\${user.displayName || user.email.split('@')[0]})\\\`;
+                }
+            } else {
+                console.log('משתמש לא מחובר - מפנה לדף התחברות');
+                // Redirect to login page
+                window.location.href = 'index.html';
+            }
+        });
+
+        // Logout function
+        window.handleLogout = async function() {
+            try {
+                await signOut(auth);
+                console.log('התנתקות הצליחה');
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('שגיאה בהתנתקות:', error);
+                alert('שגיאה בהתנתקות: ' + error.message);
+            }
+        };
+    </script>
+    
+    <style>
+        /* Loading screen styles */
+        #loading-auth {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Hide page content initially */
+        #page-content {
+            display: none;
+        }
+
+        /* User logout button styles */
+        .user-logout-btn {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .user-logout-btn:hover {
+            background: rgba(192, 57, 43, 0.95);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.6);
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .back-button {
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        
+        .details-button {
+            position: absolute;
+            left: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(46, 204, 113, 0.2);
+            border: 2px solid rgba(46, 204, 113, 0.4);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        
+        .back-button:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+            transform: translateY(-50%) translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .details-button:hover {
+            background: rgba(46, 204, 113, 0.3);
+            border-color: rgba(46, 204, 113, 0.6);
+            transform: translateY(-50%) translateY(-2px);
+            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
+        }
+        
+        .back-button:active {
+            transform: translateY(-50%) translateY(0);
+        }
+        
+        .details-button:active {
+            transform: translateY(-50%) translateY(0);
+        }
+        
+        .back-arrow, .forward-arrow {
+            font-size: 1.2em;
+            transition: transform 0.3s ease;
+        }
+        
+        .back-button:hover .back-arrow {
+            transform: translateX(3px);
+        }
+        
+        .details-button:hover .forward-arrow {
+            transform: translateX(-3px);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .header .period {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .section-divider {
+            display: flex;
+            align-items: center;
+            margin: 40px 0;
+            gap: 20px;
+        }
+        
+        .divider-line {
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, #e9ecef, #6c757d, #e9ecef);
+        }
+        
+        .divider-text {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
+            color: white;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 1.1em;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+        
+        .card.revenue::before {
+            background: linear-gradient(90deg, #28a745, #20c997);
+        }
+        
+        .card.expenses::before {
+            background: linear-gradient(90deg, #dc3545, #fd7e14);
+        }
+        
+        .card.profit::before {
+            background: linear-gradient(90deg, #dc3545, #fd7e14);
+        }
+        
+        .card.info::before {
+            background: linear-gradient(90deg, #17a2b8, #20c997);
+        }
+        
+        .card.pending::before {
+            background: linear-gradient(90deg, #ffc107, #fd7e14);
+        }
+        
+        .card h3 {
+            margin: 0 0 15px 0;
+            color: #495057;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+        
+        .card .amount {
+            font-size: 2.2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .card.revenue .amount {
+            color: #28a745;
+        }
+        
+        .card.expenses .amount {
+            color: #dc3545;
+        }
+        
+        .card.profit .amount {
+            color: #dc3545;
+        }
+        
+        .card.info .amount {
+            color: #17a2b8;
+        }
+        
+        .card.pending .amount {
+            color: #ffc107;
+        }
+        
+        .tables-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        
+        .table-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .table-section h3 {
+            margin: 0 0 20px 0;
+            color: #495057;
+            font-size: 1.3em;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #dee2e6;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        th, td {
+            padding: 15px;
+            text-align: right;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .total-row {
+            background: #e9ecef !important;
+            font-weight: bold;
+            border-top: 2px solid #dee2e6;
+        }
+        
+        .chart-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .chart-section h3 {
+            margin: 0 0 20px 0;
+            color: #495057;
+            font-size: 1.3em;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .bar-chart {
+            display: flex;
+            align-items: end;
+            justify-content: space-around;
+            height: 250px;
+            gap: 20px;
+        }
+        
+        .bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .bar-value {
+            width: 60px;
+            border-radius: 10px 10px 0 0;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .bar-value:hover {
+            transform: scale(1.05);
+        }
+        
+        .bar-revenue {
+            background: linear-gradient(180deg, #28a745, #20c997);
+        }
+        
+        .bar-expenses {
+            background: linear-gradient(180deg, #dc3545, #fd7e14);
+        }
+        
+        .bar-label {
+            font-weight: 600;
+            color: #495057;
+            margin-top: 10px;
+        }
+        
+        .bar-amount {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: bold;
+            color: #495057;
+            font-size: 0.9em;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 40px;
+            border-top: 2px solid #e9ecef;
+            text-align: center;
+            color: #6c757d;
+        }
+        
+        /* פונקציונליות פירוט */
+        .expandable-row {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .expandable-row:hover {
+            background: #e3f2fd !important;
+        }
+        
+        .detail-row {
+            display: none;
+            background: #f0f8ff !important;
+        }
+        
+        .detail-row.show {
+            display: table-row;
+        }
+        
+        .detail-row td {
+            padding-right: 40px;
+            font-size: 0.9em;
+            color: #666;
+            border-bottom: 1px dashed #ddd;
+        }
+        
+        .arrow-col {
+            width: 30px;
+            text-align: center;
+            color: #6c757d;
+            font-weight: normal;
+            font-size: 0.8em;
+        }
+        
+        .footer a:hover {
+            background: linear-gradient(135deg, #5a67d8, #667eea) !important;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        @media (max-width: 768px) {
+            .tables-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .back-button {
+                right: 15px;
+                padding: 8px 15px;
+                font-size: 0.8em;
+            }
+
+            .user-logout-btn {
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                padding: 10px 16px;
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading screen while checking authentication -->
+    <div id="loading-auth">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>בודק הרשאות...</h2>
+            <p>נא המתן...</p>
+        </div>
+    </div>
+
+    <!-- Page content - hidden until user is authenticated -->
+    <div id="page-content">
+        <!-- כפתור התנתקות -->
+        <button class="user-logout-btn" id="logout-btn" onclick="handleLogout()">התנתק</button>
+
+        <div class="container">
+            <div class="header">
+                <button class="back-button" onclick="goBack()">
+                    <span class="back-arrow">→</span>
+                    לדף הקודם
+                </button>
+                <a href="https://na5845.github.io/Dashboard/202505-2.html" class="details-button">
+                    פירוט פאגי - מרכנתיל
+                    <span class="forward-arrow">←</span>
+                </a>
+                <h1>דוח הכנסות והוצאות</h1>
+                <div class="period">חודש מאי 2025</div>
+            </div>
+            
+            <div class="content">
+                <!-- הפרדה חזותית עליונה -->
+                <div class="section-divider">
+                    <div class="divider-line"></div>
+                    <div class="divider-text">נתונים כלליים</div>
+                    <div class="divider-line"></div>
+                </div>
+                
+                <!-- סטטיסטיקות עליונות -->
+                <div class="summary-cards">
+                    <div class="card info">
+                        <h3>סך תורמים</h3>
+                        <div class="amount">424</div>
+                        <div>תורמים פעילים</div>
+                    </div>
+                    <div class="card info">
+                        <h3>סך אברכים המקבלים מלגה</h3>
+                        <div class="amount">178</div>
+                        <div>מקבלי מלגות</div>
+                    </div>
+                    <div class="card pending">
+                        <h3>חולקו מלגות על סך</h3>
+                        <div class="amount">₪103,091</div>
+                        <div></div>
+                    </div>
+                    <div class="card pending">
+                        <h3>יתרת מלגות קודמות</h3>
+                        <div class="amount">₪68,744</div>
+                        <div>שלא נגבו</div>
+                    </div>
+                </div>
+                
+                <!-- הפרדה חזותית -->
+                <div class="section-divider">
+                    <div class="divider-line"></div>
+                    <div class="divider-text">דוח כספים</div>
+                    <div class="divider-line"></div>
+                </div>
+                
+                <!-- כרטיסי סיכום כספי -->
+                <div class="summary-cards">
+                    <div class="card revenue">
+                        <h3>סך הכנסות</h3>
+                        <div class="amount">₪109,320</div>
+                        <div>הכנסות חודש מאי</div>
+                    </div>
+                    <div class="card expenses">
+                        <h3>סך הוצאות</h3>
+                        <div class="amount">₪144,505</div>
+                        <div>הוצאות חודש מאי</div>
+                    </div>
+                    <div class="card profit">
+                        <h3>יתרה</h3>
+                        <div class="amount">-₪35,185</div>
+                        <div>יתרה חודש מאי</div>
+                    </div>
+                    <div class="card pending">
+                        <h3>חיובים שנדחו</h3>
+                        <div class="amount">₪7,544</div>
+                        <div></div>
+                    </div>
+                </div>
+                
+                <!-- גרף השוואה -->
+                <div class="chart-section">
+                    <h3>השוואה חזותית - הכנסות לעומת הוצאות</h3>
+                    <div class="chart-container">
+                        <div class="bar-chart">
+                            <div class="bar">
+                                <div class="bar-value bar-revenue" style="height: 130px;">
+                                    <div class="bar-amount">₪109.3K</div>
+                                </div>
+                                <div class="bar-label">הכנסות</div>
+                            </div>
+                            <div class="bar">
+                                <div class="bar-value bar-expenses" style="height: 170px;">
+                                    <div class="bar-amount">₪144.5K</div>
+                                </div>
+                                <div class="bar-label">הוצאות</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            <!-- טבלאות מפורטות -->
+            <div class="tables-container">
+                <div class="table-section">
+                    <h3>פירוט הכנסות</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>מקור הכנסה</th>
+                                <th>סכום (₪)</th>
+                                <th>אחוז</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background-color: #f8f9fa; font-weight: bold;">
+                                <td colspan="3">1. תרומות קבועות</td>
+                            </tr>
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;אשראי</td>
+                                <td>64,204</td>
+                                <td>58.7%</td>
+                            </tr>
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;בנקאי</td>
+                                <td>33,846</td>
+                                <td>31.0%</td>
+                            </tr>
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;מזומן</td>
+                                <td>8,450</td>
+                                <td>7.7%</td>
+                            </tr>
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;העברות</td>
+                                <td>2,820</td>
+                                <td>2.6%</td>
+                            </tr>
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;שקים</td>
+                                <td>0</td>
+                                <td>0%</td>
+                            </tr>
+                            <tr style="background-color: #f8f9fa; font-weight: bold;">
+                                <td colspan="3">2. תרומות מזדמנות</td>
+                            </tr>
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;אשראי</td>
+                                <td>0</td>
+                                <td>0%</td>
+                            </tr>
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;מזומן</td>
+                                <td>0</td>
+                                <td>0%</td>
+                            </tr>
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;שקים</td>
+                                <td>0</td>
+                                <td>0%</td>
+                            </tr>
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;בנקאי</td>
+                                <td>0</td>
+                                <td>0%</td>
+                            </tr>
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;העברות</td>
+                                <td>0</td>
+                                <td>0%</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td>סך הכל</td>
+                                <td>109,320</td>
+                                <td>100%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="table-section">
+                    <h3>פירוט הוצאות</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>סוג הוצאה</th>
+                                <th>סכום (₪)</th>
+                                <th>אחוז</th>
+                                <th class="arrow-col"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>סך המלגות</td>
+                                <td>103,091</td>
+                                <td>71.8%</td>
+                                <td></td>
+                            </tr>
+                            
+                            <tr class="expandable-row" onclick="toggleDetails('salary')">
+                                <td>משכורות</td>
+                                <td>20,550</td>
+                                <td>14.0%</td>
+                                <td class="arrow-col">▶</td>
+                            </tr>
+                            <tr class="detail-row" id="salary-1">
+                                <td>&nbsp;&nbsp;&nbsp;אברהם פלק</td>
+                                <td>9,400</td>
+                                <td>45.7%</td>
+                                <td></td>
+                            </tr>
+                            <tr class="detail-row" id="salary-2">
+                                <td>&nbsp;&nbsp;&nbsp;שלמה מאיר קליין</td>
+                                <td>9,400</td>
+                                <td>45.7%</td>
+                                <td></td>
+                            </tr>
+                            <tr class="detail-row" id="salary-3">
+                                <td>&nbsp;&nbsp;&nbsp;נחמן אייזנבאך</td>
+                                <td>1,750</td>
+                                <td>8.5%</td>
+                                <td></td>
+                            </tr>
+                            
+                            <tr>
+                                <td>חוב לפולק</td>
+                                <td>11,100</td>
+                                <td>7.6%</td>
+                                <td></td>
+                            </tr>
+                            
+                            <tr class="expandable-row" onclick="toggleDetails('office')">
+                                <td>הוצאות משרד</td>
+                                <td>3,000</td>
+                                <td>2.0%</td>
+                                <td class="arrow-col">▶</td>
+                            </tr>
+                            <tr class="detail-row" id="office-1">
+                                <td>&nbsp;&nbsp;&nbsp;שכירות</td>
+                                <td>2,550</td>
+                                <td>85.0%</td>
+                                <td></td>
+                            </tr>
+                            <tr class="detail-row" id="office-2">
+                                <td>&nbsp;&nbsp;&nbsp;חשמל-מים-ועד</td>
+                                <td>450</td>
+                                <td>15.0%</td>
+                                <td></td>
+                            </tr>
+                            
+                            <tr class="expandable-row" onclick="toggleDetails('advertising')">
+                                <td>הוצאות פרסום</td>
+                                <td>3,500</td>
+                                <td>2.4%</td>
+                                <td class="arrow-col">▶</td>
+                            </tr>
+                            <tr class="detail-row" id="advertising-1">
+                                <td>&nbsp;&nbsp;&nbsp;שקיות ממותגות</td>
+                                <td>3,500</td>
+                                <td>100%</td>
+                                <td></td>
+                            </tr>
+                            
+                            <tr>
+                                <td>חוב פסח</td>
+                                <td>3,500</td>
+                                <td>2.4%</td>
+                                <td></td>
+                            </tr>
+                            
+                            <tr class="expandable-row" onclick="toggleDetails('software')">
+                                <td>תוכנות</td>
+                                <td>1,729</td>
+                                <td>1.2%</td>
+                                <td class="arrow-col">▶</td>
+                            </tr>
+                            <tr class="detail-row" id="software-1">
+                                <td>&nbsp;&nbsp;&nbsp;סדרים</td>
+                                <td>1,333</td>
+                                <td>77.1%</td>
+                                <td></td>
+                            </tr>
+                            <tr class="detail-row" id="software-2">
+                                <td>&nbsp;&nbsp;&nbsp;מטרה הפקות חיוב</td>
+                                <td>396</td>
+                                <td>22.9%</td>
+                                <td></td>
+                            </tr>
+                            
+                            <tr>
+                                <td>עמלות</td>
+                                <td>582</td>
+                                <td>0.4%</td>
+                                <td></td>
+                            </tr>
+                            
+                            <tr class="total-row">
+                                <td>סך הכל</td>
+                                <td>144,505</td>
+                                <td>100%</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p style="margin-bottom: 20px;">
+                <a href="https://na5845.github.io/Dashboard/202505-2.html" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-decoration: none; font-weight: 600; padding: 12px 24px; border-radius: 25px; transition: all 0.3s ease; display: inline-block; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+                    פירוט פאגי - מרכנתיל
+                </a>
+            </p>
+            <p>דוח זה נוצר עבור ההנהלה • תאריך עדכון: יוני 2025</p>
+        </div>
+    </div>
+
+    <script>
+        // פונקציית חזרה לדף הקודם
+        function goBack() {
+            window.location.href = 'https://na5845.github.io/Dashboard/Reports.html#';
+        }
+
+        function toggleDetails(category) {
+            const detailRows = document.querySelectorAll('[id^="' + category + '-"]');
+            const expandableRow = event.currentTarget;
+            const arrow = expandableRow.querySelector('.arrow-col');
+            
+            let isVisible = false;
+            detailRows.forEach(row => {
+                if (row.classList.contains('show')) {
+                    isVisible = true;
+                }
+            });
+            
+            if (isVisible) {
+                // הסתרת הפירוט
+                detailRows.forEach(row => {
+                    row.classList.remove('show');
+                });
+                arrow.textContent = '▶';
+            } else {
+                // הצגת הפירוט
+                detailRows.forEach(row => {
+                    row.classList.add('show');
+                });
+                arrow.textContent = '▼';
+            }
+        }
+    </script>
+</body>
+</html>\`;
         }
 
         async function fetchPageContent(url) {
@@ -625,7 +1582,83 @@
             return content.replace(regex, `$1${parseInt(value).toLocaleString('he-IL')}$2`);
         }
 
-        function duplicatePage(filename) {
+        // הכנת קוד להעתקה ידנית
+        function generateCode() {
+            const filename = document.getElementById('new-filename').value || 'new-page.html';
+            const title = document.getElementById('new-title').value || 'דוח הכנסות והוצאות';
+            const period = document.getElementById('new-period').value || 'חודש חדש';
+            const income = document.getElementById('total-income').value || '0';
+            const expenses = document.getElementById('total-expenses').value || '0';
+            const donors = document.getElementById('total-donors').value || '0';
+            const recipients = document.getElementById('scholarship-recipients').value || '0';
+            
+            try {
+                showStatus('creation-status', 'info', 'מכין קוד...');
+                
+                // קבלת תוכן הדף המקורי
+                let sourceContent = getCurrentPageContent();
+                
+                // עדכון התוכן
+                let updatedContent = sourceContent;
+                
+                if (title) {
+                    updatedContent = updatedContent.replace(/<title>.*?<\/title>/, `<title>${title}</title>`);
+                    updatedContent = updatedContent.replace(/<h1>.*?<\/h1>/, `<h1>${title.split(' - ')[0] || title}</h1>`);
+                }
+                
+                if (period) {
+                    updatedContent = updatedContent.replace(/<div class="period">.*?<\/div>/, `<div class="period">${period}</div>`);
+                }
+                
+                // עדכון נתונים כספיים
+                if (income) {
+                    updatedContent = updateFinancialData(updatedContent, 'revenue', income);
+                }
+                
+                if (expenses) {
+                    updatedContent = updateFinancialData(updatedContent, 'expenses', expenses);
+                }
+                
+                if (donors) {
+                    updatedContent = updateStatistic(updatedContent, 'סך תורמים', donors);
+                }
+                
+                if (recipients) {
+                    updatedContent = updateStatistic(updatedContent, 'סך אברכים המקבלים מלגה', recipients);
+                }
+                
+                // חישוב יתרה
+                if (income && expenses) {
+                    const balance = parseInt(income) - parseInt(expenses);
+                    updatedContent = updateFinancialData(updatedContent, 'profit', balance);
+                }
+                
+                // הצגת הקוד המוכן
+                document.getElementById('generated-code').value = updatedContent;
+                document.getElementById('generated-code-section').classList.remove('hidden');
+                document.getElementById('manual-filename').textContent = filename;
+                document.getElementById('manual-url').textContent = `https://na5845.github.io/Dashboard/${filename}`;
+                
+                showStatus('creation-status', 'success', 'קוד מוכן! גלול למטה להוראות ההעתקה.');
+                
+            } catch (error) {
+                showStatus('creation-status', 'error', `שגיאה בהכנת הקוד: ${error.message}`);
+            }
+        }
+
+        // העתקה ללוח
+        function copyToClipboard() {
+            const codeTextarea = document.getElementById('generated-code');
+            codeTextarea.select();
+            codeTextarea.setSelectionRange(0, 99999); // למובייל
+            
+            try {
+                document.execCommand('copy');
+                showStatus('creation-status', 'success', 'הקוד הועתק ללוח! 📋');
+            } catch (err) {
+                showStatus('creation-status', 'error', 'שגיאה בהעתקה. נסה להעתיק ידנית.');
+            }
+        }
             document.getElementById('new-filename').value = filename.replace('.html', '-copy.html');
             document.getElementById('source-page').value = 'custom';
             document.getElementById('custom-url').value = `https://na5845.github.io/Dashboard/${filename}`;
