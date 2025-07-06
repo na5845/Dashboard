@@ -882,6 +882,7 @@
         let currentYear = 2025;
         let currentEditYear = 2025;
         let gitHubFileSha = null; // לשמירת ה-SHA של הקובץ ב-GitHub
+        let reportsData = {}; // נתוני הדוחות
 
         // הגדרות GitHub API
         function getGitHubConfig() {
@@ -960,7 +961,9 @@
                 if (response.ok) {
                     const fileData = await response.json();
                     gitHubFileSha = fileData.sha;
-                    const content = atob(fileData.content);
+                    
+                    // תיקון בעיית הקידוד
+                    const content = decodeURIComponent(escape(atob(fileData.content)));
                     reportsData = JSON.parse(content);
                     
                     showApiStatus('✅ נתונים נטענו בהצלחה מ-GitHub!', 'success');
@@ -1022,7 +1025,30 @@
             return data;
         }
 
-        // שמירה ל-GitHub
+        // טעינה אוטומטית מ-GitHub
+        async function autoLoadFromGitHub() {
+            const savedConfig = localStorage.getItem('github-config');
+            if (!savedConfig) return;
+
+            try {
+                const config = JSON.parse(savedConfig);
+                if (config.username && config.repo && config.token && config.filePath) {
+                    // מלא את השדות
+                    document.getElementById('github-username').value = config.username;
+                    document.getElementById('github-repo').value = config.repo;
+                    document.getElementById('github-file').value = config.filePath;
+                    document.getElementById('github-token').value = config.token;
+                    
+                    // טען נתונים אוטומטית
+                    await loadFromGitHub();
+                }
+            } catch (e) {
+                console.log('לא ניתן לטעון אוטומטית מ-GitHub');
+                // טען נתונים ברירת מחדל
+                reportsData = createDefaultData();
+                displayReportsForYear(currentYear);
+            }
+        }
         async function saveToGitHub() {
             const config = getGitHubConfig();
             
@@ -1059,7 +1085,9 @@
             showApiStatus('שומר נתונים ל-GitHub...', 'loading');
 
             try {
-                const content = btoa(unescape(encodeURIComponent(JSON.stringify(reportsData, null, 2))));
+                // תיקון קידוד UTF-8 לשמירה
+                const jsonString = JSON.stringify(reportsData, null, 2);
+                const content = btoa(unescape(encodeURIComponent(jsonString)));
                 
                 const updateData = {
                     message: `עדכון נתוני דוחות - ${new Date().toLocaleString('he-IL')}`,
@@ -1284,12 +1312,18 @@
         }
 
         // אתחול הדף
-        document.addEventListener('DOMContentLoaded', function() {
-            // יצירת נתונים ברירת מחדל (לא נטען מ-localStorage)
-            let reportsData = createDefaultData();
+        document.addEventListener('DOMContentLoaded', async function() {
+            // טעינה אוטומטית מ-GitHub (אם קיימת הגדרה)
+            await autoLoadFromGitHub();
             
-            // טעינה ראשונית של דוחות
-            displayReportsForYear(currentYear);
+            // אם לא נטענו נתונים מ-GitHub, השתמש בברירת מחדל
+            if (!reportsData || Object.keys(reportsData).length === 0) {
+                reportsData = createDefaultData();
+                displayReportsForYear(currentYear);
+            }
+            
+            // התחלת שמירה אוטומטית
+            startAutoSave();
 
             // פונקציונליות החלפת שנים בתצוגה הראשית
             document.querySelectorAll('.year-tab').forEach(tab => {
