@@ -2392,8 +2392,19 @@ function extractAccountRowsToTable(tableRowsHTML, accountType) {
                 progressFill.style.width = '100%';
                 
                 if (response.ok) {
-                    showStatus('creation-status', 'success', 
-                        `הדף נוצר בהצלחה! 🎉\nכתובת: https://na5845.github.io/Dashboard/${filename}`);
+                    const pageUrl = `https://na5845.github.io/Dashboard/${filename}`;
+                    
+                    // יצירת הודעה עם קישור
+                    const statusElement = document.getElementById('creation-status');
+                    statusElement.className = 'status-message success';
+                    statusElement.innerHTML = `
+                        הדף נוצר בהצלחה! 🎉<br>
+                        <a href="${pageUrl}" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">
+                            לחץ כאן לפתיחת הדף החדש
+                        </a><br>
+                        <small style="color: #6c757d;">כתובת: ${pageUrl}</small>
+                    `;
+                    statusElement.style.display = 'block';
                     
                     // איפוס הטופס
                     document.getElementById('new-filename').value = '';
