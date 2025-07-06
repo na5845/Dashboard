@@ -296,25 +296,21 @@
             margin-bottom: 20px;
         }
 
-        .year-tabs-settings {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+        .single-report-edit {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid #dee2e6;
         }
 
-        .year-tab-settings {
-            background: #e9ecef;
-            border: none;
-            padding: 10px 20px;
+        .single-report-edit h4 {
+            margin: 0 0 20px 0;
+            color: #2c3e50;
+            font-size: 1.2em;
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
             border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 600;
-        }
-
-        .year-tab-settings.active {
-            background: linear-gradient(135deg, #3498db, #2c3e50);
-            color: white;
         }
 
         * {
@@ -752,18 +748,28 @@
                 </div>
 
                 <div class="year-selector-settings">
-                    <label>בחר שנה לעריכה:</label>
-                    <div class="year-tabs-settings">
-                        <button class="year-tab-settings" data-year="2024">2024</button>
-                        <button class="year-tab-settings active" data-year="2025">2025</button>
-                        <button class="year-tab-settings" data-year="2026">2026</button>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>בחר שנה:</label>
+                            <select id="edit-year-select" onchange="updateMonthOptions()">
+                                <option value="2024">2024</option>
+                                <option value="2025" selected>2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>בחר חודש:</label>
+                            <select id="edit-month-select" onchange="loadReportForEdit()">
+                                <!-- החודשים יטענו כאן דינמית -->
+                            </select>
+                        </div>
                     </div>
                 </div>
 
                 <div class="settings-section">
-                    <h3 class="section-title">עריכת דוחות לשנת <span id="current-edit-year">2025</span></h3>
-                    <div id="reports-settings-container">
-                        <!-- הדוחות יטענו כאן דינמית -->
+                    <h3 class="section-title">עריכת דוח: <span id="current-edit-report">מאי 2025</span></h3>
+                    <div id="report-edit-form">
+                        <!-- טופס עריכת הדוח יטען כאן -->
                     </div>
                 </div>
 
@@ -932,18 +938,44 @@
             container.innerHTML = reportsHTML;
         }
 
-        // פונקציה לטעינת הגדרות עריכה
-        function loadEditSettings(year) {
-            const container = document.getElementById('reports-settings-container');
-            const reports = reportsData[year] || [];
+        // פונקציה לטעינת אפשרויות החודשים
+        function updateMonthOptions() {
+            const yearSelect = document.getElementById('edit-year-select');
+            const monthSelect = document.getElementById('edit-month-select');
+            const selectedYear = parseInt(yearSelect.value);
             
-            const settingsHTML = reports.map((report, index) => `
-                <div class="report-item">
+            currentEditYear = selectedYear;
+            const reports = reportsData[selectedYear] || [];
+            
+            monthSelect.innerHTML = reports.map((report, index) => 
+                `<option value="${index}">${report.month}</option>`
+            ).join('');
+            
+            // טעינת הדוח הראשון כברירת מחדל
+            loadReportForEdit();
+        }
+
+        // פונקציה לטעינת דוח לעריכה
+        function loadReportForEdit() {
+            const yearSelect = document.getElementById('edit-year-select');
+            const monthSelect = document.getElementById('edit-month-select');
+            const selectedYear = parseInt(yearSelect.value);
+            const selectedIndex = parseInt(monthSelect.value);
+            
+            if (isNaN(selectedIndex)) return;
+            
+            const report = reportsData[selectedYear][selectedIndex];
+            if (!report) return;
+            
+            document.getElementById('current-edit-report').textContent = `${report.month} ${report.year}`;
+            
+            const formHTML = `
+                <div class="single-report-edit">
                     <h4>${report.month} ${report.year}</h4>
                     
                     <div class="form-group">
                         <label>סטטוס:</label>
-                        <select id="status-${year}-${index}">
+                        <select id="edit-status">
                             <option value="available" ${report.status === 'available' ? 'selected' : ''}>זמין</option>
                             <option value="unavailable" ${report.status === 'unavailable' ? 'selected' : ''}>לא זמין</option>
                             <option value="upcoming" ${report.status === 'upcoming' ? 'selected' : ''}>בהכנה/עתידי</option>
@@ -952,40 +984,39 @@
 
                     <div class="form-group">
                         <label>טקסט סטטוס:</label>
-                        <input type="text" id="statusText-${year}-${index}" value="${report.statusText}" placeholder="זמין / לא זמין / בהכנה / עתידי">
+                        <input type="text" id="edit-statusText" value="${report.statusText}" placeholder="זמין / לא זמין / בהכנה / עתידי">
                     </div>
 
                     <div class="form-group">
                         <label>מידע על הדוח:</label>
-                        <input type="text" id="info-${year}-${index}" value="${report.info}" placeholder="תיאור הדוח">
+                        <input type="text" id="edit-info" value="${report.info}" placeholder="תיאור הדוח">
                     </div>
 
                     <div class="form-group">
                         <label>קישור לדוח:</label>
-                        <input type="url" id="link-${year}-${index}" value="${report.link}" placeholder="https://...">
+                        <input type="url" id="edit-link" value="${report.link}" placeholder="https://...">
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label>הכנסות (₪):</label>
-                            <input type="number" id="income-${year}-${index}" value="${report.income}" placeholder="0">
+                            <input type="number" id="edit-income" value="${report.income}" placeholder="0">
                         </div>
                         <div class="form-group">
                             <label>הוצאות (₪):</label>
-                            <input type="number" id="expenses-${year}-${index}" value="${report.expenses}" placeholder="0">
+                            <input type="number" id="edit-expenses" value="${report.expenses}" placeholder="0">
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
             
-            container.innerHTML = settingsHTML;
-            document.getElementById('current-edit-year').textContent = year;
+            document.getElementById('report-edit-form').innerHTML = formHTML;
         }
 
         // פתיחת חלון הגדרות
         function openSettings() {
             document.getElementById('settings-modal').classList.add('show');
-            loadEditSettings(currentEditYear);
+            updateMonthOptions();
         }
 
         // סגירת חלון הגדרות
@@ -995,27 +1026,33 @@
 
         // שמירת הגדרות
         function saveSettings() {
-            const year = currentEditYear;
-            const reports = reportsData[year];
+            const yearSelect = document.getElementById('edit-year-select');
+            const monthSelect = document.getElementById('edit-month-select');
+            const selectedYear = parseInt(yearSelect.value);
+            const selectedIndex = parseInt(monthSelect.value);
             
-            reports.forEach((report, index) => {
-                const status = document.getElementById(`status-${year}-${index}`).value;
-                const statusText = document.getElementById(`statusText-${year}-${index}`).value;
-                const info = document.getElementById(`info-${year}-${index}`).value;
-                const link = document.getElementById(`link-${year}-${index}`).value;
-                const income = parseInt(document.getElementById(`income-${year}-${index}`).value) || 0;
-                const expenses = parseInt(document.getElementById(`expenses-${year}-${index}`).value) || 0;
-                
-                reportsData[year][index] = {
-                    ...report,
-                    status,
-                    statusText,
-                    info,
-                    link,
-                    income,
-                    expenses
-                };
-            });
+            if (isNaN(selectedIndex)) {
+                alert('נא בחר חודש לעריכה');
+                return;
+            }
+            
+            const status = document.getElementById('edit-status').value;
+            const statusText = document.getElementById('edit-statusText').value;
+            const info = document.getElementById('edit-info').value;
+            const link = document.getElementById('edit-link').value;
+            const income = parseInt(document.getElementById('edit-income').value) || 0;
+            const expenses = parseInt(document.getElementById('edit-expenses').value) || 0;
+            
+            // עדכון הנתונים
+            reportsData[selectedYear][selectedIndex] = {
+                ...reportsData[selectedYear][selectedIndex],
+                status,
+                statusText,
+                info,
+                link,
+                income,
+                expenses
+            };
             
             // עדכון התצוגה
             displayReportsForYear(currentYear);
@@ -1050,20 +1087,7 @@
                 });
             });
 
-            // פונקציונליות החלפת שנים בהגדרות
-            document.querySelectorAll('.year-tab-settings').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const selectedYear = parseInt(this.dataset.year);
-                    currentEditYear = selectedYear;
-                    
-                    // עדכון טאבים
-                    document.querySelectorAll('.year-tab-settings').forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // טעינת הגדרות לשנה הנבחרת
-                    loadEditSettings(selectedYear);
-                });
-            });
+            // פונקציונליות החלפת שנים בהגדרות - הוסרה מכיוון שעברנו לרשימות נפתחות
 
             // סגירת חלון הגדרות בלחיצה מחוץ לחלון
             document.getElementById('settings-modal').addEventListener('click', function(e) {
