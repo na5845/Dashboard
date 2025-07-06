@@ -949,6 +949,18 @@
             repo: 'Dashboard'
         };
 
+        // פונקציה לשמירת Token ב-localStorage
+        function saveTokenToStorage(token) {
+            if (token) {
+                localStorage.setItem('githubToken', token);
+            }
+        }
+
+        // פונקציה לקריאת Token מ-localStorage
+        function getTokenFromStorage() {
+            return localStorage.getItem('githubToken') || '';
+        }
+
         // משתנים גלובליים לעריכה
         let currentEditingFile = null;
         let currentPageContent = null;
@@ -983,6 +995,9 @@
             
             githubConfig.token = token;
             githubConfig.repo = repoName;
+            
+            // שמור את ה-Token ב-localStorage
+            saveTokenToStorage(token);
             
             showStatus('connection-status', 'info', 'בודק חיבור...');
             
@@ -2567,6 +2582,15 @@ function extractAccountRowsToTable(tableRowsHTML, accountType) {
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
             document.getElementById('new-filename').placeholder = `${year}${month}-1.html`;
+            
+            // אם יש Token מוגדר מראש, הכנס אותו לשדה והפעל בדיקת חיבור
+            if (githubConfig.token) {
+                document.getElementById('github-token').value = githubConfig.token;
+                // אופציונלי: הפעל בדיקת חיבור אוטומטית
+                setTimeout(() => {
+                    testConnection();
+                }, 1000);
+            }
         });
     </script>
 </body>
