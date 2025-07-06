@@ -2053,7 +2053,7 @@ function extractAccountRowsToTable(tableRowsHTML, accountType) {
             return name.replace(/[^a-zA-Z0-9\u0590-\u05FF]/g, '').toLowerCase();
         }
 
-        // עדכון דוח מפורט עם חלוקה לפאגי ומרכנתיל
+// עדכון דוח מפורט עם חלוקה לפאגי ומרכנתיל
         function updateDetailedReportWithAccountData(content, data) {
             const pagiKerenIncome = data.detailedData.pagiKerenIncome.reduce((sum, item) => sum + item.amount, 0);
             const pagiKerenExpenses = data.detailedData.pagiKerenExpense.reduce((sum, item) => sum + item.amount, 0);
@@ -2102,6 +2102,43 @@ function extractAccountRowsToTable(tableRowsHTML, accountType) {
             content = content.replace(
                 /(<div class="summary-card merkantil-balance">[\s\S]*?<div class="amount"[^>]*>).*?(<\/div>)/m,
                 `$1${merkantilBalanceSign}₪${merkantilBalanceAbs}$2`
+            );
+            
+            // עדכון כרטיסיות סיכום לכל חשבון
+            // הכנסות קרן התורה
+            content = content.replace(
+                /(<div class="sub-card keren-income">[\s\S]*?<div class="amount">).*?(<\/div>)/m,
+                `$1₪${pagiKerenIncome.toLocaleString('he-IL')}$2`
+            );
+            
+            // הוצאות קרן התורה
+            content = content.replace(
+                /(<div class="sub-card keren-expenses">[\s\S]*?<div class="amount">).*?(<\/div>)/m,
+                `$1₪${pagiKerenExpenses.toLocaleString('he-IL')}$2`
+            );
+            
+            // הכנסות בית המדרש
+            content = content.replace(
+                /(<div class="sub-card beit-income">[\s\S]*?<div class="amount">).*?(<\/div>)/m,
+                `$1₪${pagiBeitIncome.toLocaleString('he-IL')}$2`
+            );
+            
+            // הוצאות בית המדרש
+            content = content.replace(
+                /(<div class="sub-card beit-expenses">[\s\S]*?<div class="amount">).*?(<\/div>)/m,
+                `$1₪${pagiBeitExpenses.toLocaleString('he-IL')}$2`
+            );
+            
+            // הכנסות מרכנתיל (בכרטיסיות הנפרדות)
+            content = content.replace(
+                /(<div class="sub-card merkantil-income-card">[\s\S]*?<div class="amount">).*?(<\/div>)/m,
+                `$1₪${merkantilIncome.toLocaleString('he-IL')}$2`
+            );
+            
+            // הוצאות מרכנתיל (בכרטיסיות הנפרדות)
+            content = content.replace(
+                /(<div class="sub-card merkantil-expenses-card">[\s\S]*?<div class="amount">).*?(<\/div>)/m,
+                `$1₪${merkantilExpenses.toLocaleString('he-IL')}$2`
             );
             
             // עדכון טבלאות
