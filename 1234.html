@@ -547,8 +547,8 @@
                     </p>
                 </div>
                 
-                <!-- עריכת הכנסות -->
-                <div class="edit-subsection">
+                <!-- עריכת הכנסות והוצאות -->
+                <div class="edit-subsection" id="simple-tables">
                     <h4>💰 עריכת הכנסות</h4>
                     
                     <!-- תרומות קבועות -->
@@ -596,27 +596,191 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- הוצאות -->
+                    <div style="margin-top: 40px;">
+                        <h4>💸 עריכת הוצאות</h4>
+                        <div class="table-editor">
+                            <div class="table-controls">
+                                <button type="button" class="button" onclick="addExpenseRow()">➕ הוסף הוצאה</button>
+                            </div>
+                            <div class="editable-table-container">
+                                <table id="expenses-edit-table" class="editable-table">
+                                    <thead>
+                                        <tr>
+                                            <th>סוג הוצאה</th>
+                                            <th>סכום (₪)</th>
+                                            <th>פעולות</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="expenses-tbody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
-                <!-- עריכת הוצאות -->
-                <div class="edit-subsection">
-                    <h4>💸 עריכת הוצאות</h4>
-                    <div class="table-editor">
-                        <div class="table-controls">
-                            <button type="button" class="button" onclick="addExpenseRow()">➕ הוסף הוצאה</button>
+                <!-- טבלאות דוח מפורט -->
+                <div class="edit-subsection hidden" id="detailed-tables">
+                    <h4>🏦 עריכת נתונים לפי חשבונות</h4>
+                    
+                    <!-- פאגי - קרן התורה -->
+                    <div class="income-category" style="border: 2px solid #28a745; border-radius: 10px; padding: 20px; margin-bottom: 30px;">
+                        <h5 style="color: #28a745; font-size: 1.2em;">🟢 פאגי - קרן התורה</h5>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                            <!-- הכנסות קרן התורה -->
+                            <div>
+                                <h6 style="margin-bottom: 15px;">הכנסות קרן התורה:</h6>
+                                <div class="table-editor">
+                                    <div class="table-controls">
+                                        <button type="button" class="button" onclick="addAccountRow('pagi-keren-income')">➕ הוסף הכנסה</button>
+                                    </div>
+                                    <div class="editable-table-container">
+                                        <table class="editable-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>מקור הכנסה</th>
+                                                    <th>סכום (₪)</th>
+                                                    <th>פעולות</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="pagi-keren-income-tbody">
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- הוצאות קרן התורה -->
+                            <div>
+                                <h6 style="margin-bottom: 15px;">הוצאות קרן התורה:</h6>
+                                <div class="table-editor">
+                                    <div class="table-controls">
+                                        <button type="button" class="button" onclick="addAccountRow('pagi-keren-expense')">➕ הוסף הוצאה</button>
+                                    </div>
+                                    <div class="editable-table-container">
+                                        <table class="editable-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>סוג הוצאה</th>
+                                                    <th>סכום (₪)</th>
+                                                    <th>פעולות</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="pagi-keren-expense-tbody">
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="editable-table-container">
-                            <table id="expenses-edit-table" class="editable-table">
-                                <thead>
-                                    <tr>
-                                        <th>סוג הוצאה</th>
-                                        <th>סכום (₪)</th>
-                                        <th>פעולות</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="expenses-tbody">
-                                </tbody>
-                            </table>
+                    </div>
+                    
+                    <!-- פאגי - בית המדרש -->
+                    <div class="income-category" style="border: 2px solid #6f42c1; border-radius: 10px; padding: 20px; margin-bottom: 30px;">
+                        <h5 style="color: #6f42c1; font-size: 1.2em;">🟣 פאגי - בית המדרש</h5>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                            <!-- הכנסות בית המדרש -->
+                            <div>
+                                <h6 style="margin-bottom: 15px;">הכנסות בית המדרש:</h6>
+                                <div class="table-editor">
+                                    <div class="table-controls">
+                                        <button type="button" class="button" onclick="addAccountRow('pagi-beit-income')">➕ הוסף הכנסה</button>
+                                    </div>
+                                    <div class="editable-table-container">
+                                        <table class="editable-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>מקור הכנסה</th>
+                                                    <th>סכום (₪)</th>
+                                                    <th>פעולות</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="pagi-beit-income-tbody">
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- הוצאות בית המדרש -->
+                            <div>
+                                <h6 style="margin-bottom: 15px;">הוצאות בית המדרש:</h6>
+                                <div class="table-editor">
+                                    <div class="table-controls">
+                                        <button type="button" class="button" onclick="addAccountRow('pagi-beit-expense')">➕ הוסף הוצאה</button>
+                                    </div>
+                                    <div class="editable-table-container">
+                                        <table class="editable-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>סוג הוצאה</th>
+                                                    <th>סכום (₪)</th>
+                                                    <th>פעולות</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="pagi-beit-expense-tbody">
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- מרכנתיל -->
+                    <div class="income-category" style="border: 2px solid #17a2b8; border-radius: 10px; padding: 20px; margin-bottom: 30px;">
+                        <h5 style="color: #17a2b8; font-size: 1.2em;">🔵 מרכנתיל</h5>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                            <!-- הכנסות מרכנתיל -->
+                            <div>
+                                <h6 style="margin-bottom: 15px;">הכנסות מרכנתיל:</h6>
+                                <div class="table-editor">
+                                    <div class="table-controls">
+                                        <button type="button" class="button" onclick="addAccountRow('merkantil-income')">➕ הוסף הכנסה</button>
+                                    </div>
+                                    <div class="editable-table-container">
+                                        <table class="editable-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>מקור הכנסה</th>
+                                                    <th>סכום (₪)</th>
+                                                    <th>פעולות</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="merkantil-income-tbody">
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- הוצאות מרכנתיל -->
+                            <div>
+                                <h6 style="margin-bottom: 15px;">הוצאות מרכנתיל:</h6>
+                                <div class="table-editor">
+                                    <div class="table-controls">
+                                        <button type="button" class="button" onclick="addAccountRow('merkantil-expense')">➕ הוסף הוצאה</button>
+                                    </div>
+                                    <div class="editable-table-container">
+                                        <table class="editable-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>סוג הוצאה</th>
+                                                    <th>סכום (₪)</th>
+                                                    <th>פעולות</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="merkantil-expense-tbody">
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -624,7 +788,7 @@
                 <div id="edit-status" class="status-message"></div>
             </div>
             
-            <!-- יצירת דף חדש -->
+                            <!-- יצירת דף חדש -->
             <div class="section">
                 <h2>➕ יצירת דף חדש</h2>
                 
@@ -642,16 +806,6 @@
                 <div class="form-group">
                     <label for="new-period">תקופת הדוח:</label>
                     <input type="text" id="new-period" placeholder="חודש יולי 2025">
-                </div>
-                
-                <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; margin: 20px 0; color: #0c5460;">
-                    <h4 style="margin: 0 0 10px 0; color: #0c5460;">💡 טיפים ליצירת דף חדש:</h4>
-                    <ul style="margin: 0; padding-right: 20px;">
-                        <li>הדף החדש יווצר על בסיס התבנית הקיימת (202505-1.html או הקובץ שנבחר לשכפול)</li>
-                        <li>לאחר היצירה תוכל לערוך את הדף ולהתאים את הנתונים</li>
-                        <li>הממשק יזהה אוטומטית אם הדף פשוט או מפורט (פאגי + מרכנתיל)</li>
-                        <li>לשכפול דף מסוים - לחץ על "שכפל" ברשימת הדפים הקיימים</li>
-                    </ul>
                 </div>
                 
                 <button type="button" class="button success" onclick="createNewPage()">צור דף חדש</button>
@@ -837,11 +991,17 @@
         function toggleReportTypeFields() {
             const reportType = document.getElementById('edit-report-type').value;
             const detailedFields = document.getElementById('detailed-report-fields');
+            const simpleTables = document.getElementById('simple-tables');
+            const detailedTables = document.getElementById('detailed-tables');
             
             if (reportType === 'detailed') {
                 detailedFields.style.display = 'block';
+                simpleTables.classList.add('hidden');
+                detailedTables.classList.remove('hidden');
             } else {
                 detailedFields.style.display = 'none';
+                simpleTables.classList.remove('hidden');
+                detailedTables.classList.add('hidden');
             }
         }
 
@@ -973,50 +1133,149 @@
             }
         }
 
-        // חילוץ נתונים מדוח מפורט (פאגי + מרכנתיל)
+        // הוספת שורה לטבלת חשבון ספציפי
+        function addAccountRow(accountType) {
+            const tbody = document.getElementById(accountType + '-tbody');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="text" value="" placeholder="${getPlaceholderText(accountType)}"></td>
+                <td><input type="number" value="" placeholder="0"></td>
+                <td>
+                    <div class="row-actions">
+                        <button class="delete-btn" onclick="deleteRow(this)">🗑️</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        // קבלת טקסט מקום להחזיק עבור כל סוג חשבון
+        function getPlaceholderText(accountType) {
+            if (accountType.includes('income')) {
+                return 'מקור הכנסה';
+            } else {
+                return 'סוג הוצאה';
+            }
+        }
+
+        // חילוץ נתונים מדוח מפורט - גרסה מעודכנת
         function extractDetailedReportData() {
             console.log('Extracting detailed report data...');
             
-            const regularTbody = document.getElementById('regular-income-tbody');
-            const casualTbody = document.getElementById('casual-income-tbody');
-            const expenseTbody = document.getElementById('expenses-tbody');
+            // איפוס כל הטבלאות
+            const tableIds = [
+                'pagi-keren-income-tbody',
+                'pagi-keren-expense-tbody', 
+                'pagi-beit-income-tbody',
+                'pagi-beit-expense-tbody',
+                'merkantil-income-tbody',
+                'merkantil-expense-tbody'
+            ];
             
-            if (!regularTbody || !casualTbody || !expenseTbody) {
-                console.error('Required tbody elements not found');
-                return;
-            }
-            
-            regularTbody.innerHTML = '';
-            casualTbody.innerHTML = '';
-            expenseTbody.innerHTML = '';
+            tableIds.forEach(id => {
+                const tbody = document.getElementById(id);
+                if (tbody) tbody.innerHTML = '';
+            });
             
             try {
                 // חילוץ נתוני קרן התורה
-                extractAccountData('קרן התורה', 'keren');
+                extractAccountDataToTables('קרן התורה', 'pagi-keren');
                 
                 // חילוץ נתוני בית המדרש
-                extractAccountData('בית המדרש', 'beit');
+                extractAccountDataToTables('בית המדרש', 'pagi-beit');
                 
                 // חילוץ נתוני מרכנתיל
-                extractAccountData('מרכנתיל', 'merkantil');
+                extractAccountDataToTables('מרכנתיל', 'merkantil');
                 
-                // אם לא נמצאו נתונים, הוסף שורות ריקות
-                if (regularTbody.children.length === 0) {
-                    addRegularIncomeRowWithData('', '');
-                }
-                if (casualTbody.children.length === 0) {
-                    addCasualIncomeRowWithData('', '');
-                }
-                if (expenseTbody.children.length === 0) {
-                    addExpenseRowWithData('', '', false);
-                }
+                // הוספת שורות ריקות לטבלאות ללא נתונים
+                tableIds.forEach(id => {
+                    const tbody = document.getElementById(id);
+                    if (tbody && tbody.children.length === 0) {
+                        addAccountRow(id.replace('-tbody', ''));
+                    }
+                });
                 
             } catch (error) {
                 console.error('Error extracting detailed report data:', error);
-                addRegularIncomeRowWithData('', '');
-                addCasualIncomeRowWithData('', '');
-                addExpenseRowWithData('', '', false);
+                // הוספת שורות ריקות בכל הטבלאות
+                tableIds.forEach(id => {
+                    addAccountRow(id.replace('-tbody', ''));
+                });
             }
+        }
+
+        // חילוץ נתוני חשבון לטבלאות הנפרדות
+        function extractAccountDataToTables(accountName, accountPrefix) {
+            console.log(`Extracting data for ${accountName} to separate tables...`);
+            
+            // חיפוש קטע החשבון
+            const accountSectionRegex = new RegExp(`<h3[^>]*>${accountName}[\\s\\S]*?(?=<h3|<div class="section"|$)`, 'g');
+            const accountMatch = currentPageContent.match(accountSectionRegex);
+            
+            if (!accountMatch) {
+                console.log(`Account section for ${accountName} not found`);
+                return;
+            }
+            
+            const sectionContent = accountMatch[0];
+            
+            // חילוץ הכנסות לטבלה נפרדת
+            const incomeTableRegex = new RegExp(`<h3>הכנסות[^<]*${accountName}[\\s\\S]*?<tbody>([\\s\\S]*?)<\\/tbody>`, 'i');
+            const incomeMatch = sectionContent.match(incomeTableRegex);
+            
+            if (incomeMatch) {
+                const incomeRows = incomeMatch[1];
+                const incomePattern = /<tr[^>]*class="subcategory-row"[^>]*>[\s\S]*?<td[^>]*>([^<]*)<\/td>[\s\S]*?<td[^>]*>([\d,]+)<\/td>/g;
+                let match;
+                
+                while ((match = incomePattern.exec(incomeRows)) !== null) {
+                    const name = match[1].trim();
+                    const amount = match[2].replace(/,/g, '');
+                    
+                    if (amount && amount !== '0') {
+                        addAccountRowWithData(accountPrefix + '-income', name, amount);
+                        console.log(`Added income to ${accountPrefix}: ${name}, ${amount}`);
+                    }
+                }
+            }
+            
+            // חילוץ הוצאות לטבלה נפרדת
+            const expenseTableRegex = new RegExp(`<h3>הוצאות[^<]*${accountName}[\\s\\S]*?<tbody>([\\s\\S]*?)<\\/tbody>`, 'i');
+            const expenseMatch = sectionContent.match(expenseTableRegex);
+            
+            if (expenseMatch) {
+                const expenseRows = expenseMatch[1];
+                const expensePattern = /<tr[^>]*class="subcategory-row"[^>]*>[\s\S]*?<td[^>]*>([^<]*)<\/td>[\s\S]*?<td[^>]*>([\d,]+)<\/td>/g;
+                let match;
+                
+                while ((match = expensePattern.exec(expenseRows)) !== null) {
+                    const name = match[1].trim();
+                    const amount = match[2].replace(/,/g, '');
+                    
+                    if (amount && amount !== '0') {
+                        addAccountRowWithData(accountPrefix + '-expense', name, amount);
+                        console.log(`Added expense to ${accountPrefix}: ${name}, ${amount}`);
+                    }
+                }
+            }
+        }
+
+        // הוספת שורה עם נתונים לטבלת חשבון
+        function addAccountRowWithData(accountType, name, amount) {
+            const tbody = document.getElementById(accountType + '-tbody');
+            if (!tbody) return;
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="text" value="${name}" placeholder="${getPlaceholderText(accountType)}"></td>
+                <td><input type="number" value="${amount}" placeholder="0"></td>
+                <td>
+                    <div class="row-actions">
+                        <button class="delete-btn" onclick="deleteRow(this)">🗑️</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
         }
 
         // חילוץ נתוני חשבון ספציפי
@@ -1492,6 +1751,7 @@
 
         // איסוף נתונים מהטופס
         function collectFormData() {
+            const reportType = document.getElementById('edit-report-type').value;
             const data = {
                 title: document.getElementById('edit-title').value,
                 period: document.getElementById('edit-period').value,
@@ -1499,40 +1759,70 @@
                 scholarshipRecipients: document.getElementById('edit-scholarship-recipients').value,
                 backLink: document.getElementById('edit-back-link').value,
                 detailsLink: document.getElementById('edit-details-link').value,
-                reportType: document.getElementById('edit-report-type').value,
+                reportType: reportType,
                 regularIncomeItems: [],
                 casualIncomeItems: [],
                 expenseItems: []
             };
             
-            // איסוף הכנסות קבועות
-            const regularIncomeRows = document.querySelectorAll('#regular-income-tbody tr');
-            regularIncomeRows.forEach(row => {
-                const inputs = row.querySelectorAll('input');
-                if (inputs[0] && inputs[0].value.trim()) {
-                    data.regularIncomeItems.push({
-                        name: inputs[0].value.trim(),
-                        amount: parseInt(inputs[1].value) || 0
-                    });
-                }
-            });
-            
-            // איסוף הכנסות מזדמנות
-            const casualIncomeRows = document.querySelectorAll('#casual-income-tbody tr');
-            casualIncomeRows.forEach(row => {
-                const inputs = row.querySelectorAll('input');
-                if (inputs[0] && inputs[0].value.trim()) {
-                    data.casualIncomeItems.push({
-                        name: inputs[0].value.trim(),
-                        amount: parseInt(inputs[1].value) || 0
-                    });
-                }
-            });
-            
-            // איסוף הוצאות עם פירוט
-            data.expenseItems = collectExpenseDataWithSubItems();
+            if (reportType === 'detailed') {
+                // איסוף נתונים מטבלאות מפורטות
+                data.detailedData = {
+                    pagiKerenIncome: collectAccountData('pagi-keren-income'),
+                    pagiKerenExpense: collectAccountData('pagi-keren-expense'),
+                    pagiBeitIncome: collectAccountData('pagi-beit-income'),
+                    pagiBeitExpense: collectAccountData('pagi-beit-expense'),
+                    merkantilIncome: collectAccountData('merkantil-income'),
+                    merkantilExpense: collectAccountData('merkantil-expense')
+                };
+            } else {
+                // איסוף הכנסות קבועות
+                const regularIncomeRows = document.querySelectorAll('#regular-income-tbody tr');
+                regularIncomeRows.forEach(row => {
+                    const inputs = row.querySelectorAll('input');
+                    if (inputs[0] && inputs[0].value.trim()) {
+                        data.regularIncomeItems.push({
+                            name: inputs[0].value.trim(),
+                            amount: parseInt(inputs[1].value) || 0
+                        });
+                    }
+                });
+                
+                // איסוף הכנסות מזדמנות
+                const casualIncomeRows = document.querySelectorAll('#casual-income-tbody tr');
+                casualIncomeRows.forEach(row => {
+                    const inputs = row.querySelectorAll('input');
+                    if (inputs[0] && inputs[0].value.trim()) {
+                        data.casualIncomeItems.push({
+                            name: inputs[0].value.trim(),
+                            amount: parseInt(inputs[1].value) || 0
+                        });
+                    }
+                });
+                
+                // איסוף הוצאות עם פירוט
+                data.expenseItems = collectExpenseDataWithSubItems();
+            }
             
             return data;
+        }
+
+        // איסוף נתונים מטבלת חשבון ספציפי
+        function collectAccountData(accountType) {
+            const items = [];
+            const rows = document.querySelectorAll(`#${accountType}-tbody tr`);
+            
+            rows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                if (inputs[0] && inputs[0].value.trim()) {
+                    items.push({
+                        name: inputs[0].value.trim(),
+                        amount: parseInt(inputs[1].value) || 0
+                    });
+                }
+            });
+            
+            return items;
         }
 
         // איסוף נתוני הוצאות עם פירוט
@@ -1725,20 +2015,23 @@
             return updatedContent;
         }
 
-        // עדכון דוח מפורט עם חלוקה לפאגי ומרכנתיל
+        // עדכון דוח מפורט עם חלוקה לפאגי ומרכנתיל - גרסה מעודכנת
         function updateDetailedReportWithAccountData(content, data) {
-            // הפרדת הנתונים לפי סוגי החשבונות שנבחרו על ידי המשתמש
-            const pagiKerenData = extractAccountDataForUpdate(data, 'pagi-keren');
-            const pagiBeitData = extractAccountDataForUpdate(data, 'pagi-beit');
-            const merkantilData = extractAccountDataForUpdate(data, 'merkantil');
+            // חישוב סיכומים מהנתונים החדשים
+            const pagiKerenIncome = data.detailedData.pagiKerenIncome.reduce((sum, item) => sum + item.amount, 0);
+            const pagiKerenExpenses = data.detailedData.pagiKerenExpense.reduce((sum, item) => sum + item.amount, 0);
+            const pagiBeitIncome = data.detailedData.pagiBeitIncome.reduce((sum, item) => sum + item.amount, 0);
+            const pagiBeitExpenses = data.detailedData.pagiBeitExpense.reduce((sum, item) => sum + item.amount, 0);
+            const merkantilIncome = data.detailedData.merkantilIncome.reduce((sum, item) => sum + item.amount, 0);
+            const merkantilExpenses = data.detailedData.merkantilExpense.reduce((sum, item) => sum + item.amount, 0);
             
-            // חישוב סיכומים כוללים לפאגי ומרכנתיל
-            const totalPagiIncome = pagiKerenData.income + pagiBeitData.income;
-            const totalPagiExpenses = pagiKerenData.expenses + pagiBeitData.expenses;
+            // חישוב סיכומים כוללים
+            const totalPagiIncome = pagiKerenIncome + pagiBeitIncome;
+            const totalPagiExpenses = pagiKerenExpenses + pagiBeitExpenses;
             const totalPagiBalance = totalPagiIncome - totalPagiExpenses;
             
-            const totalMerkantilIncome = merkantilData.income;
-            const totalMerkantilExpenses = merkantilData.expenses;
+            const totalMerkantilIncome = merkantilIncome;
+            const totalMerkantilExpenses = merkantilExpenses;
             const totalMerkantilBalance = totalMerkantilIncome - totalMerkantilExpenses;
             
             // עדכון סיכומי פאגי כללי
@@ -1776,13 +2069,99 @@
             );
             
             // עדכון קרן התורה
-            content = updateAccountSection(content, 'keren', pagiKerenData);
+            const kerenBalance = pagiKerenIncome - pagiKerenExpenses;
+            const kerenBalanceSign = kerenBalance < 0 ? '-' : '';
+            const kerenBalanceAbs = Math.abs(kerenBalance).toLocaleString('he-IL');
+            
+            content = content.replace(
+                /(<div class="summary-card keren-income">[\s\S]*?<div class="amount"[^>]*>).*?(<\/div>)/m,
+                `$1₪${pagiKerenIncome.toLocaleString('he-IL')}$2`
+            );
+            content = content.replace(
+                /(<div class="summary-card keren-expenses">[\s\S]*?<div class="amount"[^>]*>).*?(<\/div>)/m,
+                `$1₪${pagiKerenExpenses.toLocaleString('he-IL')}$2`
+            );
+            content = content.replace(
+                /(<div class="summary-card keren-balance">[\s\S]*?<div class="amount"[^>]*>).*?(<\/div>)/m,
+                `$1${kerenBalanceSign}₪${kerenBalanceAbs}$2`
+            );
             
             // עדכון בית המדרש
-            content = updateAccountSection(content, 'beit', pagiBeitData);
+            const beitBalance = pagiBeitIncome - pagiBeitExpenses;
+            const beitBalanceSign = beitBalance < 0 ? '-' : '';
+            const beitBalanceAbs = Math.abs(beitBalance).toLocaleString('he-IL');
             
-            // עדכון טבלאות מרכנתיל
-            content = updateMerkantilTables(content, merkantilData);
+            content = content.replace(
+                /(<div class="summary-card beit-income">[\s\S]*?<div class="amount"[^>]*>).*?(<\/div>)/m,
+                `$1₪${pagiBeitIncome.toLocaleString('he-IL')}$2`
+            );
+            content = content.replace(
+                /(<div class="summary-card keren-expenses">[\s\S]*?<div class="amount"[^>]*>).*?(<\/div>)/m,
+                `$1₪${pagiBeitExpenses.toLocaleString('he-IL')}$2`
+            );
+            content = content.replace(
+                /(<div class="summary-card beit-balance">[\s\S]*?<div class="amount"[^>]*>).*?(<\/div>)/m,
+                `$1${beitBalanceSign}₪${beitBalanceAbs}$2`
+            );
+            
+            // עדכון טבלאות
+            content = updateDetailedAccountTables(content, 'קרן התורה', data.detailedData.pagiKerenIncome, data.detailedData.pagiKerenExpense);
+            content = updateDetailedAccountTables(content, 'בית המדרש', data.detailedData.pagiBeitIncome, data.detailedData.pagiBeitExpense);
+            content = updateDetailedAccountTables(content, 'מרכנתיל', data.detailedData.merkantilIncome, data.detailedData.merkantilExpense);
+            
+            return content;
+        }
+
+        // עדכון טבלאות של חשבון ספציפי - גרסה מפורטת
+        function updateDetailedAccountTables(content, sectionTitle, incomeItems, expenseItems) {
+            // עדכון טבלת הכנסות
+            let incomeRows = '';
+            incomeItems.forEach(item => {
+                incomeRows += `
+                                        <tr class="subcategory-row">
+                                            <td>${item.name}</td>
+                                            <td>${item.amount.toLocaleString('he-IL')}</td>
+                                        </tr>`;
+            });
+            
+            const totalIncome = incomeItems.reduce((sum, item) => sum + item.amount, 0);
+            if (incomeRows) {
+                incomeRows += `
+                                        <tr class="total-row">
+                                            <td>סך הכל</td>
+                                            <td>${totalIncome.toLocaleString('he-IL')}</td>
+                                        </tr>`;
+            }
+            
+            // עדכון טבלת הוצאות
+            let expenseRows = '';
+            expenseItems.forEach(item => {
+                expenseRows += `
+                                        <tr class="subcategory-row">
+                                            <td>${item.name}</td>
+                                            <td>${item.amount.toLocaleString('he-IL')}</td>
+                                        </tr>`;
+            });
+            
+            const totalExpenses = expenseItems.reduce((sum, item) => sum + item.amount, 0);
+            if (expenseRows) {
+                expenseRows += `
+                                        <tr class="total-row">
+                                            <td>סך הכל</td>
+                                            <td>${totalExpenses.toLocaleString('he-IL')}</td>
+                                        </tr>`;
+            }
+            
+            // החלפה בתוכן
+            const incomeTableRegex = new RegExp(`(<h3>הכנסות ${sectionTitle}<\/h3>[\\s\\S]*?<tbody>)[\\s\\S]*?(<\/tbody>)`, 'm');
+            if (incomeRows && incomeTableRegex.test(content)) {
+                content = content.replace(incomeTableRegex, `$1${incomeRows}$2`);
+            }
+            
+            const expenseTableRegex = new RegExp(`(<h3>הוצאות ${sectionTitle}<\/h3>[\\s\\S]*?<tbody>)[\\s\\S]*?(<\/tbody>)`, 'm');
+            if (expenseRows && expenseTableRegex.test(content)) {
+                content = content.replace(expenseTableRegex, `$1${expenseRows}$2`);
+            }
             
             return content;
         }
@@ -2133,9 +2512,26 @@
             document.getElementById('edit-period').value = '';
             document.getElementById('edit-total-donors').value = '';
             document.getElementById('edit-scholarship-recipients').value = '';
+            
+            // איפוס טבלאות דוח פשוט
             document.getElementById('regular-income-tbody').innerHTML = '';
             document.getElementById('casual-income-tbody').innerHTML = '';
             document.getElementById('expenses-tbody').innerHTML = '';
+            
+            // איפוס טבלאות דוח מפורט
+            const detailedTableIds = [
+                'pagi-keren-income-tbody',
+                'pagi-keren-expense-tbody',
+                'pagi-beit-income-tbody', 
+                'pagi-beit-expense-tbody',
+                'merkantil-income-tbody',
+                'merkantil-expense-tbody'
+            ];
+            
+            detailedTableIds.forEach(id => {
+                const tbody = document.getElementById(id);
+                if (tbody) tbody.innerHTML = '';
+            });
         }
 
         // צפייה בדף
@@ -2322,6 +2718,7 @@
         window.deleteExpenseRowAndSubItems = deleteExpenseRowAndSubItems;
         window.addRegularIncomeRow = addRegularIncomeRow;
         window.addCasualIncomeRow = addCasualIncomeRow;
+        window.addAccountRow = addAccountRow;
 
         // הגדרת שם קובץ אוטומטי
         document.addEventListener('DOMContentLoaded', function() {
