@@ -434,7 +434,9 @@
                 progressFill.style.width = '75%';
                 
                 // יצירת הקובץ ב-GitHub
-                const encodedContent = btoa(unescape(encodeURIComponent(updatedContent)));
+                // תיקון encoding לעברית
+                const utf8Content = new TextEncoder().encode(updatedContent);
+                const encodedContent = btoa(String.fromCharCode(...utf8Content));
                 
                 const apiUrl = `https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents/${filename}`;
                 
@@ -493,8 +495,12 @@
                 
                 if (response.ok) {
                     const data = await response.json();
-                    // פענוח התוכן מ-base64
-                    return atob(data.content);
+                    // פענוח התוכן מ-base64 עם תמיכה בעברית
+                    const decodedContent = atob(data.content);
+                    // המרה נכונה לעברית
+                    return new TextDecoder('utf-8').decode(
+                        new Uint8Array([...decodedContent].map(char => char.charCodeAt(0)))
+                    );
                 } else {
                     throw new Error(`לא ניתן לקרוא את הקובץ המקורי - HTTP ${response.status}`);
                 }
