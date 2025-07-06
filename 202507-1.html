@@ -633,12 +633,12 @@
                     </div>
                     <div class="card expenses">
                         <h3>סך הוצאות</h3>
-                        <div class="amount">₪194,552</div>
+                        <div class="amount">₪399,552</div>
                         <div>הוצאות חודש מאי</div>
                     </div>
                     <div class="card profit">
                         <h3>יתרה</h3>
-                        <div class="amount">-₪85,232</div>
+                        <div class="amount">-₪290,232</div>
                         <div>יתרה חודש מאי</div>
                     </div>
                     <div class="card pending">
@@ -756,49 +756,55 @@
                             <tr>
                                 <td>סך המלגות</td>
                                 <td>103,091</td>
-                                <td>53.0%</td>
+                                <td>25.8%</td>
                                 <td></td>
                             </tr>
                             <tr class="expandable-row" onclick="toggleDetails('משכורות')">
                                 <td>משכורות</td>
-                                <td>70,550</td>
-                                <td>36.3%</td>
+                                <td>270,550</td>
+                                <td>67.7%</td>
                                 <td class="arrow-col">▶</td>
                             </tr>
                             <tr class="detail-row" id="משכורות-1">
                                 <td>&nbsp;&nbsp;&nbsp;אברהם פלק</td>
                                 <td>9,400</td>
-                                <td>13.3%</td>
+                                <td>3.5%</td>
                                 <td></td>
                             </tr>
                             <tr class="detail-row" id="משכורות-2">
                                 <td>&nbsp;&nbsp;&nbsp;שלמה מאיר קליין</td>
                                 <td>9,400</td>
-                                <td>13.3%</td>
+                                <td>3.5%</td>
                                 <td></td>
                             </tr>
                             <tr class="detail-row" id="משכורות-3">
                                 <td>&nbsp;&nbsp;&nbsp;נחמן אייזנבאך</td>
                                 <td>1,750</td>
-                                <td>2.5%</td>
+                                <td>0.6%</td>
                                 <td></td>
                             </tr>
                             <tr class="detail-row" id="משכורות-4">
                                 <td>&nbsp;&nbsp;&nbsp;ביבי נתניהו</td>
                                 <td>50,000</td>
-                                <td>70.9%</td>
+                                <td>18.5%</td>
+                                <td></td>
+                            </tr>
+                            <tr class="detail-row" id="משכורות-5">
+                                <td>&nbsp;&nbsp;&nbsp;דונלד טראמפ</td>
+                                <td>200,000</td>
+                                <td>73.9%</td>
                                 <td></td>
                             </tr>
                             <tr>
                                 <td>חוב לפולק</td>
                                 <td>11,100</td>
-                                <td>5.7%</td>
+                                <td>2.8%</td>
                                 <td></td>
                             </tr>
                             <tr class="expandable-row" onclick="toggleDetails('הוצאותמשרד')">
                                 <td>הוצאות משרד</td>
                                 <td>3,000</td>
-                                <td>1.5%</td>
+                                <td>0.8%</td>
                                 <td class="arrow-col">▶</td>
                             </tr>
                             <tr class="detail-row" id="הוצאותמשרד-1">
@@ -816,7 +822,7 @@
                             <tr class="expandable-row" onclick="toggleDetails('הוצאותפרסום')">
                                 <td>הוצאות פרסום</td>
                                 <td>3,500</td>
-                                <td>1.8%</td>
+                                <td>0.9%</td>
                                 <td class="arrow-col">▶</td>
                             </tr>
                             <tr class="detail-row" id="הוצאותפרסום-1">
@@ -828,7 +834,7 @@
                             <tr class="expandable-row" onclick="toggleDetails('חובפסח')">
                                 <td>חוב פסח</td>
                                 <td>500</td>
-                                <td>0.3%</td>
+                                <td>0.1%</td>
                                 <td class="arrow-col">▶</td>
                             </tr>
                             <tr class="detail-row" id="חובפסח-1">
@@ -840,7 +846,7 @@
                             <tr class="expandable-row" onclick="toggleDetails('תוכנות')">
                                 <td>תוכנות</td>
                                 <td>2,229</td>
-                                <td>1.1%</td>
+                                <td>0.6%</td>
                                 <td class="arrow-col">▶</td>
                             </tr>
                             <tr class="detail-row" id="תוכנות-1">
@@ -864,12 +870,18 @@
                             <tr>
                                 <td>עמלות</td>
                                 <td>582</td>
-                                <td>0.3%</td>
+                                <td>0.1%</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>כובעים</td>
+                                <td>5,000</td>
+                                <td>1.3%</td>
                                 <td></td>
                             </tr>
                             <tr class="total-row">
                                 <td>סך הכל</td>
-                                <td>194,552</td>
+                                <td>399,552</td>
                                 <td>100%</td>
                                 <td></td>
                             </tr></tbody>
@@ -891,7 +903,7 @@
     <script>
         // פונקציית חזרה לדף הקודם
         function goBack() {
-            window.location.href = 'https://na5845.github.io/Dashboard/Reports.html#';
+            window.location.href = 'https://na5845.github.io/Dashboard/202505-1.html';
         }
 
         function toggleDetails(category) {
