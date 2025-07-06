@@ -1,0 +1,404 @@
+{
+  "2024": [
+    {
+      "month": "ינואר",
+      "monthNum": 1,
+      "year": 2024,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "פברואר",
+      "monthNum": 2,
+      "year": 2024,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "מרץ",
+      "monthNum": 3,
+      "year": 2024,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "אפריל",
+      "monthNum": 4,
+      "year": 2024,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "מאי",
+      "monthNum": 5,
+      "year": 2024,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "יוני",
+      "monthNum": 6,
+      "year": 2024,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "יולי",
+      "monthNum": 7,
+      "year": 2024,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "אוגוסט",
+      "monthNum": 8,
+      "year": 2024,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "ספטמבר",
+      "monthNum": 9,
+      "year": 2024,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "אוקטובר",
+      "monthNum": 10,
+      "year": 2024,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "נובמבר",
+      "monthNum": 11,
+      "year": 2024,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "דצמבר",
+      "monthNum": 12,
+      "year": 2024,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    }
+  ],
+  "2025": [
+    {
+      "month": "ינואר",
+      "monthNum": 1,
+      "year": 2025,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 2500,
+      "expenses": 3500,
+      "link": ""
+    },
+    {
+      "month": "פברואר",
+      "monthNum": 2,
+      "year": 2025,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "מרץ",
+      "monthNum": 3,
+      "year": 2025,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "אפריל",
+      "monthNum": 4,
+      "year": 2025,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "מאי",
+      "monthNum": 5,
+      "year": 2025,
+      "status": "available",
+      "statusText": "זמין",
+      "info": "דוח מפורט של הכנסות והוצאות חודש מאי, כולל פירוט לפי בנקים ומטרות.",
+      "income": 109300,
+      "expenses": 144500,
+      "link": "https://na5845.github.io/Dashboard/202505-1.html"
+    },
+    {
+      "month": "יוני",
+      "monthNum": 6,
+      "year": 2025,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "יולי",
+      "monthNum": 7,
+      "year": 2025,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "אוגוסט",
+      "monthNum": 8,
+      "year": 2025,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "ספטמבר",
+      "monthNum": 9,
+      "year": 2025,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "אוקטובר",
+      "monthNum": 10,
+      "year": 2025,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "נובמבר",
+      "monthNum": 11,
+      "year": 2025,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "דצמבר",
+      "monthNum": 12,
+      "year": 2025,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    }
+  ],
+  "2026": [
+    {
+      "month": "ינואר",
+      "monthNum": 1,
+      "year": 2026,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "פברואר",
+      "monthNum": 2,
+      "year": 2026,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "מרץ",
+      "monthNum": 3,
+      "year": 2026,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "אפריל",
+      "monthNum": 4,
+      "year": 2026,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "מאי",
+      "monthNum": 5,
+      "year": 2026,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "יוני",
+      "monthNum": 6,
+      "year": 2026,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "יולי",
+      "monthNum": 7,
+      "year": 2026,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "אוגוסט",
+      "monthNum": 8,
+      "year": 2026,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "ספטמבר",
+      "monthNum": 9,
+      "year": 2026,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "אוקטובר",
+      "monthNum": 10,
+      "year": 2026,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "נובמבר",
+      "monthNum": 11,
+      "year": 2026,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    },
+    {
+      "month": "דצמבר",
+      "monthNum": 12,
+      "year": 2026,
+      "status": "unavailable",
+      "statusText": "לא זמין",
+      "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
+      "income": 0,
+      "expenses": 0,
+      "link": ""
+    }
+  ]
+}
