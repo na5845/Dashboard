@@ -992,11 +992,14 @@
 
         // זיהוי אוטומטי של סוג הדוח במילוי הטופס
         function detectReportType() {
-            if (!currentPageContent) return 'simple';
-            
-            const isDetailedReport = currentPageContent.includes('בנק פאגי') && currentPageContent.includes('בנק מרכנתיל');
-            return isDetailedReport ? 'detailed' : 'simple';
-        }
+    if (!currentPageContent) return 'simple';
+    
+    // בדיקה מפורטת יותר לזיהוי דוח מפורט
+    const hasDetailedStructure = (currentPageContent.includes('בנק פאגי') && currentPageContent.includes('בנק מרכנתיל')) ||
+                                 (currentPageContent.includes('קרן התורה') && currentPageContent.includes('בית המדרש'));
+    
+    return hasDetailedStructure ? 'detailed' : 'simple';
+}
 
         // מילוי טופס העריכה
         function populateEditForm() {
