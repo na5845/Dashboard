@@ -362,15 +362,30 @@
     </div>
 
     <script>
+        // הגדרות גלובליות
         let githubConfig = {
             token: '',
             owner: 'na5845',
             repo: 'Dashboard'
         };
 
+        // פונקציה להצגת הודעות סטטוס
+        function showStatus(elementId, type, message) {
+            const element = document.getElementById(elementId);
+            element.className = `status-message ${type}`;
+            element.textContent = message;
+            element.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    element.style.display = 'none';
+                }, 5000);
+            }
+        }
+
         // בדיקת חיבור ל-GitHub
         function testConnection() {
-            console.log('testConnection called'); // לבדיקה
+            console.log('testConnection called');
             
             const token = document.getElementById('github-token').value;
             const repoName = document.getElementById('repo-name').value;
@@ -404,7 +419,7 @@
         }
 
         // טעינת דפים קיימים
-        async function loadExistingPages() {
+        function loadExistingPages() {
             if (!githubConfig.token) {
                 showStatus('connection-status', 'error', 'נא בדוק את החיבור ל-GitHub תחילה');
                 return;
@@ -416,19 +431,19 @@
             loading.style.display = 'block';
             pagesList.innerHTML = '';
             
-            try {
-                const response = await fetch(`https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents`, {
-                    headers: {
-                        'Authorization': `token ${githubConfig.token}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                });
-                
+            fetch(`https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents`, {
+                headers: {
+                    'Authorization': `token ${githubConfig.token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            })
+            .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
                 }
-                
-                const files = await response.json();
+                return response.json();
+            })
+            .then(files => {
                 const htmlFiles = files.filter(file => file.name.endsWith('.html'));
                 
                 if (htmlFiles.length === 0) {
@@ -447,11 +462,13 @@
                         pagesList.appendChild(fileItem);
                     });
                 }
-            } catch (error) {
+            })
+            .catch(error => {
                 pagesList.innerHTML = `<p style="text-align: center; color: #dc3545;">שגיאה בטעינת הדפים: ${error.message}</p>`;
-            } finally {
+            })
+            .finally(() => {
                 loading.style.display = 'none';
-            }
+            });
         }
 
         // יצירת דף חדש
