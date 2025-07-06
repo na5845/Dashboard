@@ -343,9 +343,60 @@
             margin: 0 auto 10px;
         }
         
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .has-subitems-indicator {
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .sub-items-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #e9ecef;
+        }
+        
+        .sub-items-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .sub-item {
+            display: flex;
+            gap: 10px;
+            margin: 8px 0;
+            align-items: center;
+            padding: 8px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .sub-item input {
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 6px 8px;
+            font-size: 0.9em;
+        }
+        
+        .sub-item input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+        
+        .sub-items-row {
+            background: #f8f9fa;
+        }
+        
+        .sub-items-row td {
+            padding: 0 !important;
+            border: none !important;
         }
         
         @media (max-width: 768px) {
@@ -822,9 +873,9 @@
             }
         }
 
-        // חילוץ נתוני הוצאות אמיתיים מהטבלה
+        // חילוץ נתוני הוצאות אמיתיים מהטבלה עם פירוט
         function extractRealExpensesData() {
-            console.log('Extracting real expenses data...');
+            console.log('Extracting real expenses data with sub-items...');
             
             const expenseTbody = document.getElementById('expenses-tbody');
             if (!expenseTbody) {
@@ -835,43 +886,81 @@
             expenseTbody.innerHTML = '';
             
             try {
-                // חיפוש פשוט יותר - חיפוש ישיר בטקסט
+                // חיפוש טבלת ההוצאות
                 const expenseTablePattern = /<h3>פירוט הוצאות<\/h3>[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/;
                 const tableMatch = currentPageContent.match(expenseTablePattern);
                 
                 if (tableMatch) {
                     const tableContent = tableMatch[1];
                     
-                    // חיפוש שורות רגילות (לא expandable ולא detail)
-                    const rowPattern = /<tr(?![^>]*class="(?:expandable-row|detail-row)")[^>]*>[\s\S]*?<td[^>]*>([^<]+)<\/td>[\s\S]*?<td[^>]*>([\d,]+)<\/td>/g;
+                    // פיצול לשורות
+                    const rows = tableContent.split(/<\/tr>/);
+                    let currentMainItem = null;
                     
-                    let match;
-                    let foundData = false;
-                    
-                    while ((match = rowPattern.exec(tableContent)) !== null) {
-                        const name = match[1].replace(/&nbsp;/g, ' ').trim();
-                        const amount = match[2].replace(/,/g, '');
+                    rows.forEach(rowHtml => {
+                        if (!rowHtml.trim() || !rowHtml.includes('<td')) return;
                         
-                        // דילוג על שורת סיכום
-                        if (name && amount && !name.includes('סך הכל') && amount !== '0') {
-                            addExpenseRowWithData(name, amount);
-                            foundData = true;
-                            console.log('Found expense:', name, amount);
+                        // בדיקה אם זו שורה מרחיבה (expandable-row)
+                        const isExpandableMatch = rowHtml.match(/class="expandable-row"[^>]*onclick="toggleDetails\('([^']+)'\)"/);
+                        
+                        if (isExpandableMatch) {
+                            // שורה עם פירוט - חילוץ הנתונים
+                            const nameMatch = rowHtml.match(/<td[^>]*>([^<]+)<\/td>/);
+                            const amountMatch = rowHtml.match(/<td[^>]*>([\d,]+)<\/td>/);
+                            
+                            if (nameMatch && amountMatch) {
+                                const name = nameMatch[1].trim();
+                                const amount = amountMatch[1].replace(/,/g, '');
+                                
+                                currentMainItem = addExpenseRowWithData(name, amount, true); // true = יש פירוט
+                                console.log('Found expandable expense:', name, amount);
+                            }
                         }
-                    }
+                        // בדיקה אם זו שורת פירוט (detail-row)
+                        else if (rowHtml.includes('class="detail-row"') && currentMainItem) {
+                            const nameMatch = rowHtml.match(/<td[^>]*>([^<]+)<\/td>/);
+                            const amountMatch = rowHtml.match(/<td[^>]*>([\d,]+)<\/td>/);
+                            
+                            if (nameMatch && amountMatch) {
+                                const name = nameMatch[1].replace(/&nbsp;/g, '').trim();
+                                const amount = amountMatch[1].replace(/,/g, '');
+                                
+                                if (name && amount !== '0') {
+                                    addSubItemToExpenseRow(currentMainItem, name, amount);
+                                    console.log('Found sub-item:', name, amount);
+                                }
+                            }
+                        }
+                        // שורה רגילה ללא פירוט
+                        else if (!rowHtml.includes('class="') || (!rowHtml.includes('detail-row') && !rowHtml.includes('total-row'))) {
+                            const nameMatch = rowHtml.match(/<td[^>]*>([^<]+)<\/td>/);
+                            const amountMatch = rowHtml.match(/<td[^>]*>([\d,]+)<\/td>/);
+                            
+                            if (nameMatch && amountMatch) {
+                                const name = nameMatch[1].trim();
+                                const amount = amountMatch[1].replace(/,/g, '');
+                                
+                                if (name && amount && !name.includes('סך הכל') && amount !== '0') {
+                                    addExpenseRowWithData(name, amount, false); // false = אין פירוט
+                                    currentMainItem = null; // איפוס
+                                    console.log('Found regular expense:', name, amount);
+                                }
+                            }
+                        }
+                    });
                     
-                    if (!foundData) {
+                    if (expenseTbody.children.length === 0) {
                         console.log('No expense data found, adding empty row');
-                        addExpenseRowWithData('', '');
+                        addExpenseRowWithData('', '', false);
                     }
                 } else {
                     console.log('Expense table not found, adding empty row');
-                    addExpenseRowWithData('', '');
+                    addExpenseRowWithData('', '', false);
                 }
                 
             } catch (error) {
                 console.error('Error extracting expense data:', error);
-                addExpenseRowWithData('', '');
+                addExpenseRowWithData('', '', false);
             }
         }
 
@@ -899,20 +988,155 @@
             addExpenseRowWithData('', '');
         }
 
-        function addExpenseRowWithData(name, amount) {
+        function addExpenseRowWithData(name, amount, hasSubItems = false) {
             const tbody = document.getElementById('expenses-tbody');
             const row = document.createElement('tr');
+            const rowId = 'expense-row-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            row.id = rowId;
+            
             row.innerHTML = `
-                <td><input type="text" value="${name}" placeholder="סוג הוצאה"></td>
-                <td><input type="number" value="${amount}" placeholder="0"></td>
+                <td>
+                    <input type="text" value="${name}" placeholder="סוג הוצאה" class="expense-name">
+                    ${hasSubItems ? '<span class="has-subitems-indicator">📋</span>' : ''}
+                </td>
+                <td><input type="number" value="${amount}" placeholder="0" class="expense-amount"></td>
                 <td>
                     <div class="row-actions">
-                        <button class="delete-btn" onclick="deleteRow(this)">🗑️</button>
+                        ${hasSubItems ? '' : '<button type="button" class="button" style="padding: 2px 6px; font-size: 0.7em;" onclick="toggleSubItems(\'' + rowId + '\')">➕ פרט</button>'}
+                        <button class="delete-btn" onclick="deleteExpenseRowAndSubItems(this)">🗑️</button>
                     </div>
                 </td>
             `;
             tbody.appendChild(row);
+            
+            if (hasSubItems) {
+                // הוספת div לפריטים
+                const subItemsDiv = document.createElement('tr');
+                subItemsDiv.className = 'sub-items-row';
+                subItemsDiv.id = rowId + '-subitems';
+                subItemsDiv.innerHTML = `
+                    <td colspan="3">
+                        <div class="sub-items-container" style="margin-right: 20px; background: #f8f9fa; padding: 10px; border-radius: 5px;">
+                            <div class="sub-items-header">
+                                <strong>פירוט:</strong>
+                                <button type="button" class="button" style="padding: 2px 6px; font-size: 0.7em; float: left;" onclick="addSubItemToRow('${rowId}')">➕ הוסף פריט</button>
+                            </div>
+                            <div class="sub-items-list" id="${rowId}-list">
+                            </div>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(subItemsDiv);
+            }
+            
+            return rowId;
         }
+
+        // הוספת פריט משנה לשורה קיימת
+        function addSubItemToExpenseRow(rowId, name, amount) {
+            const subItemsList = document.getElementById(rowId + '-list');
+            if (!subItemsList) return;
+            
+            const subItemDiv = document.createElement('div');
+            subItemDiv.className = 'sub-item';
+            subItemDiv.style.cssText = 'display: flex; gap: 10px; margin: 5px 0; align-items: center;';
+            
+            const subItemId = 'subitem-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            subItemDiv.id = subItemId;
+            
+            subItemDiv.innerHTML = `
+                <input type="text" value="${name}" placeholder="פירוט" style="flex: 2;">
+                <input type="number" value="${amount}" placeholder="0" style="flex: 1;">
+                <button class="delete-btn" style="padding: 2px 6px;" onclick="deleteSubItem('${subItemId}')">🗑️</button>
+            `;
+            
+            subItemsList.appendChild(subItemDiv);
+        }
+
+        // הפעלת/כיבוי פירוט לשורה
+        function toggleSubItems(rowId) {
+            let subItemsRow = document.getElementById(rowId + '-subitems');
+            
+            if (!subItemsRow) {
+                // יצירת שורת פירוט חדשה
+                const mainRow = document.getElementById(rowId);
+                const tbody = mainRow.parentNode;
+                
+                subItemsRow = document.createElement('tr');
+                subItemsRow.className = 'sub-items-row';
+                subItemsRow.id = rowId + '-subitems';
+                subItemsRow.innerHTML = `
+                    <td colspan="3">
+                        <div class="sub-items-container" style="margin-right: 20px; background: #f8f9fa; padding: 10px; border-radius: 5px;">
+                            <div class="sub-items-header">
+                                <strong>פירוט:</strong>
+                                <button type="button" class="button" style="padding: 2px 6px; font-size: 0.7em; float: left;" onclick="addSubItemToRow('${rowId}')">➕ הוסף פריט</button>
+                            </div>
+                            <div class="sub-items-list" id="${rowId}-list">
+                            </div>
+                        </div>
+                    </td>
+                `;
+                
+                // הכנסה אחרי השורה הראשית
+                mainRow.insertAdjacentElement('afterend', subItemsRow);
+                
+                // עדכון הכפתור
+                const toggleBtn = mainRow.querySelector('.row-actions button');
+                if (toggleBtn) {
+                    toggleBtn.innerHTML = '➖ הסתר';
+                    toggleBtn.setAttribute('onclick', `toggleSubItems('${rowId}')`);
+                }
+                
+                // הוספת פריט ראשון
+                addSubItemToRow(rowId);
+            } else {
+                // הסתרת/הצגת הפירוט
+                if (subItemsRow.style.display === 'none') {
+                    subItemsRow.style.display = '';
+                    const toggleBtn = document.querySelector(`#${rowId} .row-actions button`);
+                    if (toggleBtn) toggleBtn.innerHTML = '➖ הסתר';
+                } else {
+                    subItemsRow.style.display = 'none';
+                    const toggleBtn = document.querySelector(`#${rowId} .row-actions button`);
+                    if (toggleBtn) toggleBtn.innerHTML = '➕ פרט';
+                }
+            }
+        }
+
+        // הוספת פריט משנה
+        function addSubItemToRow(rowId) {
+            addSubItemToExpenseRow(rowId, '', '');
+        }
+
+        // מחיקת פריט משנה
+        function deleteSubItem(subItemId) {
+            const subItem = document.getElementById(subItemId);
+            if (subItem) {
+                subItem.remove();
+            }
+        }
+
+        // מחיקת שורה עם כל הפריטים שלה
+        function deleteExpenseRowAndSubItems(button) {
+            const row = button.closest('tr');
+            const rowId = row.id;
+            
+            // מחיקת שורת הפירוט אם קיימת
+            const subItemsRow = document.getElementById(rowId + '-subitems');
+            if (subItemsRow) {
+                subItemsRow.remove();
+            }
+            
+            // מחיקת השורה הראשית
+            row.remove();
+        }
+
+        // פונקציות גלובליות
+        window.toggleSubItems = toggleSubItems;
+        window.addSubItemToRow = addSubItemToRow;
+        window.deleteSubItem = deleteSubItem;
+        window.deleteExpenseRowAndSubItems = deleteExpenseRowAndSubItems;
 
         function deleteRow(button) {
             button.closest('tr').remove();
@@ -981,7 +1205,7 @@
             const incomeRows = document.querySelectorAll('#income-tbody tr');
             incomeRows.forEach(row => {
                 const inputs = row.querySelectorAll('input');
-                if (inputs[0].value.trim()) {
+                if (inputs[0] && inputs[0].value.trim()) {
                     data.incomeItems.push({
                         name: inputs[0].value.trim(),
                         amount: parseInt(inputs[1].value) || 0
@@ -989,17 +1213,8 @@
                 }
             });
             
-            // איסוף הוצאות
-            const expenseRows = document.querySelectorAll('#expenses-tbody tr');
-            expenseRows.forEach(row => {
-                const inputs = row.querySelectorAll('input');
-                if (inputs[0].value.trim()) {
-                    data.expenseItems.push({
-                        name: inputs[0].value.trim(),
-                        amount: parseInt(inputs[1].value) || 0
-                    });
-                }
-            });
+            // איסוף הוצאות עם פירוט
+            data.expenseItems = collectExpenseDataWithSubItems();
             
             return data;
         }
@@ -1120,24 +1335,55 @@
             return content.replace(tableRegex, `$1${tableRows}$3`);
         }
 
-        // עדכון טבלת הוצאות
+        // עדכון טבלת הוצאות עם פירוט
         function updateExpenseTable(content, expenseItems) {
+            // איסוף נתונים מהטבלה כולל פירוט
+            const expenseData = collectExpenseDataWithSubItems();
+            
             // חישוב סכום כולל
-            const totalExpenses = expenseItems.reduce((sum, item) => sum + item.amount, 0);
+            const totalExpenses = expenseData.reduce((sum, item) => {
+                const mainAmount = item.amount || 0;
+                const subItemsAmount = item.subItems ? item.subItems.reduce((subSum, subItem) => subSum + (subItem.amount || 0), 0) : 0;
+                return sum + Math.max(mainAmount, subItemsAmount); // לוקח את הגבוה יותר - או הסכום הכללי או סכום הפריטים
+            }, 0);
             
             // יצירת שורות הטבלה
             let tableRows = '';
             
-            // הוספת שורות ההוצאות
-            expenseItems.forEach(item => {
-                const percentage = totalExpenses > 0 ? ((item.amount / totalExpenses) * 100).toFixed(1) : '0';
-                tableRows += `
+            expenseData.forEach(item => {
+                const percentage = totalExpenses > 0 ? ((Math.max(item.amount, item.subItems ? item.subItems.reduce((sum, si) => sum + si.amount, 0) : 0) / totalExpenses) * 100).toFixed(1) : '0';
+                
+                if (item.subItems && item.subItems.length > 0) {
+                    // שורה עם פירוט
+                    tableRows += `
+                            <tr class="expandable-row" onclick="toggleDetails('${item.name.replace(/[^a-zA-Z0-9]/g, '')}')">
+                                <td>${item.name}</td>
+                                <td>${item.amount.toLocaleString('he-IL')}</td>
+                                <td>${percentage}%</td>
+                                <td class="arrow-col">▶</td>
+                            </tr>`;
+                    
+                    // הוספת שורות הפירוט
+                    item.subItems.forEach(subItem => {
+                        const subPercentage = item.amount > 0 ? ((subItem.amount / item.amount) * 100).toFixed(1) : '0';
+                        tableRows += `
+                            <tr class="detail-row" id="${item.name.replace(/[^a-zA-Z0-9]/g, '')}-${subItem.name.replace(/[^a-zA-Z0-9]/g, '')}">
+                                <td>&nbsp;&nbsp;&nbsp;${subItem.name}</td>
+                                <td>${subItem.amount.toLocaleString('he-IL')}</td>
+                                <td>${subPercentage}%</td>
+                                <td></td>
+                            </tr>`;
+                    });
+                } else {
+                    // שורה רגילה
+                    tableRows += `
                             <tr>
                                 <td>${item.name}</td>
                                 <td>${item.amount.toLocaleString('he-IL')}</td>
                                 <td>${percentage}%</td>
                                 <td></td>
                             </tr>`;
+                }
             });
             
             // הוספת שורת סיכום
@@ -1152,6 +1398,46 @@
             // החלפת תוכן הטבלה
             const tableRegex = /(<h3>פירוט הוצאות<\/h3>[\s\S]*?<tbody>)([\s\S]*?)(<\/tbody>)/;
             return content.replace(tableRegex, `$1${tableRows}$3`);
+        }
+
+        // איסוף נתוני הוצאות עם פירוט
+        function collectExpenseDataWithSubItems() {
+            const expenseData = [];
+            const expenseRows = document.querySelectorAll('#expenses-tbody tr:not(.sub-items-row)');
+            
+            expenseRows.forEach(row => {
+                const nameInput = row.querySelector('.expense-name') || row.querySelector('input[type="text"]');
+                const amountInput = row.querySelector('.expense-amount') || row.querySelector('input[type="number"]');
+                
+                if (nameInput && nameInput.value.trim()) {
+                    const itemData = {
+                        name: nameInput.value.trim(),
+                        amount: parseInt(amountInput.value) || 0,
+                        subItems: []
+                    };
+                    
+                    // חיפוש פריטי משנה
+                    const subItemsRow = document.getElementById(row.id + '-subitems');
+                    if (subItemsRow) {
+                        const subItems = subItemsRow.querySelectorAll('.sub-item');
+                        subItems.forEach(subItem => {
+                            const subNameInput = subItem.querySelector('input[type="text"]');
+                            const subAmountInput = subItem.querySelector('input[type="number"]');
+                            
+                            if (subNameInput && subNameInput.value.trim()) {
+                                itemData.subItems.push({
+                                    name: subNameInput.value.trim(),
+                                    amount: parseInt(subAmountInput.value) || 0
+                                });
+                            }
+                        });
+                    }
+                    
+                    expenseData.push(itemData);
+                }
+            });
+            
+            return expenseData;
         }
 
         // ביטול עריכה
