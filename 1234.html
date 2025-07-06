@@ -1300,33 +1300,33 @@
 function extractAccountDataToTables(accountName, accountPrefix) {
     console.log(`Extracting data for ${accountName} to separate tables...`);
     
-    // חיפוש קטע החשבון בצורה גמישה יותר
-    const sectionRegex = new RegExp(`<h3[^>]*[^>]*${accountName}[\\s\\S]*?(?=<h3[^>]*(?:קרן התורה|בית המדרש)|<div class="section-divider">|$)`, 'g');
-    const sectionMatch = currentPageContent.match(sectionRegex);
-    
-    if (!sectionMatch) {
-        console.log(`Account section for ${accountName} not found`);
-        return;
-    }
-    
-    const sectionContent = sectionMatch[0];
-    
-    // חילוץ הכנסות לטבלה נפרדת - חיפוש גמיש יותר
-    const incomeTableRegex = new RegExp(`<h3>הכנסות ${accountName}<\\/h3>[\\s\\S]*?<tbody>([\\s\\S]*?)<\\/tbody>`, 'i');
-    const incomeMatch = sectionContent.match(incomeTableRegex);
-    
-    if (incomeMatch) {
-        const incomeRows = incomeMatch[1];
-        extractAccountRowsToTable(incomeRows, accountPrefix + '-income');
-    }
-    
-    // חילוץ הוצאות לטבלה נפרדת - חיפוש גמיש יותר  
-    const expenseTableRegex = new RegExp(`<h3>הוצאות ${accountName}<\\/h3>[\\s\\S]*?<tbody>([\\s\\S]*?)<\\/tbody>`, 'i');
-    const expenseMatch = sectionContent.match(expenseTableRegex);
-    
-    if (expenseMatch) {
-        const expenseRows = expenseMatch[1];
-        extractAccountRowsToTable(expenseRows, accountPrefix + '-expense');
+    try {
+        // חילוץ הכנסות - חיפוש ישיר לפי הכותרת המלאה
+        const incomeTableRegex = new RegExp(`<h3>הכנסות ${accountName}<\\/h3>[\\s\\S]*?<tbody>([\\s\\S]*?)<\\/tbody>`, 'i');
+        const incomeMatch = currentPageContent.match(incomeTableRegex);
+        
+        if (incomeMatch) {
+            console.log(`Found income table for ${accountName}`);
+            const incomeRows = incomeMatch[1];
+            extractAccountRowsToTable(incomeRows, accountPrefix + '-income');
+        } else {
+            console.log(`Income table for ${accountName} not found`);
+        }
+        
+        // חילוץ הוצאות - חיפוש ישיר לפי הכותרת המלאה  
+        const expenseTableRegex = new RegExp(`<h3>הוצאות ${accountName}<\\/h3>[\\s\\S]*?<tbody>([\\s\\S]*?)<\\/tbody>`, 'i');
+        const expenseMatch = currentPageContent.match(expenseTableRegex);
+        
+        if (expenseMatch) {
+            console.log(`Found expense table for ${accountName}`);
+            const expenseRows = expenseMatch[1];
+            extractAccountRowsToTable(expenseRows, accountPrefix + '-expense');
+        } else {
+            console.log(`Expense table for ${accountName} not found`);
+        }
+        
+    } catch (error) {
+        console.error(`Error extracting data for ${accountName}:`, error);
     }
 }
 
