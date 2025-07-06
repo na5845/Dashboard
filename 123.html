@@ -462,11 +462,58 @@
             }
         }
 
-        // משתנים גלובליים לעריכה
-        let currentEditingFile = null;
-        let currentPageContent = null;
-
-        // טעינת דפים קיימים
+        // בדיקת חיבור ל-GitHub
+        function testConnection() {
+            console.log('Testing connection...');
+            
+            const tokenInput = document.getElementById('github-token');
+            const repoInput = document.getElementById('repo-name');
+            
+            if (!tokenInput || !repoInput) {
+                console.error('Elements not found');
+                return;
+            }
+            
+            const token = tokenInput.value.trim();
+            const repoName = repoInput.value.trim();
+            
+            if (!token) {
+                showStatus('connection-status', 'error', 'נא הזן GitHub Token');
+                return;
+            }
+            
+            githubConfig.token = token;
+            githubConfig.repo = repoName;
+            
+            showStatus('connection-status', 'info', 'בודק חיבור...');
+            
+            const apiUrl = `https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}`;
+            console.log('API URL:', apiUrl);
+            
+            fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (response.ok) {
+                    showStatus('connection-status', 'success', 'חיבור הצליח! ✅');
+                    return response.json();
+                } else {
+                    throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+                }
+            })
+            .then(data => {
+                console.log('Repository data:', data);
+            })
+            .catch(error => {
+                console.error('Connection error:', error);
+                showStatus('connection-status', 'error', `שגיאה בחיבור: ${error.message}`);
+            });
+        }
         async function loadExistingPages() {
             if (!githubConfig.token) {
                 showStatus('connection-status', 'error', 'נא בדוק את החיבור ל-GitHub תחילה');
@@ -503,9 +550,9 @@
                         fileItem.innerHTML = `
                             <div class="file-name">${file.name}</div>
                             <div class="file-actions">
-                                <button class="button success" onclick="editPage('${file.name}')">✏️ ערוך</button>
-                                <button class="button" onclick="duplicatePage('${file.name}')">📋 שכפל</button>
-                                <button class="button" onclick="viewPage('${file.name}')">👁️ צפה</button>
+                                <button class="button success" onclick="window.editPage('${file.name}')">✏️ ערוך</button>
+                                <button class="button" onclick="window.duplicatePage('${file.name}')">📋 שכפל</button>
+                                <button class="button" onclick="window.viewPage('${file.name}')">👁️ צפה</button>
                             </div>
                         `;
                         pagesList.appendChild(fileItem);
@@ -655,51 +702,40 @@
         }
 
         // הוספת שורת הכנסה
-        function addIncomeRow() {
+        window.addIncomeRow = function() {
             addIncomeRowWithData('', '');
         }
 
-        function addIncomeRowWithData(name, amount) {
-            const tbody = document.getElementById('income-tbody');
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><input type="text" value="${name}" placeholder="מקור הכנסה"></td>
-                <td><input type="number" value="${amount}" placeholder="0"></td>
-                <td>
-                    <div class="row-actions">
-                        <button class="delete-btn" onclick="deleteRow(this)">🗑️</button>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(row);
-        }
-
-        // הוספת שורת הוצאה
-        function addExpenseRow() {
+        // הוספת שורת הוצאה  
+        window.addExpenseRow = function() {
             addExpenseRowWithData('', '');
         }
 
-        function addExpenseRowWithData(name, amount) {
-            const tbody = document.getElementById('expenses-tbody');
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><input type="text" value="${name}" placeholder="סוג הוצאה"></td>
-                <td><input type="number" value="${amount}" placeholder="0"></td>
-                <td>
-                    <div class="row-actions">
-                        <button class="delete-btn" onclick="deleteRow(this)">🗑️</button>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(row);
-        }
-
         // מחיקת שורה
-        function deleteRow(button) {
+        window.deleteRow = function(button) {
             button.closest('tr').remove();
         }
 
-        // שמירת שינויים
+        // צפייה בדף
+        window.viewPage = function(filename) {
+            window.open(`https://na5845.github.io/Dashboard/${filename}`, '_blank');
+        }
+
+        // שכפול דף
+        window.duplicatePage = function(filename) {
+            document.getElementById('new-filename').value = filename.replace('.html', '-copy.html');
+            
+            // גלילה לטופס יצירת דף חדש
+            const createSection = document.querySelector('.section:last-of-type');
+            if (createSection) {
+                createSection.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // עריכת דף
+        window.editPage = function(filename) {
+            editPage(filename);
+        }
         async function saveChanges() {
             if (!currentEditingFile || !currentPageContent) {
                 showStatus('edit-status', 'error', 'אין קובץ פתוח לעריכה');
