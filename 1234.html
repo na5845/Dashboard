@@ -1002,71 +1002,64 @@
                 
                 if (tableMatch) {
                     const tableContent = tableMatch[1];
+                    console.log('Table content found, analyzing...');
                     
-                    // פיצול לשורות
-                    const rows = tableContent.split(/<\/tr>/);
+                    // יצירת parser לטבלה
+                    const parser = new DOMParser();
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = `<table><tbody>${tableContent}</tbody></table>`;
+                    const rows = tempDiv.querySelectorAll('tr');
+                    
                     let currentMainItem = null;
                     let currentCategory = null;
                     
-                    rows.forEach(rowHtml => {
-                        if (!rowHtml.trim() || !rowHtml.includes('<td')) return;
+                    rows.forEach((row, index) => {
+                        console.log(`Processing row ${index}:`, row.outerHTML);
                         
                         // בדיקה אם זו שורה מרחיבה (expandable-row)
-                        const isExpandableMatch = rowHtml.match(/class="expandable-row"[^>]*onclick="toggleDetails\('([^']+)'\)"/);
-                        
-                        if (isExpandableMatch) {
-                    // שורה עם פירוט - חילוץ הנתונים
-                    const nameMatch = rowHtml.match(/<td[^>]*>([^<]+)<\/td>/);
-                    const amountMatch = rowHtml.match(/<td[^>]*>([\d,]+)<\/td>/);
-                    
-                    if (nameMatch && amountMatch) {
-                        const name = nameMatch[1].trim();
-                        const amount = amountMatch[1].replace(/,/g, '');
-                        
-                        currentMainItem = addExpenseRowWithData(name, amount, true); // true = יש פירוט
-                        currentCategory = cleanCategoryName(name); // שם נקי לקטגוריה
-                        console.log('Found expandable expense:', name, amount, 'category:', currentCategory);
-                    }
-                }
-                // בדיקה אם זו שורת פירוט (detail-row) עם ID מתאים  
-                else if (rowHtml.includes('class="detail-row"') && currentMainItem && currentCategory) {
-                    // בדיקה שהפריט שייך לקטגוריה הנוכחית
-                    if (rowHtml.includes(`id="${currentCategory}-`) || rowHtml.includes(`"${currentCategory}`)) {
-                        const nameMatch = rowHtml.match(/<td[^>]*>([^<]+)<\/td>/);
-                        const amountMatch = rowHtml.match(/<td[^>]*>([\d,]+)<\/td>/);
-                        
-                        if (nameMatch && amountMatch) {
-                            const name = nameMatch[1].replace(/&nbsp;/g, '').trim();
-                            const amount = amountMatch[1].replace(/,/g, '');
-                            
-                            if (name && amount !== '0') {
-                                addSubItemToExpenseRow(currentMainItem, name, amount);
-                                console.log('Found sub-item for', currentCategory, ':', name, amount);
-                            }
-                        }
-                    }
-                }
-                        // שורה רגילה ללא פירוט
-                        else if (!rowHtml.includes('class="') || (!rowHtml.includes('detail-row') && !rowHtml.includes('expandable-row') && !rowHtml.includes('total-row'))) {
-                            const nameMatch = rowHtml.match(/<td[^>]*>([^<]+)<\/td>/);
-                            const amountMatch = rowHtml.match(/<td[^>]*>([\d,]+)<\/td>/);
-                            
-                            if (nameMatch && amountMatch) {
-                                const name = nameMatch[1].trim();
-                                const amount = amountMatch[1].replace(/,/g, '');
+                        if (row.classList.contains('expandable-row')) {
+                            const cells = row.querySelectorAll('td');
+                            if (cells.length >= 2) {
+                                const name = cells[0].textContent.trim();
+                                const amountText = cells[1].textContent.trim();
+                                const amount = amountText.replace(/[₪,\s]/g, '');
                                 
-                                if (name && amount && !name.includes('סך הכל') && amount !== '0') {
-                                    addExpenseRowWithData(name, amount, false); // false = אין פירוט
-                                    currentMainItem = null; // איפוס
-                                    currentCategory = null;
-                                    console.log('Found regular expense:', name, amount);
+                                if (name && amount && amount !== '0') {
+                                    currentMainItem = addExpenseRowWithData(name, amount, true);
+                                    currentCategory = cleanCategoryName(name);
+                                    console.log('Added expandable row:', name, amount, 'category:', currentCategory);
                                 }
                             }
                         }
-                        // אם התחילה קטגוריה חדשה, איפוס המשתנים
-                        else if (rowHtml.includes('expandable-row') && !isExpandableMatch) {
-                            currentMainItem = null;
-                            currentCategory = null;
+                        // בדיקה אם זו שורת פירוט (detail-row)
+                        else if (row.classList.contains('detail-row') && currentMainItem && currentCategory) {
+                            const cells = row.querySelectorAll('td');
+                            if (cells.length >= 2) {
+                                const name = cells[0].textContent.replace(/&nbsp;/g, '').trim();
+                                const amountText = cells[1].textContent.trim();
+                                const amount = amountText.replace(/[₪,\s]/g, '');
+                                
+                                if (name && amount && amount !== '0') {
+                                    addSubItemToExpenseRow(currentMainItem, name, amount);
+                                    console.log('Added sub-item:', name, amount, 'to category:', currentCategory);
+                                }
+                            }
+                        }
+                        // שורה רגילה ללא פירוט
+                        else if (!row.classList.contains('detail-row') && !row.classList.contains('total-row') && !row.classList.contains('expandable-row')) {
+                            const cells = row.querySelectorAll('td');
+                            if (cells.length >= 2) {
+                                const name = cells[0].textContent.trim();
+                                const amountText = cells[1].textContent.trim();
+                                const amount = amountText.replace(/[₪,\s]/g, '');
+                                
+                                if (name && amount && !name.includes('סך הכל') && amount !== '0') {
+                                    addExpenseRowWithData(name, amount, false);
+                                    currentMainItem = null;
+                                    currentCategory = null;
+                                    console.log('Added regular expense:', name, amount);
+                                }
+                            }
                         }
                     });
                     
@@ -1083,6 +1076,11 @@
                 console.error('Error extracting expense data:', error);
                 addExpenseRowWithData('', '', false);
             }
+        }
+
+        // ניקוי שם קטגוריה לזיהוי
+        function cleanCategoryName(name) {
+            return name.replace(/[^a-zA-Z0-9\u0590-\u05FF]/g, '').toLowerCase();
         }
 
         // הוספת שורות
