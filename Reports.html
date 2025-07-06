@@ -651,6 +651,11 @@
             color: white;
         }
 
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
@@ -807,6 +812,7 @@
                     <div style="display: flex; gap: 10px;">
                         <button onclick="loadFromGitHub()" class="btn btn-primary" style="flex: 1;">📥 טען מ-GitHub</button>
                         <button onclick="testConnection()" class="btn btn-secondary" style="flex: 1;">🔗 בדוק חיבור</button>
+                        <a href="https://na5845.github.io/Dashboard/Manager.html" target="_blank" class="btn btn-success" style="flex: 1; text-decoration: none;">📊 יצירת דוחות</a>
                     </div>
                     <div id="api-status" class="api-status" style="display: none;"></div>
                 </div>
