@@ -892,10 +892,10 @@
     </div>
 
     <script>
+        let currentUser = null; // משתנה גלובלי לשמירת המשתמש הנוכחי
         let currentYear = 2025;
         let currentEditYear = 2025;
         let gitHubFileSha = null; // לשמירת ה-SHA של הקובץ ב-GitHub
-        let reportsData = {}; // נתוני הדוחות
 
         // הגדרות GitHub API
         function getGitHubConfig() {
