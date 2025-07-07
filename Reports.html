@@ -1413,35 +1413,10 @@
             window.location.href = 'https://na5845.github.io/Dashboard/#';
         }
 
-        // בדיקה מיידית בטעינת הדף + כפתור לבדיקת localStorage
+        // בדיקה בטעינת הדף
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 דף נטען - מוסיף כפתור בדיקה...');
-            
-            // הוספת כפתור בדיקה לקונסול
-            setTimeout(() => {
-                console.log('🔧 כפתורי בדיקה זמינים:');
-                console.log('   - checkLocalStorage() - בדיקת נתונים שמורים');
-                console.log('   - checkAndOpenSettings() - בדיקת גישה להגדרות');
-                
-                // בדיקה אוטומטית
-                const saved = localStorage.getItem('github-config');
-                if (saved) {
-                    console.log('✅ נמצאו נתונים ב-localStorage');
-                    try {
-                        const config = JSON.parse(saved);
-                        console.log('📊 סיכום נתונים שמורים:', {
-                            username: config.username || 'לא מוגדר',
-                            repo: config.repo || 'לא מוגדר', 
-                            hasToken: !!config.token,
-                            tokenLength: config.token ? config.token.length : 0
-                        });
-                    } catch (e) {
-                        console.error('❌ בעיה בנתונים השמורים:', e);
-                    }
-                } else {
-                    console.log('📭 אין נתונים שמורים ב-localStorage');
-                }
-            }, 1000);
+            console.log('🚀 דף נטען');
+            console.log('🔧 פונקציות זמינות: checkLocalStorage(), checkAndOpenSettings()');
         });
         document.addEventListener('DOMContentLoaded', async function() {
             // טעינה אוטומטית מ-GitHub (אם קיימת הגדרה)
