@@ -193,12 +193,12 @@
       "month": "יוני",
       "monthNum": 6,
       "year": 2025,
-      "status": "unavailable",
-      "statusText": "לא זמין",
+      "status": "available",
+      "statusText": "זמין",
       "info": "דוח זה טרם הוכן או שהמידע עדיין לא זמין.",
-      "income": 0,
-      "expenses": 0,
-      "link": ""
+      "income": 161050,
+      "expenses": 178003,
+      "link": "https://na5845.github.io/Dashboard/202506-1.html"
     },
     {
       "month": "יולי",
