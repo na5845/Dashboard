@@ -27,8 +27,10 @@
 
         // Check if user is authenticated
         onAuthStateChanged(auth, (user) => {
+            currentUser = user; // עדכון המשתמש הגלובלי
+            
             if (user) {
-                console.log('משתמש מחובר:', user.email);
+                console.log('✅ משתמש מחובר:', user.email);
                 // Show page content
                 document.getElementById('page-content').style.display = 'block';
                 document.getElementById('loading-auth').style.display = 'none';
@@ -38,8 +40,14 @@
                 if (logoutBtn) {
                     logoutBtn.innerHTML = `התנתק (${user.displayName || user.email.split('@')[0]})`;
                 }
+                
+                // הוספת event listeners לשמירת הגדרות אחרי שהמשתמש מחובר
+                setTimeout(() => {
+                    setupGitHubConfigSaving();
+                }, 1000);
+                
             } else {
-                console.log('משתמש לא מחובר - מפנה לדף התחברות');
+                console.log('❌ משתמש לא מחובר - מפנה לדף התחברות');
                 // Redirect to login page
                 window.location.href = 'index.html';
             }
@@ -1434,14 +1442,7 @@
                 });
             });
 
-            // אתחול עורכי הנתונים עם שמירה אוטומטית
-            ['github-username', 'github-repo', 'github-file', 'github-token'].forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.addEventListener('input', saveGitHubConfig);
-                    element.addEventListener('change', saveGitHubConfig);
-                }
-            });
+            // הסרת קוד האתחול הישן - הועבר ל-onAuthStateChanged
 
             // סגירת חלון הגדרות בלחיצה מחוץ לחלון
             document.getElementById('settings-modal').addEventListener('click', function(e) {
