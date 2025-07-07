@@ -943,7 +943,7 @@
                 if (response.ok) {
                     showApiStatus('✅ חיבור ל-GitHub הצליח!', 'success');
                     // שמירת הגדרות GitHub
-                    localStorage.setItem('github-config', JSON.stringify(config));
+                    saveGitHubConfig();
                 } else {
                     throw new Error(`HTTP ${response.status}: בעיה בחיבור לריפוזיטורי`);
                 }
@@ -1038,34 +1038,70 @@
             return data;
         }
 
-        // טעינה אוטומטית מ-GitHub (רק למנהל מורשה)
+        // טעינה אוטומטית מ-GitHub מיד בפתיחת הדף
         async function autoLoadFromGitHub() {
-            const hasPermission = await checkUserPermissions();
-            if (!hasPermission) {
-                // אם אין הרשאה, טען נתונים ברירת מחדל
+            console.log('🔄 מתחיל טעינה אוטומטית...');
+            
+            // טעינת הגדרות מהזיכרון
+            const savedConfig = localStorage.getItem('github-config');
+            if (!savedConfig) {
+                console.log('❌ אין הגדרות GitHub שמורות');
                 reportsData = createDefaultData();
                 displayReportsForYear(currentYear);
                 return;
             }
 
-            const savedConfig = localStorage.getItem('github-config');
-            if (!savedConfig) return;
-
             try {
                 const config = JSON.parse(savedConfig);
+                console.log('📋 הגדרות GitHub נמצאו:', config.username, config.repo);
+                
                 if (config.username && config.repo && config.token && config.filePath) {
-                    // מלא את השדות
-                    document.getElementById('github-username').value = config.username;
-                    document.getElementById('github-repo').value = config.repo;
-                    document.getElementById('github-file').value = config.filePath;
-                    document.getElementById('github-token').value = config.token;
+                    console.log('🔗 מנסה לטעון מ-GitHub...');
                     
-                    // טען נתונים אוטומטית
-                    await loadFromGitHub();
+                    const response = await fetch(`https://api.github.com/repos/${config.username}/${config.repo}/contents/${config.filePath}`, {
+                        headers: {
+                            'Authorization': `token ${config.token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        const fileData = await response.json();
+                        gitHubFileSha = fileData.sha;
+                        
+                        // תיקון בעיית הקידוד
+                        const content = decodeURIComponent(escape(atob(fileData.content)));
+                        reportsData = JSON.parse(content);
+                        
+                        console.log('✅ נתונים נטענו בהצלחה מ-GitHub!');
+                        displayReportsForYear(currentYear);
+                        
+                        // הצגת הודעה קצרה למשתמש
+                        const statusEl = document.getElementById('api-status');
+                        if (statusEl) {
+                            statusEl.textContent = '✅ נתונים עודכנו מ-GitHub';
+                            statusEl.className = 'api-status api-success';
+                            statusEl.style.display = 'block';
+                            setTimeout(() => {
+                                statusEl.style.display = 'none';
+                            }, 2000);
+                        }
+                        
+                    } else if (response.status === 404) {
+                        console.log('📄 קובץ לא נמצא - יוצר נתונים ברירת מחדל');
+                        reportsData = createDefaultData();
+                        gitHubFileSha = null;
+                        displayReportsForYear(currentYear);
+                    } else {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                } else {
+                    console.log('❌ הגדרות GitHub לא שלמות');
+                    reportsData = createDefaultData();
+                    displayReportsForYear(currentYear);
                 }
             } catch (e) {
-                console.log('לא ניתן לטעון אוטומטית מ-GitHub');
-                // טען נתונים ברירת מחדל
+                console.log('❌ שגיאה בטעינה אוטומטית:', e.message);
                 reportsData = createDefaultData();
                 displayReportsForYear(currentYear);
             }
@@ -1304,12 +1340,16 @@
         // בדיקת הרשאות משתמש
         function checkUserPermissions() {
             return new Promise((resolve) => {
-                onAuthStateChanged(auth, (user) => {
+                const unsubscribe = onAuthStateChanged(auth, (user) => {
+                    console.log('בודק הרשאות עבור:', user?.email);
                     if (user && user.email === 'n.a0533153305@gmail.com') {
+                        console.log('✅ משתמש מורשה');
                         resolve(true);
                     } else {
+                        console.log('❌ משתמש לא מורשה');
                         resolve(false);
                     }
+                    unsubscribe(); // הפסקת האזנה
                 });
             });
         }
@@ -1320,6 +1360,7 @@
             
             // בדיקת הרשאות
             const hasPermission = await checkUserPermissions();
+            console.log('תוצאת בדיקת הרשאות:', hasPermission);
             
             if (hasPermission) {
                 // הצגת הגדרות GitHub
@@ -1327,24 +1368,30 @@
                 document.getElementById('unauthorized-message').style.display = 'none';
                 
                 // טעינת הגדרות GitHub שמורות
-                const savedConfig = localStorage.getItem('github-config');
-                if (savedConfig) {
-                    try {
-                        const config = JSON.parse(savedConfig);
-                        document.getElementById('github-username').value = config.username || 'na5845';
-                        document.getElementById('github-repo').value = config.repo || 'Dashboard';
-                        document.getElementById('github-file').value = config.filePath || 'data/reports.json';
-                        if (config.token) {
-                            document.getElementById('github-token').value = config.token;
-                        }
-                    } catch (e) {
-                        console.log('שגיאה בטעינת הגדרות שמורות');
-                    }
-                }
+                loadSavedGitHubConfig();
             } else {
                 // הסתרת הגדרות GitHub והצגת הודעת אי הרשאה
                 document.getElementById('github-settings-section').style.display = 'none';
                 document.getElementById('unauthorized-message').style.display = 'block';
+            }
+        }
+
+        // טעינת הגדרות GitHub שמורות
+        function loadSavedGitHubConfig() {
+            const savedConfig = localStorage.getItem('github-config');
+            if (savedConfig) {
+                try {
+                    const config = JSON.parse(savedConfig);
+                    document.getElementById('github-username').value = config.username || 'na5845';
+                    document.getElementById('github-repo').value = config.repo || 'Dashboard';
+                    document.getElementById('github-file').value = config.filePath || 'data/reports.json';
+                    if (config.token) {
+                        document.getElementById('github-token').value = config.token;
+                    }
+                    console.log('✅ הגדרות GitHub נטענו מהזיכרון');
+                } catch (e) {
+                    console.log('שגיאה בטעינת הגדרות שמורות');
+                }
             }
         }
 
@@ -1387,7 +1434,14 @@
                 });
             });
 
-            // פונקציונליות החלפת שנים בהגדרות - הוסרה מכיוון שעברנו לרשימות נפתחות
+            // אתחול עורכי הנתונים עם שמירה אוטומטית
+            ['github-username', 'github-repo', 'github-file', 'github-token'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', saveGitHubConfig);
+                    element.addEventListener('change', saveGitHubConfig);
+                }
+            });
 
             // סגירת חלון הגדרות בלחיצה מחוץ לחלון
             document.getElementById('settings-modal').addEventListener('click', function(e) {
