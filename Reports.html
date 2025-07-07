@@ -24,10 +24,34 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        
-        // Make auth and onAuthStateChanged available globally
-        window.auth = auth;
-        window.onAuthStateChanged = onAuthStateChanged;
+
+        // Check if user is authenticated
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user; // עדכון המשתמש הגלובלי
+            
+            if (user) {
+                console.log('✅ משתמש מחובר:', user.email);
+                // Show page content
+                document.getElementById('page-content').style.display = 'block';
+                document.getElementById('loading-auth').style.display = 'none';
+                
+                // Add user info to logout button
+                const logoutBtn = document.getElementById('logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.innerHTML = `התנתק (${user.displayName || user.email.split('@')[0]})`;
+                }
+                
+                // הוספת event listeners לשמירת הגדרות אחרי שהמשתמש מחובר
+                setTimeout(() => {
+                    setupGitHubConfigSaving();
+                }, 1000);
+                
+            } else {
+                console.log('❌ משתמש לא מחובר - מפנה לדף התחברות');
+                // Redirect to login page
+                window.location.href = 'index.html';
+            }
+        });
 
         // Logout function
         window.handleLogout = async function() {
@@ -1389,7 +1413,18 @@
             window.location.href = 'https://na5845.github.io/Dashboard/#';
         }
 
-        // אתחול הדף
+        // בדיקה מיידית בטעינת הדף
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 דף נטען - בודק localStorage...');
+            
+            // בדיקה מיידית של localStorage
+            const saved = localStorage.getItem('github-config');
+            if (saved) {
+                console.log('✅ נמצאו הגדרות שמורות:', saved.substring(0, 100) + '...');
+            } else {
+                console.log('❌ אין הגדרות שמורות ב-localStorage');
+            }
+        });
         document.addEventListener('DOMContentLoaded', async function() {
             // טעינה אוטומטית מ-GitHub (אם קיימת הגדרה)
             await autoLoadFromGitHub();
