@@ -795,8 +795,8 @@
         <!-- כפתור התנתקות -->
         <button class="user-logout-btn" id="logout-btn" onclick="handleLogout()">התנתק</button>
 
-        <!-- כפתור הגדרות -->
-        <button class="settings-btn" onclick="openSettings()">
+        <!-- כפתור הגדרות עם בדיקת הרשאות -->
+        <button class="settings-btn" onclick="checkAndOpenSettings()" id="settings-btn">
             <span>⚙️</span>
             הגדרות
         </button>
@@ -1364,7 +1364,7 @@
 
         // פתיחת חלון הגדרות
         async function openSettings() {
-            document.getElementById('settings-modal').classList.add('show');
+            console.log('⚙️ פותח הגדרות...');
             
             // בדיקת הרשאות
             const hasPermission = await checkUserPermissions();
@@ -1413,17 +1413,35 @@
             window.location.href = 'https://na5845.github.io/Dashboard/#';
         }
 
-        // בדיקה מיידית בטעינת הדף
+        // בדיקה מיידית בטעינת הדף + כפתור לבדיקת localStorage
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 דף נטען - בודק localStorage...');
+            console.log('🚀 דף נטען - מוסיף כפתור בדיקה...');
             
-            // בדיקה מיידית של localStorage
-            const saved = localStorage.getItem('github-config');
-            if (saved) {
-                console.log('✅ נמצאו הגדרות שמורות:', saved.substring(0, 100) + '...');
-            } else {
-                console.log('❌ אין הגדרות שמורות ב-localStorage');
-            }
+            // הוספת כפתור בדיקה לקונסול
+            setTimeout(() => {
+                console.log('🔧 כפתורי בדיקה זמינים:');
+                console.log('   - checkLocalStorage() - בדיקת נתונים שמורים');
+                console.log('   - checkAndOpenSettings() - בדיקת גישה להגדרות');
+                
+                // בדיקה אוטומטית
+                const saved = localStorage.getItem('github-config');
+                if (saved) {
+                    console.log('✅ נמצאו נתונים ב-localStorage');
+                    try {
+                        const config = JSON.parse(saved);
+                        console.log('📊 סיכום נתונים שמורים:', {
+                            username: config.username || 'לא מוגדר',
+                            repo: config.repo || 'לא מוגדר', 
+                            hasToken: !!config.token,
+                            tokenLength: config.token ? config.token.length : 0
+                        });
+                    } catch (e) {
+                        console.error('❌ בעיה בנתונים השמורים:', e);
+                    }
+                } else {
+                    console.log('📭 אין נתונים שמורים ב-localStorage');
+                }
+            }, 1000);
         });
         document.addEventListener('DOMContentLoaded', async function() {
             // טעינה אוטומטית מ-GitHub (אם קיימת הגדרה)
