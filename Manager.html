@@ -642,6 +642,28 @@
                             </div>
                         </div>
                         
+                        <!-- שדות נוספים לדוח פשוט -->
+                        <div id="simple-report-fields" style="display: none;">
+                            <h5 style="margin: 25px 0 15px 0; color: #495057; border-bottom: 1px solid #dee2e6; padding-bottom: 8px;">💰 נתונים כספיים נוספים</h5>
+                            <div class="grid">
+                                <div class="form-group">
+                                    <label for="edit-scholarships-distributed">חולקו מלגות על סך:</label>
+                                    <input type="number" id="edit-scholarships-distributed" placeholder="0">
+                                    <small style="color: #6c757d;">סכום המלגות שחולקו החודש</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-previous-balance">יתרת מלגות קודמות:</label>
+                                    <input type="number" id="edit-previous-balance" placeholder="0">
+                                    <small style="color: #6c757d;">מלגות שלא נגבו מחודשים קודמים</small>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-declined-charges">חיובים שנדחו:</label>
+                                <input type="number" id="edit-declined-charges" placeholder="0">
+                                <small style="color: #6c757d;">סכום החיובים שנדחו החודש</small>
+                            </div>
+                        </div>
+                        
                         <!-- זיהוי סוג הדוח -->
                         <div class="form-group">
                             <label for="edit-report-type">סוג הדוח:</label>
@@ -1144,26 +1166,29 @@
             const reportType = document.getElementById('edit-report-type').value;
             const simpleTables = document.getElementById('simple-tables');
             const detailedTables = document.getElementById('detailed-tables');
+            const simpleReportFields = document.getElementById('simple-report-fields');
             
             if (reportType === 'detailed') {
                 simpleTables.classList.add('hidden');
                 detailedTables.classList.remove('hidden');
+                simpleReportFields.style.display = 'none';
             } else {
                 simpleTables.classList.remove('hidden');
                 detailedTables.classList.add('hidden');
+                simpleReportFields.style.display = 'block';
             }
         }
 
         // זיהוי אוטומטי של סוג הדוח במילוי הטופס
         function detectReportType() {
-    if (!currentPageContent) return 'simple';
-    
-    // בדיקה מפורטת יותר לזיהוי דוח מפורט
-    const hasDetailedStructure = (currentPageContent.includes('בנק פאגי') && currentPageContent.includes('בנק מרכנתיל')) ||
-                                 (currentPageContent.includes('קרן התורה') && currentPageContent.includes('בית המדרש'));
-    
-    return hasDetailedStructure ? 'detailed' : 'simple';
-}
+            if (!currentPageContent) return 'simple';
+            
+            // בדיקה מפורטת יותר לזיהוי דוח מפורט
+            const hasDetailedStructure = (currentPageContent.includes('בנק פאגי') && currentPageContent.includes('בנק מרכנתיל')) ||
+                                        (currentPageContent.includes('קרן התורה') && currentPageContent.includes('בית המדרש'));
+            
+            return hasDetailedStructure ? 'detailed' : 'simple';
+        }
 
         // מילוי טופס העריכה
         function populateEditForm() {
@@ -1206,6 +1231,30 @@
                 }
                 if (recipientsMatch && recipientsElement) {
                     recipientsElement.value = recipientsMatch[1];
+                }
+                
+                // חילוץ נתונים כספיים נוספים לדוח פשוט
+                if (reportType === 'simple') {
+                    // חילוץ חולקו מלגות
+                    const scholarshipsMatch = currentPageContent.match(/<h3>חולקו מלגות על סך<\/h3>[\s\S]*?<div class="amount">₪([\d,]+)<\/div>/);
+                    const scholarshipsElement = document.getElementById('edit-scholarships-distributed');
+                    if (scholarshipsMatch && scholarshipsElement) {
+                        scholarshipsElement.value = scholarshipsMatch[1].replace(/,/g, '');
+                    }
+                    
+                    // חילוץ יתרת מלגות קודמות
+                    const balanceMatch = currentPageContent.match(/<h3>יתרת מלגות קודמות<\/h3>[\s\S]*?<div class="amount">₪([\d,]+)<\/div>/);
+                    const balanceElement = document.getElementById('edit-previous-balance');
+                    if (balanceMatch && balanceElement) {
+                        balanceElement.value = balanceMatch[1].replace(/,/g, '');
+                    }
+                    
+                    // חילוץ חיובים שנדחו
+                    const declinedMatch = currentPageContent.match(/<h3>חיובים שנדחו<\/h3>[\s\S]*?<div class="amount">₪([\d,]+)<\/div>/);
+                    const declinedElement = document.getElementById('edit-declined-charges');
+                    if (declinedMatch && declinedElement) {
+                        declinedElement.value = declinedMatch[1].replace(/,/g, '');
+                    }
                 }
                 
                 // חילוץ קישורי ניווט
@@ -1255,11 +1304,14 @@
                     }
                 }
                 
-                // שדה הפירוט נשאר ריק כי זה קובץ הפירוט עצמו
-                const detailsLinkElement = document.getElementById('edit-details-link');
-                if (detailsLinkElement) {
-                    detailsLinkElement.value = '';
-                    console.log('Details link left empty (this is the details page)');
+                // חילוץ קישור פירוט פאגי מרכנתיל
+                const detailsButtonMatch = currentPageContent.match(/<a href="([^"]+)" class="details-button">/);
+                if (detailsButtonMatch) {
+                    const detailsLinkElement = document.getElementById('edit-details-link');
+                    if (detailsLinkElement) {
+                        detailsLinkElement.value = detailsButtonMatch[1];
+                        console.log('Found details link:', detailsButtonMatch[1]);
+                    }
                 }
                 
             } catch (error) {
@@ -1460,55 +1512,55 @@
             }
         }
 
-// חילוץ נתוני חשבון לטבלאות הנפרדות
-function extractAccountDataToTables(accountName, accountPrefix) {
-    console.log(`Extracting data for ${accountName} to separate tables...`);
-    
-    try {
-        // חילוץ הכנסות - חיפוש ישיר לפי הכותרת המלאה
-        const incomeTableRegex = new RegExp(`<h3>הכנסות ${accountName}<\\/h3>[\\s\\S]*?<tbody>([\\s\\S]*?)<\\/tbody>`, 'i');
-        const incomeMatch = currentPageContent.match(incomeTableRegex);
-        
-        if (incomeMatch) {
-            console.log(`Found income table for ${accountName}`);
-            const incomeRows = incomeMatch[1];
-            extractAccountRowsToTable(incomeRows, accountPrefix + '-income');
-        } else {
-            console.log(`Income table for ${accountName} not found`);
+        // חילוץ נתוני חשבון לטבלאות הנפרדות
+        function extractAccountDataToTables(accountName, accountPrefix) {
+            console.log(`Extracting data for ${accountName} to separate tables...`);
+            
+            try {
+                // חילוץ הכנסות - חיפוש ישיר לפי הכותרת המלאה
+                const incomeTableRegex = new RegExp(`<h3>הכנסות ${accountName}<\\/h3>[\\s\\S]*?<tbody>([\\s\\S]*?)<\\/tbody>`, 'i');
+                const incomeMatch = currentPageContent.match(incomeTableRegex);
+                
+                if (incomeMatch) {
+                    console.log(`Found income table for ${accountName}`);
+                    const incomeRows = incomeMatch[1];
+                    extractAccountRowsToTable(incomeRows, accountPrefix + '-income');
+                } else {
+                    console.log(`Income table for ${accountName} not found`);
+                }
+                
+                // חילוץ הוצאות - חיפוש ישיר לפי הכותרת המלאה  
+                const expenseTableRegex = new RegExp(`<h3>הוצאות ${accountName}<\\/h3>[\\s\\S]*?<tbody>([\\s\\S]*?)<\\/tbody>`, 'i');
+                const expenseMatch = currentPageContent.match(expenseTableRegex);
+                
+                if (expenseMatch) {
+                    console.log(`Found expense table for ${accountName}`);
+                    const expenseRows = expenseMatch[1];
+                    extractAccountRowsToTable(expenseRows, accountPrefix + '-expense');
+                } else {
+                    console.log(`Expense table for ${accountName} not found`);
+                }
+                
+            } catch (error) {
+                console.error(`Error extracting data for ${accountName}:`, error);
+            }
         }
-        
-        // חילוץ הוצאות - חיפוש ישיר לפי הכותרת המלאה  
-        const expenseTableRegex = new RegExp(`<h3>הוצאות ${accountName}<\\/h3>[\\s\\S]*?<tbody>([\\s\\S]*?)<\\/tbody>`, 'i');
-        const expenseMatch = currentPageContent.match(expenseTableRegex);
-        
-        if (expenseMatch) {
-            console.log(`Found expense table for ${accountName}`);
-            const expenseRows = expenseMatch[1];
-            extractAccountRowsToTable(expenseRows, accountPrefix + '-expense');
-        } else {
-            console.log(`Expense table for ${accountName} not found`);
-        }
-        
-    } catch (error) {
-        console.error(`Error extracting data for ${accountName}:`, error);
-    }
-}
 
-// חילוץ שורות מטבלה לחשבון ספציפי - פונקציה מותאמת
-function extractAccountRowsToTable(tableRowsHTML, accountType) {
-    const rowPattern = /<tr[^>]*class="subcategory-row"[^>]*>[\s\S]*?<td[^>]*>([^<]*)<\/td>[\s\S]*?<td[^>]*>([\d,]+)<\/td>/g;
-    let match;
-    
-    while ((match = rowPattern.exec(tableRowsHTML)) !== null) {
-        const name = match[1].trim();
-        const amount = match[2].replace(/,/g, '');
-        
-        if (amount && amount !== '0' && name && !name.includes('סך הכל')) {
-            addAccountRowWithData(accountType, name, amount);
-            console.log(`Added to ${accountType}: ${name}, ${amount}`);
+        // חילוץ שורות מטבלה לחשבון ספציפי - פונקציה מותאמת
+        function extractAccountRowsToTable(tableRowsHTML, accountType) {
+            const rowPattern = /<tr[^>]*class="subcategory-row"[^>]*>[\s\S]*?<td[^>]*>([^<]*)<\/td>[\s\S]*?<td[^>]*>([\d,]+)<\/td>/g;
+            let match;
+            
+            while ((match = rowPattern.exec(tableRowsHTML)) !== null) {
+                const name = match[1].trim();
+                const amount = match[2].replace(/,/g, '');
+                
+                if (amount && amount !== '0' && name && !name.includes('סך הכל')) {
+                    addAccountRowWithData(accountType, name, amount);
+                    console.log(`Added to ${accountType}: ${name}, ${amount}`);
+                }
+            }
         }
-    }
-}
 
         // חילוץ נתוני פאגי כללי
         function extractPagiGeneralData() {
@@ -1850,6 +1902,10 @@ function extractAccountRowsToTable(tableRowsHTML, accountType) {
                 backLink: document.getElementById('edit-back-link').value,
                 detailsLink: document.getElementById('edit-details-link').value,
                 reportType: reportType,
+                // נתונים נוספים לדוח פשוט
+                scholarshipsDistributed: reportType === 'simple' ? document.getElementById('edit-scholarships-distributed').value : '',
+                previousBalance: reportType === 'simple' ? document.getElementById('edit-previous-balance').value : '',
+                declinedCharges: reportType === 'simple' ? document.getElementById('edit-declined-charges').value : '',
                 regularIncomeItems: [],
                 casualIncomeItems: [],
                 expenseItems: []
@@ -2006,14 +2062,16 @@ function extractAccountRowsToTable(tableRowsHTML, accountType) {
         // עדכון תוכן הדף עם הנתונים החדשים
         function updatePageContentWithNewData(content, data) {
             let updatedContent = content;
+            let totalIncome = 0;
+            let totalExpenses = 0;
             
             // חישוב סכומים כוללים
             if (data.reportType === 'simple') {
                 const totalRegularIncome = data.regularIncomeItems.reduce((sum, item) => sum + item.amount, 0);
                 const totalCasualIncome = data.casualIncomeItems.reduce((sum, item) => sum + item.amount, 0);
-                const totalIncome = totalRegularIncome + totalCasualIncome;
+                totalIncome = totalRegularIncome + totalCasualIncome;
                 
-                const totalExpenses = data.expenseItems.reduce((sum, item) => {
+                totalExpenses = data.expenseItems.reduce((sum, item) => {
                     const mainAmount = item.amount || 0;
                     const subItemsAmount = item.subItems ? item.subItems.reduce((subSum, subItem) => subSum + (subItem.amount || 0), 0) : 0;
                     return sum + Math.max(mainAmount, subItemsAmount);
@@ -2070,6 +2128,30 @@ function extractAccountRowsToTable(tableRowsHTML, accountType) {
                     `$1${data.scholarshipRecipients}$2`);
             }
             
+            // עדכון נתונים כספיים נוספים לדוח פשוט
+            if (data.reportType === 'simple') {
+                if (data.scholarshipsDistributed) {
+                    const scholarshipsFormatted = parseInt(data.scholarshipsDistributed).toLocaleString('he-IL');
+                    updatedContent = updatedContent.replace(/(<h3>חולקו מלגות על סך<\/h3>[\s\S]*?<div class="amount">)₪[\d,]+(<\/div>)/m, 
+                        `$1₪${scholarshipsFormatted}$2`);
+                }
+                
+                if (data.previousBalance) {
+                    const balanceFormatted = parseInt(data.previousBalance).toLocaleString('he-IL');
+                    updatedContent = updatedContent.replace(/(<h3>יתרת מלגות קודמות<\/h3>[\s\S]*?<div class="amount">)₪[\d,]+(<\/div>)/m, 
+                        `$1₪${balanceFormatted}$2`);
+                }
+                
+                if (data.declinedCharges) {
+                    const declinedFormatted = parseInt(data.declinedCharges).toLocaleString('he-IL');
+                    updatedContent = updatedContent.replace(/(<h3>חיובים שנדחו<\/h3>[\s\S]*?<div class="amount">)₪[\d,]+(<\/div>)/m, 
+                        `$1₪${declinedFormatted}$2`);
+                }
+                
+                // עדכון הגרף
+                updatedContent = updateBarChart(updatedContent, totalIncome, totalExpenses);
+            }
+            
             // עדכון קישורי ניווט
             if (data.backLink) {
                 updatedContent = updatedContent.replace(
@@ -2091,6 +2173,46 @@ function extractAccountRowsToTable(tableRowsHTML, accountType) {
             }
             
             return updatedContent;
+        }
+
+        // עדכון הגרף החזותי
+        function updateBarChart(content, totalIncome, totalExpenses) {
+            // חישוב גובה הגרפים - מקסימום 200px
+            const maxAmount = Math.max(totalIncome, totalExpenses);
+            const maxHeight = 200;
+            
+            const incomeHeight = Math.round((totalIncome / maxAmount) * maxHeight);
+            const expensesHeight = Math.round((totalExpenses / maxAmount) * maxHeight);
+            
+            // פורמט הסכומים לתצוגה בגרף
+            const incomeDisplay = totalIncome >= 1000 ? 
+                `₪${(totalIncome / 1000).toFixed(1)}K` : 
+                `₪${totalIncome}`;
+            const expensesDisplay = totalExpenses >= 1000 ? 
+                `₪${(totalExpenses / 1000).toFixed(1)}K` : 
+                `₪${totalExpenses}`;
+            
+            // עדכון גובה העמודות
+            content = content.replace(
+                /(<div class="bar-value bar-revenue" style="height:)\s*\d+px/,
+                `$1 ${incomeHeight}px`
+            );
+            content = content.replace(
+                /(<div class="bar-value bar-expenses" style="height:)\s*\d+px/,
+                `$1 ${expensesHeight}px`
+            );
+            
+            // עדכון הסכומים בגרף
+            content = content.replace(
+                /(<div class="bar-value bar-revenue"[\s\S]*?<div class="bar-amount">)₪[\d.,K]+(<\/div>)/,
+                `$1${incomeDisplay}$2`
+            );
+            content = content.replace(
+                /(<div class="bar-value bar-expenses"[\s\S]*?<div class="bar-amount">)₪[\d.,K]+(<\/div>)/,
+                `$1${expensesDisplay}$2`
+            );
+            
+            return content;
         }
 
         // עדכון טבלת הכנסות עם קטגוריות
@@ -2217,7 +2339,7 @@ function extractAccountRowsToTable(tableRowsHTML, accountType) {
             return name.replace(/[^a-zA-Z0-9\u0590-\u05FF]/g, '').toLowerCase();
         }
 
-// עדכון דוח מפורט עם חלוקה לפאגי ומרכנתיל
+        // עדכון דוח מפורט עם חלוקה לפאגי ומרכנתיל
         function updateDetailedReportWithAccountData(content, data) {
             const pagiKerenIncome = data.detailedData.pagiKerenIncome.reduce((sum, item) => sum + item.amount, 0);
             const pagiKerenExpenses = data.detailedData.pagiKerenExpense.reduce((sum, item) => sum + item.amount, 0);
@@ -2391,6 +2513,11 @@ function extractAccountRowsToTable(tableRowsHTML, accountType) {
             document.getElementById('edit-period').value = '';
             document.getElementById('edit-total-donors').value = '';
             document.getElementById('edit-scholarship-recipients').value = '';
+            
+            // איפוס שדות נוספים לדוח פשוט
+            document.getElementById('edit-scholarships-distributed').value = '';
+            document.getElementById('edit-previous-balance').value = '';
+            document.getElementById('edit-declined-charges').value = '';
             
             // איפוס טבלאות דוח פשוט
             document.getElementById('regular-income-tbody').innerHTML = '';
