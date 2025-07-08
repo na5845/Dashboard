@@ -1572,7 +1572,13 @@
                 container.innerHTML = '';
 
                 paymentMethods.forEach(methodName => {
-                    const amount = categories[methodName] || 0;
+                    let amount = categories[methodName] || 0;
+                    
+                    // For 'העברה', combine both 'העברה' and 'המחאה'
+                    if (methodName === 'העברה') {
+                        amount = (categories['העברה'] || 0) + (categories['המחאה'] || 0);
+                    }
+                    
                     container.innerHTML += `
                         <div class="stat-card">
                             <h3>${methodName}</h3>
