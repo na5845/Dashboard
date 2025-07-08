@@ -1057,24 +1057,19 @@
                 document.getElementById('originalDashboard').style.display = 'none';
                 
                 try {
-                    // Force bypass cache with multiple strategies
+                    // Simple fetch with timestamp to bypass cache
                     const timestamp = Date.now();
-                    const randomParam = Math.random();
-                    const response = await fetch(`${JSON_URL}?t=${timestamp}&r=${randomParam}`, {
-                        cache: 'no-cache',
-                        headers: {
-                            'Cache-Control': 'no-cache, no-store, must-revalidate',
-                            'Pragma': 'no-cache',
-                            'Expires': '0'
-                        }
-                    });
+                    const url = `${JSON_URL}?t=${timestamp}`;
+                    console.log('מנסה לטעון מ:', url);
+                    
+                    const response = await fetch(url);
                     
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
                     
                     const data = await response.json();
-                    console.log('נתונים נטענו בהצלחה מ-GitHub (ללא מטמון)');
+                    console.log('נתונים נטענו בהצלחה');
                     console.log('זמן עדכון אחרון:', data.lastUpdateLocal);
                     
                     // Update last update info
@@ -1089,9 +1084,18 @@
                     
                 } catch (error) {
                     console.error('שגיאה בטעינת נתונים:', error);
+                    console.error('פרטי השגיאה:', error.message);
                     document.getElementById('dataLoading').style.display = 'none';
                     document.getElementById('errorMessage').style.display = 'block';
                     document.getElementById('errorDetails').textContent = error.message;
+                    
+                    // Try to give more specific error message
+                    if (error.message.includes('Failed to fetch')) {
+                        document.getElementById('errorDetails').innerHTML = 
+                            'לא ניתן לטעון את הנתונים.<br>' +
+                            'ייתכן שהקובץ עדיין לא נוצר או שיש בעיית חיבור.<br>' +
+                            '<a href="https://github.com/na5845/Dashboard/tree/main/data" target="_blank">בדוק אם הקובץ קיים</a>';
+                    }
                 }
             }
 
