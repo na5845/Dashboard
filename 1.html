@@ -1058,25 +1058,82 @@
                 document.getElementById('originalDashboard').style.display = 'none';
                 
                 try {
-                    // Force bypass all caching mechanisms
-                    const timestamp = Date.now();
-                    const response = await fetch(`${JSON_URL}?t=${timestamp}`, {
-                        cache: 'no-store',
-                        headers: {
-                            'Cache-Control': 'no-cache, no-store, must-revalidate',
-                            'Pragma': 'no-cache',
-                            'Expires': '0'
-                        }
-                    });
+                    // Try multiple methods to fetch the data
+                    let data = null;
+                    let lastError = null;
                     
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    // Method 1: Try GitHub Pages (if enabled)
+                    const githubPagesUrl = 'https://na5845.github.io/Dashboard/data/daily-donations.json';
+                    try {
+                        console.log('מנסה לטעון מ-GitHub Pages...');
+                        const timestamp = Date.now();
+                        const response = await fetch(`${githubPagesUrl}?t=${timestamp}`, {
+                            cache: 'no-store',
+                            headers: {
+                                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                                'Pragma': 'no-cache'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            data = await response.json();
+                            console.log('נתונים נטענו בהצלחה מ-GitHub Pages');
+                        }
+                    } catch (error) {
+                        console.log('GitHub Pages לא זמין, מנסה שיטה אחרת...');
+                        lastError = error;
                     }
                     
-                    const data = await response.json();
-                    console.log('נתונים נטענו בהצלחה מ-daily-donations.json');
+                    // Method 2: Try GitHub API
+                    if (!data) {
+                        try {
+                            console.log('מנסה לטעון דרך GitHub API...');
+                            const apiUrl = 'https://api.github.com/repos/na5845/Dashboard/contents/data/daily-donations.json';
+                            const response = await fetch(apiUrl, {
+                                headers: {
+                                    'Accept': 'application/vnd.github.v3+json',
+                                    'Cache-Control': 'no-cache'
+                                }
+                            });
+                            
+                            if (response.ok) {
+                                const apiData = await response.json();
+                                // Decode base64 content
+                                const content = atob(apiData.content.replace(/\n/g, ''));
+                                data = JSON.parse(content);
+                                console.log('נתונים נטענו בהצלחה מ-GitHub API');
+                            }
+                        } catch (error) {
+                            console.log('GitHub API נכשל:', error);
+                            lastError = error;
+                        }
+                    }
+                    
+                    // Method 3: Try proxy service
+                    if (!data) {
+                        try {
+                            console.log('מנסה לטעון דרך proxy service...');
+                            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent('https://raw.githubusercontent.com/na5845/Dashboard/main/data/daily-donations.json');
+                            const timestamp = Date.now();
+                            const response = await fetch(`${proxyUrl}&t=${timestamp}`, {
+                                cache: 'no-store'
+                            });
+                            
+                            if (response.ok) {
+                                data = await response.json();
+                                console.log('נתונים נטענו בהצלחה דרך proxy');
+                            }
+                        } catch (error) {
+                            console.log('Proxy service נכשל:', error);
+                            lastError = error;
+                        }
+                    }
+                    
+                    if (!data) {
+                        throw new Error(lastError?.message || 'לא ניתן לטעון את הנתונים מאף מקור');
+                    }
+                    
                     console.log('זמן עדכון אחרון:', data.lastUpdateLocal || 'לא זמין');
-                    console.log('כתובת הקובץ:', `${JSON_URL}?t=${timestamp}`);
                     
                     // Update last update info
                     this.updateLastUpdateInfo(data);
@@ -1095,11 +1152,13 @@
                     document.getElementById('errorDetails').textContent = error.message;
                     
                     // Try to give more specific error message
-                    if (error.message.includes('Failed to fetch')) {
+                    if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
                         document.getElementById('errorDetails').innerHTML = 
-                            'לא ניתן לטעון את הנתונים.<br>' +
-                            'ייתכן שהקובץ עדיין לא נוצר או שיש בעיית חיבור.<br>' +
-                            '<a href="https://github.com/na5845/Dashboard/tree/main/data" target="_blank">בדוק אם הקובץ קיים</a>';
+                            'לא ניתן לטעון את הנתונים עקב הגבלות אבטחה.<br>' +
+                            'אפשרויות לפתרון:<br>' +
+                            '1. ודא ש-GitHub Pages מופעל בפרויקט<br>' +
+                            '2. <a href="https://github.com/na5845/Dashboard/settings/pages" target="_blank">הפעל GitHub Pages כאן</a><br>' +
+                            '3. <a href="https://github.com/na5845/Dashboard/tree/main/data" target="_blank">בדוק שהקובץ קיים</a>';
                     }
                 }
             }
