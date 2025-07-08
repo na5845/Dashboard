@@ -868,10 +868,11 @@
                         <input type="password" id="github-token" class="github-input" placeholder="GitHub Personal Access Token" style="width: 100%; margin-bottom: 10px;">
                         <span id="token-status"></span>
                     </div>
-                    <div style="display: flex; gap: 10px;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                         <button onclick="loadFromGitHub()" class="btn btn-primary" style="flex: 1;">📥 טען מ-GitHub</button>
                         <button onclick="testConnection()" class="btn btn-secondary" style="flex: 1;">🔗 בדוק חיבור</button>
                     </div>
+                    <button onclick="saveGitHubConfig()" class="btn btn-success" style="width: 100%;">💾 שמור הגדרות</button>
                     <div id="api-status" class="api-status" style="display: none;"></div>
                 </div>
 
@@ -975,6 +976,15 @@
             // שמירה פשוטה ב-localStorage בלבד
             localStorage.setItem('github-config', JSON.stringify(config));
             console.log('✅ הגדרות GitHub נשמרו');
+            
+            // הצג הודעת הצלחה
+            showApiStatus('✅ ההגדרות נשמרו בהצלחה!', 'success');
+            
+            // הצג אינדיקציה ויזואלית
+            const tokenInput = document.getElementById('github-token');
+            if (tokenInput && tokenInput.value) {
+                tokenInput.classList.add('token-loaded');
+            }
         }
 
         // פונקציה משופרת לטעינת הגדרות
@@ -1607,8 +1617,15 @@
             ['github-username', 'github-repo', 'github-file', 'github-token'].forEach(id => {
                 const element = document.getElementById(id);
                 if (element) {
-                    // הסרנו את השמירה האוטומטית על כל שינוי
-                    // השמירה תתבצע רק בלחיצה על כפתורי הטעינה/בדיקה
+                    // נוסיף שמירה רק על הטוקן כשמשנים אותו
+                    if (id === 'github-token') {
+                        element.addEventListener('blur', function() {
+                            if (this.value.trim()) {
+                                console.log('שומר טוקן...');
+                                saveGitHubConfig();
+                            }
+                        });
+                    }
                 }
             });
 
