@@ -2062,14 +2062,16 @@
         // עדכון תוכן הדף עם הנתונים החדשים
         function updatePageContentWithNewData(content, data) {
             let updatedContent = content;
+            let totalIncome = 0;
+            let totalExpenses = 0;
             
             // חישוב סכומים כוללים
             if (data.reportType === 'simple') {
                 const totalRegularIncome = data.regularIncomeItems.reduce((sum, item) => sum + item.amount, 0);
                 const totalCasualIncome = data.casualIncomeItems.reduce((sum, item) => sum + item.amount, 0);
-                const totalIncome = totalRegularIncome + totalCasualIncome;
+                totalIncome = totalRegularIncome + totalCasualIncome;
                 
-                const totalExpenses = data.expenseItems.reduce((sum, item) => {
+                totalExpenses = data.expenseItems.reduce((sum, item) => {
                     const mainAmount = item.amount || 0;
                     const subItemsAmount = item.subItems ? item.subItems.reduce((subSum, subItem) => subSum + (subItem.amount || 0), 0) : 0;
                     return sum + Math.max(mainAmount, subItemsAmount);
