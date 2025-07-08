@@ -157,19 +157,19 @@
             box-shadow: 0 6px 20px rgba(52, 152, 219, 0.6);
         }
 
-        /* Settings modal styles */
+        /* Settings Modal */
         .settings-modal {
-            display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
-            z-index: 2000;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
             justify-content: center;
             align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
         }
 
         .settings-modal.show {
@@ -867,6 +867,9 @@
                     <div style="position: relative;">
                         <input type="password" id="github-token" class="github-input" placeholder="GitHub Personal Access Token" style="width: 100%; margin-bottom: 10px;">
                         <span id="token-status"></span>
+                        <small style="color: #6c757d; font-size: 0.8rem; margin-top: 5px; display: block;">
+                            הטוקן יישמר אוטומטית בדפדפן שלך
+                        </small>
                     </div>
                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                         <button onclick="loadFromGitHub()" class="btn btn-primary" style="flex: 1;">📥 טען מ-GitHub</button>
@@ -966,53 +969,80 @@
 
         // שמירה פשוטה יותר של הגדרות GitHub
         function saveGitHubConfig() {
-            const config = {
-                username: document.getElementById('github-username').value,
-                repo: document.getElementById('github-repo').value,
-                filePath: document.getElementById('github-file').value,
-                token: document.getElementById('github-token').value
-            };
-            
-            // שמירה פשוטה ב-localStorage בלבד
-            localStorage.setItem('github-config', JSON.stringify(config));
-            console.log('✅ הגדרות GitHub נשמרו');
-            
-            // הצג הודעת הצלחה
-            showApiStatus('✅ ההגדרות נשמרו בהצלחה!', 'success');
-            
-            // הצג אינדיקציה ויזואלית
-            const tokenInput = document.getElementById('github-token');
-            if (tokenInput && tokenInput.value) {
-                tokenInput.classList.add('token-loaded');
+            try {
+                const username = document.getElementById('github-username').value;
+                const repo = document.getElementById('github-repo').value;
+                const filePath = document.getElementById('github-file').value;
+                const token = document.getElementById('github-token').value;
+                
+                // שמירה נפרדת של כל ערך
+                localStorage.setItem('github-username', username);
+                localStorage.setItem('github-repo', repo);
+                localStorage.setItem('github-filePath', filePath);
+                localStorage.setItem('github-token', token);
+                
+                // שמירה גם כאובייקט לגיבוי
+                const config = { username, repo, filePath, token };
+                localStorage.setItem('github-config', JSON.stringify(config));
+                
+                console.log('✅ הגדרות GitHub נשמרו');
+                console.log('Token saved:', token ? 'Yes' : 'No');
+                
+                // הצג הודעת הצלחה
+                showApiStatus('✅ ההגדרות נשמרו בהצלחה!', 'success');
+                
+                // הצג אינדיקציה ויזואלית
+                const tokenInput = document.getElementById('github-token');
+                if (tokenInput && tokenInput.value) {
+                    tokenInput.classList.add('token-loaded');
+                }
+            } catch (error) {
+                console.error('שגיאה בשמירת הגדרות:', error);
+                showApiStatus('❌ שגיאה בשמירת הגדרות', 'error');
             }
         }
 
         // פונקציה משופרת לטעינת הגדרות
         function loadSavedGitHubConfig() {
-            const savedConfig = localStorage.getItem('github-config');
-            if (!savedConfig) {
-                console.log('❌ אין הגדרות GitHub שמורות');
-                return;
-            }
-
             try {
-                const config = JSON.parse(savedConfig);
+                // נסה לטעון קודם את הערכים הבודדים
+                let username = localStorage.getItem('github-username');
+                let repo = localStorage.getItem('github-repo');
+                let filePath = localStorage.getItem('github-filePath');
+                let token = localStorage.getItem('github-token');
                 
-                // מלא את השדות
-                document.getElementById('github-username').value = config.username || 'na5845';
-                document.getElementById('github-repo').value = config.repo || 'Dashboard';
-                document.getElementById('github-file').value = config.filePath || 'data/reports.json';
-                
-                if (config.token) {
-                    document.getElementById('github-token').value = config.token;
-                    // הצג אינדיקציה שהטוקן נטען
-                    showTokenStatus();
+                // אם לא נמצאו, נסה לטעון מהאובייקט
+                if (!token) {
+                    const savedConfig = localStorage.getItem('github-config');
+                    if (savedConfig) {
+                        try {
+                            const config = JSON.parse(savedConfig);
+                            username = username || config.username;
+                            repo = repo || config.repo;
+                            filePath = filePath || config.filePath;
+                            token = token || config.token;
+                        } catch (e) {
+                            console.log('שגיאה בפענוח JSON:', e);
+                        }
+                    }
                 }
                 
-                console.log('✅ הגדרות GitHub נטענו בהצלחה');
+                // מלא את השדות
+                document.getElementById('github-username').value = username || 'na5845';
+                document.getElementById('github-repo').value = repo || 'Dashboard';
+                document.getElementById('github-file').value = filePath || 'data/reports.json';
+                
+                if (token) {
+                    document.getElementById('github-token').value = token;
+                    console.log('✅ טוקן נטען מהזיכרון');
+                    // הצג אינדיקציה שהטוקן נטען
+                    showTokenStatus();
+                } else {
+                    console.log('❌ לא נמצא טוקן שמור');
+                }
+                
             } catch (e) {
                 console.log('שגיאה בטעינת הגדרות:', e);
-                localStorage.removeItem('github-config');
             }
         }
 
@@ -1551,7 +1581,9 @@
 
         // פתיחת חלון הגדרות
         async function openSettings() {
-            document.getElementById('settings-modal').classList.add('show');
+            const modal = document.getElementById('settings-modal');
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
             
             // בדיקת הרשאות
             const hasPermission = await checkUserPermissions();
@@ -1579,7 +1611,9 @@
 
         // סגירת חלון הגדרות
         function closeSettings() {
-            document.getElementById('settings-modal').classList.remove('show');
+            const modal = document.getElementById('settings-modal');
+            modal.classList.remove('show');
+            document.body.style.overflow = 'auto';
         }
 
         // פונקציית חזרה לדף הקודם
