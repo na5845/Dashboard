@@ -1567,15 +1567,15 @@
                 const categories = monthData.categories;
                 
                 // Always show these 4 payment methods
-                const paymentMethods = ['אשראי', 'בנקאי', 'מזומן','העברה'];
+                const paymentMethods = ['אשראי', 'בנקאי', 'מזומן','העברות והמחאות'];
                 
                 container.innerHTML = '';
 
                 paymentMethods.forEach(methodName => {
                     let amount = categories[methodName] || 0;
                     
-                    // For 'העברה', combine both 'העברה' and 'המחאה'
-                    if (methodName === 'העברה') {
+                    // For 'העברות והמחאות', combine both 'העברה' and 'המחאה'
+                    if (methodName === 'העברות והמחאות') {
                         amount = (categories['העברה'] || 0) + (categories['המחאה'] || 0);
                     }
                     
