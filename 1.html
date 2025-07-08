@@ -1057,14 +1057,25 @@
                 document.getElementById('originalDashboard').style.display = 'none';
                 
                 try {
-                    const response = await fetch(JSON_URL + '?t=' + Date.now()); // Add timestamp to bypass cache
+                    // Force bypass cache with multiple strategies
+                    const timestamp = Date.now();
+                    const randomParam = Math.random();
+                    const response = await fetch(`${JSON_URL}?t=${timestamp}&r=${randomParam}`, {
+                        cache: 'no-cache',
+                        headers: {
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache',
+                            'Expires': '0'
+                        }
+                    });
                     
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
                     
                     const data = await response.json();
-                    console.log('נתונים נטענו בהצלחה');
+                    console.log('נתונים נטענו בהצלחה מ-GitHub (ללא מטמון)');
+                    console.log('זמן עדכון אחרון:', data.lastUpdateLocal);
                     
                     // Update last update info
                     this.updateLastUpdateInfo(data);
@@ -1739,23 +1750,42 @@
         async function checkForUpdates() {
             const startTime = Date.now();
             const maxWaitTime = 5 * 60 * 1000; // 5 minutes
-            let lastModified = null;
+            let lastData = null;
             
-            // Get current last modified time
+            // Get current data
             try {
-                const response = await fetch(JSON_URL + '?t=' + Date.now(), { method: 'HEAD' });
-                lastModified = response.headers.get('last-modified');
+                const timestamp = Date.now();
+                const response = await fetch(`${JSON_URL}?t=${timestamp}&r=${Math.random()}`, {
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate'
+                    }
+                });
+                lastData = await response.json();
+                console.log('נתוני התחלה:', lastData.lastUpdateLocal);
             } catch (error) {
-                console.log('Could not get last modified time');
+                console.log('Could not get initial data');
             }
             
             const checkInterval = setInterval(async () => {
                 try {
-                    // Check if file was updated
-                    const response = await fetch(JSON_URL + '?t=' + Date.now(), { method: 'HEAD' });
-                    const newLastModified = response.headers.get('last-modified');
+                    // Check if file was updated - force bypass cache
+                    const timestamp = Date.now();
+                    const response = await fetch(`${JSON_URL}?t=${timestamp}&r=${Math.random()}`, {
+                        cache: 'no-cache',
+                        headers: {
+                            'Cache-Control': 'no-cache, no-store, must-revalidate'
+                        }
+                    });
+                    const newData = await response.json();
                     
-                    if (newLastModified !== lastModified || (Date.now() - startTime) > maxWaitTime) {
+                    // Compare actual data, not just headers
+                    const dataChanged = lastData && (
+                        newData.lastUpdate !== lastData.lastUpdate ||
+                        newData.currentMonth.total !== lastData.currentMonth.total
+                    );
+                    
+                    if (dataChanged || (Date.now() - startTime) > maxWaitTime) {
                         clearInterval(checkInterval);
                         
                         // Reload data
@@ -1765,8 +1795,9 @@
                         const refreshBtn = document.getElementById('refreshBtn');
                         refreshBtn.classList.remove('loading');
                         
-                        if (newLastModified !== lastModified) {
+                        if (dataChanged) {
                             console.log('נתונים עודכנו בהצלחה!');
+                            console.log('עדכון חדש:', newData.lastUpdateLocal);
                         } else {
                             console.log('תם הזמן המוקצב לבדיקה');
                         }
