@@ -1051,23 +1051,31 @@
             }
 
             async loadDataFromGitHub() {
-                console.log('טוען נתונים מ-GitHub...');
+                console.log('טוען נתונים מ-daily-donations.json...');
                 document.getElementById('dataLoading').style.display = 'block';
                 document.getElementById('errorMessage').style.display = 'none';
                 document.getElementById('originalDashboard').style.display = 'none';
                 
                 try {
-                    // Add timestamp to bypass browser cache
+                    // Force bypass all caching mechanisms
                     const timestamp = Date.now();
-                    const response = await fetch(`${JSON_URL}?t=${timestamp}`);
+                    const response = await fetch(`${JSON_URL}?t=${timestamp}`, {
+                        cache: 'no-store',
+                        headers: {
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache',
+                            'Expires': '0'
+                        }
+                    });
                     
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
                     
                     const data = await response.json();
-                    console.log('נתונים נטענו בהצלחה');
+                    console.log('נתונים נטענו בהצלחה מ-daily-donations.json');
                     console.log('זמן עדכון אחרון:', data.lastUpdateLocal || 'לא זמין');
+                    console.log('כתובת הקובץ:', `${JSON_URL}?t=${timestamp}`);
                     
                     // Update last update info
                     this.updateLastUpdateInfo(data);
@@ -1591,7 +1599,7 @@
                             element.textContent = text.replace(/₪[0-9,]+/, '₪' + number.toLocaleString('he-IL'));
                         }
                     }
-                });
+});
             }
         }
 
@@ -1601,6 +1609,15 @@
         // Initialize dashboard function (called after authentication)
         window.initializeDashboard = function() {
             console.log('מאתחל דשבורד...');
+            
+            // Clear any cached data
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
             
             dashboardController = new DashboardController();
             
@@ -1818,6 +1835,22 @@
         // Page initialization (before authentication)
         document.addEventListener('DOMContentLoaded', () => {
             console.log('דף נטען - ממתין לאימות...');
+            
+            // Add meta tags to prevent caching
+            const metaNoCache = document.createElement('meta');
+            metaNoCache.httpEquiv = 'Cache-Control';
+            metaNoCache.content = 'no-cache, no-store, must-revalidate';
+            document.head.appendChild(metaNoCache);
+            
+            const metaPragma = document.createElement('meta');
+            metaPragma.httpEquiv = 'Pragma';
+            metaPragma.content = 'no-cache';
+            document.head.appendChild(metaPragma);
+            
+            const metaExpires = document.createElement('meta');
+            metaExpires.httpEquiv = 'Expires';
+            metaExpires.content = '0';
+            document.head.appendChild(metaExpires);
             
             // Close modal when clicking outside
             document.getElementById('settingsModal').addEventListener('click', function(e) {
