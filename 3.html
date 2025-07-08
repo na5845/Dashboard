@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>דוח תרומות - חיבור ישיר לAirtable</title>
+    <title>דוח תרומות - נתונים מעודכנים יומית</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
     
     <!-- Firebase SDKs -->
@@ -42,6 +42,9 @@
                         <button class="logout-btn" onclick="handleLogout()">התנתק</button>
                     `;
                 }
+                
+                // Initialize the dashboard after authentication
+                window.initializeDashboard();
             } else {
                 console.log('משתמש לא מחובר - מפנה לדף התחברות');
                 // Redirect to login page
@@ -97,6 +100,131 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        /* Data loading styles */
+        .data-loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .data-loading .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        /* Last update info */
+        .last-update-info {
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid #3498db;
+            border-radius: 10px;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #2c3e50;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .last-update-info strong {
+            color: #3498db;
+        }
+
+        .update-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .update-status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .update-status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .update-status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Progress bar styles */
+        .progress-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+        }
+
+        .progress-text {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #27ae60, #2ecc71, #3498db);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.4),
+                transparent
+            );
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-percentage {
+            font-size: 14px;
+            font-weight: bold;
+            color: #495057;
+            text-align: center;
         }
 
         /* User info positioned on blue background */
@@ -271,17 +399,6 @@
             background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
         }
 
-        .refresh-button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        .refresh-button:disabled:hover {
-            transform: none !important;
-            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3) !important;
-        }
-
         .refresh-icon, .reports-icon, .settings-icon {
             width: 20px;
             height: 20px;
@@ -293,55 +410,24 @@
             cursor: not-allowed;
             transform: none !important;
             pointer-events: none;
-            width: 150px !important;
-            height: 50px !important;
-            min-width: 150px !important;
-            min-height: 50px !important;
-            padding: 15px 20px !important;
-        }
-
-        .refresh-button.loading:hover {
-            transform: none !important;
-            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3) !important;
         }
 
         .refresh-button.loading .refresh-icon {
             animation: spin 1s linear infinite;
         }
 
-        .status-message {
-            background: #e8f5e8;
-            border: 2px solid #4caf50;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-            color: #2e7d32;
-            font-weight: bold;
-        }
-
-        .status-message.error {
-            background: #ffebee;
-            border-color: #f44336;
-            color: #c62828;
-        }
-
-        .debug-panel {
-            background: #f8f9fa;
-            border: 2px solid #6c757d;
-            border-radius: 10px;
+        .error-message {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
             padding: 20px;
-            margin-bottom: 20px;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 300px;
-            overflow-y: auto;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
         }
 
-        .debug-panel h4 {
+        .error-message h3 {
             margin-bottom: 10px;
-            font-family: inherit;
-            color: #495057;
         }
 
         /* Settings Modal */
@@ -487,76 +573,6 @@
 
         .modal-button.secondary:hover {
             background: #e9ecef;
-            color: #495057;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-            font-size: 16px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .progress-container {
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        .progress-text {
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 15px;
-            font-size: 16px;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 12px;
-            background: #e9ecef;
-            border-radius: 6px;
-            overflow: hidden;
-            margin-bottom: 10px;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #27ae60, #2ecc71, #3498db);
-            width: 0%;
-            transition: width 0.3s ease;
-            border-radius: 6px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .progress-fill::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            background: linear-gradient(
-                90deg,
-                transparent,
-                rgba(255, 255, 255, 0.4),
-                transparent
-            );
-            animation: shimmer 1.5s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
-        .progress-percentage {
-            font-size: 14px;
-            font-weight: bold;
             color: #495057;
         }
 
@@ -851,7 +867,7 @@
                         <svg class="refresh-icon" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
                         </svg>
-                        <span id="refreshBtnText">טען נתונים</span>
+                        <span id="refreshBtnText">רענן נתונים</span>
                     </button>
                     
                     <a href="https://na5845.github.io/Dashboard/Reports.html#" class="reports-button">
@@ -860,7 +876,7 @@
                         </svg>
                         דוחות
                     </a>
-
+                    
                     <button class="settings-button" id="settingsBtn" onclick="openSettings()">
                         <svg class="settings-icon" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path>
@@ -870,67 +886,55 @@
                 </div>
             </div>
 
-            <div id="statusMessage" class="status-message" style="display: none;"></div>
-
-            <div id="debugPanel" class="debug-panel" style="display: none;">
-                <h4>🐛 מידע דיבאג:</h4>
-                <div id="debugContent"></div>
+            <!-- Last update info -->
+            <div id="lastUpdateInfo" class="last-update-info" style="display: none;">
+                <span>עדכון אחרון: <strong id="lastUpdateTime">טוען...</strong></span>
+                <span id="updateStatus" class="update-status loading">בודק...</span>
             </div>
 
             <!-- Settings Modal -->
             <div id="settingsModal" class="modal-overlay">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h3 class="modal-title">🔗 הגדרות חיבור לAirtable</h3>
+                        <h3 class="modal-title">⚙️ הגדרות</h3>
                         <button class="close-button" onclick="closeSettings()">×</button>
                     </div>
                     
                     <form class="modal-form">
                         <div class="form-group">
-                            <label for="modalBaseId">Base ID:</label>
-                            <input type="text" id="modalBaseId" placeholder="appxxxxxxxxxxxxx">
+                            <label for="githubToken">GitHub Personal Access Token (אופציונלי):</label>
+                            <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxxx">
                             <small style="color: #6c757d; font-size: 0.8rem; margin-top: 5px; display: block;">
-                                מזהה הבסיס שלך באAirtable
-                            </small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="modalTableId">Table ID (או שם הטבלה):</label>
-                            <input type="text" id="modalTableId" placeholder="tblxxxxxxxxxxxxx או שם הטבלה">
-                            <small style="color: #6c757d; font-size: 0.8rem; margin-top: 5px; display: block;">
-                                מזהה הטבלה או שם הטבלה
-                            </small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="modalApiKey">Personal Access Token:</label>
-                            <input type="password" id="modalApiKey" placeholder="patxxxxxxxxxxxxxxxxx">
-                            <small style="color: #6c757d; font-size: 0.8rem; margin-top: 5px; display: block;">
-                                טוקן הגישה האישי שלך
+                                נדרש רק אם תרצה להפעיל עדכונים ישירות מהדשבורד.
+                                <a href="https://github.com/settings/tokens/new?scopes=repo,workflow" target="_blank" style="color: #3498db;">
+                                    צור טוקן חדש
+                                </a>
                             </small>
                         </div>
                     </form>
                     
                     <div class="modal-buttons">
                         <button class="modal-button secondary" onclick="closeSettings()">ביטול</button>
-                        <button class="modal-button primary" onclick="testConnectionFromModal()">בדוק חיבור</button>
-                        <button class="modal-button primary" onclick="saveSettingsAndLoad()">שמור וטען נתונים</button>
+                        <button class="modal-button primary" onclick="saveSettings()">שמור</button>
                     </div>
                 </div>
             </div>
 
-            <div id="loadingMessage" class="loading" style="display: none;">
-                <div class="progress-container">
-                    <div class="progress-text">טוען נתונים מAirtable...</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
-                    </div>
-                    <div class="progress-percentage" id="progressPercentage">0%</div>
-                </div>
+            <!-- Data loading indicator -->
+            <div id="dataLoading" class="data-loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>טוען נתונים...</p>
+            </div>
+
+            <!-- Error message -->
+            <div id="errorMessage" class="error-message" style="display: none;">
+                <h3>שגיאה בטעינת הנתונים</h3>
+                <p id="errorDetails"></p>
+                <button onclick="handleRefresh()" style="margin-top: 10px; padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">נסה שוב</button>
             </div>
 
             <!-- Dashboard content -->
-            <div id="originalDashboard">
+            <div id="originalDashboard" style="display: none;">
                 <div class="divider">
                     <span class="divider-text">📈 מגמות כלליות</span>
                 </div>
@@ -1100,381 +1104,194 @@
 
     <script>
         // Global variables
-        let airtableData = null;
         let charts = {};
-        let debugMode = false;
+        // Using jsDelivr CDN to avoid CORS issues
+        const JSON_URL = 'https://cdn.jsdelivr.net/gh/na5845/Dashboard@main/data/daily-donations.json';
 
-        class AirtableConnector {
+        // Main dashboard controller
+        class DashboardController {
             constructor() {
-                this.baseUrl = 'https://api.airtable.com/v0';
-                this.baseId = '';
-                this.tableId = '';
-                this.apiKey = '';
-                this.cacheKey = 'airtable_dashboard_data';
-                this.cacheTimestamp = 'airtable_dashboard_timestamp';
-                
-                console.log('AirtableConnector נוצר');
+                console.log('DashboardController נוצר');
             }
 
-            // Save data to localStorage
-            saveDataToCache(data) {
+            async loadDataFromGitHub() {
+                console.log('טוען נתונים מ-daily-donations.json...');
+                document.getElementById('dataLoading').style.display = 'block';
+                document.getElementById('errorMessage').style.display = 'none';
+                document.getElementById('originalDashboard').style.display = 'none';
+                
                 try {
-                    const dataToSave = {
-                        ...data,
-                        timestamp: new Date().getTime()
-                    };
-                    const jsonData = JSON.stringify(dataToSave);
-                    localStorage.setItem(this.cacheKey, jsonData);
-                    localStorage.setItem(this.cacheTimestamp, new Date().toLocaleString('he-IL'));
-                    console.log('נתונים נשמרו לזיכרון המקומי');
-                } catch (error) {
-                    console.warn('לא ניתן לשמור נתונים לזיכרון המקומי:', error);
-                }
-            }
-
-            // Load data from localStorage
-            loadDataFromCache() {
-                try {
-                    const cachedData = localStorage.getItem(this.cacheKey);
-                    if (cachedData) {
-                        const data = JSON.parse(cachedData);
-                        console.log('נתונים נטענו מהזיכרון המקומי');
-                        return data;
-                    }
-                } catch (error) {
-                    console.warn('לא ניתן לטעון נתונים מהזיכרון המקומי:', error);
-                }
-                return null;
-            }
-
-            // Check if we have cached data and load it
-            loadCachedDataIfExists() {
-                const cachedData = this.loadDataFromCache();
-                if (cachedData) {
-                    // Remove timestamp before displaying
-                    const { timestamp, ...dataWithoutTimestamp } = cachedData;
-                    this.displayData(dataWithoutTimestamp);
-                    airtableData = dataWithoutTimestamp;
+                    // Try multiple methods to fetch the data
+                    let data = null;
+                    let lastError = null;
                     
-                    // Show dashboard
-                    document.getElementById('originalDashboard').style.display = 'block';
-                    return true;
-                }
-                return false;
-            }
-
-            updateCredentials() {
-                // Only update from modal fields, don't try to read from non-existent fields
-                const modalBaseId = document.getElementById('modalBaseId')?.value?.trim();
-                const modalTableId = document.getElementById('modalTableId')?.value?.trim();
-                const modalApiKey = document.getElementById('modalApiKey')?.value?.trim();
-                
-                // Only update if modal fields have values, otherwise keep current values
-                if (modalBaseId !== undefined && modalBaseId !== '') {
-                    this.baseId = modalBaseId;
-                }
-                if (modalTableId !== undefined && modalTableId !== '') {
-                    this.tableId = modalTableId;
-                }
-                if (modalApiKey !== undefined && modalApiKey !== '') {
-                    this.apiKey = modalApiKey;
-                }
-            }
-
-            validateCredentials() {
-                if (!this.baseId || !this.tableId || !this.apiKey) {
-                    this.showMessage('נא למלא את כל השדות הנדרשים', 'error');
-                    return false;
-                }
-
-                if (!this.baseId.startsWith('app')) {
-                    this.showMessage('Base ID חייב להתחיל ב-app', 'error');
-                    return false;
-                }
-
-                if (!this.apiKey.startsWith('pat')) {
-                    this.showMessage('Personal Access Token חייב להתחיל ב-pat', 'error');
-                    return false;
-                }
-
-                return true;
-            }
-
-            async testConnection() {
-                if (!this.validateCredentials()) {
-                    return false;
-                }
-
-                this.debug('מתחיל בדיקת חיבור...');
-
-                try {
-                    const url = `${this.baseUrl}/${this.baseId}/${this.tableId}?maxRecords=1`;
-
-                    const response = await fetch(url, {
-                        headers: {
-                            'Authorization': `Bearer ${this.apiKey}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        this.showMessage('החיבור לAirtable תקין! ✅', 'success');
-                        return true;
-                    } else {
-                        const errorText = await response.text();
-                        
-                        let errorMessage = 'שגיאה לא ידועה';
-                        try {
-                            const errorJson = JSON.parse(errorText);
-                            errorMessage = errorJson.error?.message || errorJson.error || errorText;
-                        } catch (e) {
-                            errorMessage = errorText;
-                        }
-                        
-                        this.showMessage(`שגיאה בחיבור (${response.status}): ${errorMessage}`, 'error');
-                        return false;
-                    }
-                } catch (error) {
-                    this.showMessage(`שגיאת רשת: ${error.message}`, 'error');
-                    return false;
-                }
-            }
-
-            async loadData() {
-                if (!this.validateCredentials()) {
-                    return;
-                }
-
-                this.showLoading(true);
-                const refreshBtn = document.getElementById('refreshBtn');
-                
-                if (refreshBtn.classList.contains('loading')) {
-                    console.log('כבר בתהליך רענון, מדלג...');
-                    return;
-                }
-                
-                refreshBtn.classList.add('loading');
-                refreshBtn.disabled = true;
-
-                try {
-                    const allRecords = await this.loadAllRecords();
-                    
-                    if (allRecords.length === 0) {
-                        this.showMessage('לא נמצאו רשומות בטבלה', 'error');
-                        return;
-                    }
-
-                    this.processAllData(allRecords);
-                    
-                } catch (error) {
-                    this.showMessage(`שגיאה בטעינת הנתונים: ${error.message}`, 'error');
-                } finally {
-                    this.completeProgress();
-                    refreshBtn.classList.remove('loading');
-                    refreshBtn.disabled = false;
-                }
-            }
-
-            async loadAllRecords() {
-                let allRecords = [];
-                let offset = '';
-                let pageCount = 0;
-                const maxPages = 400;
-                
-                do {
-                    pageCount++;
-                    if (pageCount > maxPages) {
-                        break;
-                    }
-                    
-                    const url = `${this.baseUrl}/${this.baseId}/${this.tableId}?pageSize=100${offset ? `&offset=${offset}` : ''}`;
-                    
-                    const response = await fetch(url, {
-                        headers: {
-                            'Authorization': `Bearer ${this.apiKey}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`HTTP ${response.status}: ${errorText}`);
-                    }
-
-                    const data = await response.json();
-                    allRecords = allRecords.concat(data.records);
-                    offset = data.offset;
-                    
-                } while (offset);
-
-                return allRecords;
-            }
-
-            processAllData(allRecords) {
-                const now = new Date();
-                const currentMonth = now.getMonth();
-                const currentYear = now.getFullYear();
-                const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-                const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-                
-                const currentMonthStart = new Date(currentYear, currentMonth, 1);
-                const lastMonthStart = new Date(lastMonthYear, lastMonth, 1);
-                const lastMonthEnd = new Date(lastMonthYear, lastMonth + 1, 0);
-                const yearStart = new Date(currentYear, 0, 1);
-                const last12MonthsStart = new Date(currentYear, currentMonth - 11, 1);
-
-                const stats = {
-                    currentMonth: { 
-                        total: 0, 
-                        daily: {}, 
-                        categories: {}, 
-                        organizations: {},
-                        categoryOrg: {} 
-                    },
-                    lastMonth: { 
-                        total: 0, 
-                        daily: {}, 
-                        categories: {}, 
-                        organizations: {},
-                        categoryOrg: {} 
-                    },
-                    monthlyData: {},
-                    yearlyData: {
-                        '2022': 413501,
-                        '2023': 527445,
-                        '2024': 913946,
-                        '2025': 0
-                    }
-                };
-
-                // Find field names
-                const possibleAmountFields = ['סכום עסקה', 'סכום', 'Amount', 'amount'];
-                const possibleDateFields = ['תאריך ושעת ביצוע העסקה', 'תאריך', 'Date', 'date', 'Created'];
-                const possibleCategoryFields = ['קטגוריה', 'Category', 'category', 'סוג'];
-                const possibleOrgFields = ['עמותה', 'Organization', 'organization', 'ארגון'];
-
-                let amountField = null;
-                let dateField = null;
-                let categoryField = null;
-                let orgField = null;
-
-                for (const record of allRecords.slice(0, 5)) {
-                    const fields = Object.keys(record.fields);
-                    
-                    if (!amountField) {
-                        amountField = possibleAmountFields.find(field => fields.includes(field));
-                    }
-                    if (!dateField) {
-                        dateField = possibleDateFields.find(field => fields.includes(field));
-                    }
-                    if (!categoryField) {
-                        categoryField = possibleCategoryFields.find(field => fields.includes(field));
-                    }
-                    if (!orgField) {
-                        orgField = possibleOrgFields.find(field => fields.includes(field));
-                    }
-                    
-                    if (amountField && dateField) break;
-                }
-
-                if (!amountField || !dateField) {
-                    this.showMessage(`לא נמצאו שדות חובה: ${!amountField ? 'סכום' : ''} ${!dateField ? 'תאריך' : ''}`, 'error');
-                    return;
-                }
-
-                const validRecords = allRecords.filter(record => {
-                    const amount = record.fields[amountField];
-                    const date = record.fields[dateField];
-                    return amount && date && parseFloat(amount) > 0;
-                });
-
-                validRecords.forEach((record) => {
-                    const fields = record.fields;
-                    const amount = parseFloat(fields[amountField]);
-                    const dateStr = fields[dateField];
-                    
-                    let date;
+                    // Method 1: Try GitHub Pages (if enabled)
+                    const githubPagesUrl = 'https://na5845.github.io/Dashboard/data/daily-donations.json';
                     try {
-                        date = new Date(dateStr);
-                        if (isNaN(date.getTime())) {
-                            return;
+                        console.log('מנסה לטעון מ-GitHub Pages...');
+                        const timestamp = Date.now();
+                        const response = await fetch(`${githubPagesUrl}?t=${timestamp}`, {
+                            cache: 'no-store',
+                            headers: {
+                                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                                'Pragma': 'no-cache'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            data = await response.json();
+                            console.log('נתונים נטענו בהצלחה מ-GitHub Pages');
                         }
-                    } catch (e) {
-                        return;
+                    } catch (error) {
+                        console.log('GitHub Pages לא זמין, מנסה שיטה אחרת...');
+                        lastError = error;
                     }
                     
-                    const category = fields[categoryField] || 'לא מוגדר';
-                    const organization = fields[orgField] || 'אחר';
-                    
-                    // Current month
-                    if (date >= currentMonthStart) {
-                        this.addToMonthStats(stats.currentMonth, amount, date, category, organization);
+                    // Method 2: Try GitHub API
+                    if (!data) {
+                        try {
+                            console.log('מנסה לטעון דרך GitHub API...');
+                            const apiUrl = 'https://api.github.com/repos/na5845/Dashboard/contents/data/daily-donations.json';
+                            const response = await fetch(apiUrl, {
+                                headers: {
+                                    'Accept': 'application/vnd.github.v3+json',
+                                    'Cache-Control': 'no-cache'
+                                }
+                            });
+                            
+                            if (response.ok) {
+                                const apiData = await response.json();
+                                // Decode base64 content
+                                const content = atob(apiData.content.replace(/\n/g, ''));
+                                data = JSON.parse(content);
+                                console.log('נתונים נטענו בהצלחה מ-GitHub API');
+                            }
+                        } catch (error) {
+                            console.log('GitHub API נכשל:', error);
+                            lastError = error;
+                        }
                     }
                     
-                    // Last month
-                    if (date >= lastMonthStart && date <= lastMonthEnd) {
-                        this.addToMonthStats(stats.lastMonth, amount, date, category, organization);
+                    // Method 3: Try proxy service
+                    if (!data) {
+                        try {
+                            console.log('מנסה לטעון דרך proxy service...');
+                            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent('https://raw.githubusercontent.com/na5845/Dashboard/main/data/daily-donations.json');
+                            const timestamp = Date.now();
+                            const response = await fetch(`${proxyUrl}&t=${timestamp}`, {
+                                cache: 'no-store'
+                            });
+                            
+                            if (response.ok) {
+                                data = await response.json();
+                                console.log('נתונים נטענו בהצלחה דרך proxy');
+                            }
+                        } catch (error) {
+                            console.log('Proxy service נכשל:', error);
+                            lastError = error;
+                        }
                     }
                     
-                    // Current year data
-                    if (date >= yearStart) {
-                        stats.yearlyData['2025'] += amount;
+                    if (!data) {
+                        throw new Error(lastError?.message || 'לא ניתן לטעון את הנתונים מאף מקור');
                     }
                     
-                    // Last 12 months
-                    if (date >= last12MonthsStart) {
-                        const year = date.getFullYear();
-                        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                        const monthKey = `${month}-${year}`;
-                        stats.monthlyData[monthKey] = (stats.monthlyData[monthKey] || 0) + amount;
+                    console.log('זמן עדכון אחרון:', data.lastUpdateLocal || 'לא זמין');
+                    
+                    // Update last update info
+                    this.updateLastUpdateInfo(data);
+                    
+                    // Display the data
+                    this.displayData(data);
+                    
+                    // Hide loading, show dashboard
+                    document.getElementById('dataLoading').style.display = 'none';
+                    document.getElementById('originalDashboard').style.display = 'block';
+                    
+                } catch (error) {
+                    console.error('שגיאה בטעינת נתונים:', error);
+                    document.getElementById('dataLoading').style.display = 'none';
+                    document.getElementById('errorMessage').style.display = 'block';
+                    document.getElementById('errorDetails').textContent = error.message;
+                    
+                    // Try to give more specific error message
+                    if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
+                        document.getElementById('errorDetails').innerHTML = 
+                            'לא ניתן לטעון את הנתונים עקב הגבלות אבטחה.<br>' +
+                            'אפשרויות לפתרון:<br>' +
+                            '1. ודא ש-GitHub Pages מופעל בפרויקט<br>' +
+                            '2. <a href="https://github.com/na5845/Dashboard/settings/pages" target="_blank">הפעל GitHub Pages כאן</a><br>' +
+                            '3. <a href="https://github.com/na5845/Dashboard/tree/main/data" target="_blank">בדוק שהקובץ קיים</a>';
                     }
-                });
-
-                airtableData = stats;
-                this.saveDataToCache(stats);
-                this.displayData(stats);
+                }
             }
 
-            addToMonthStats(monthStats, amount, date, category, organization) {
-                monthStats.total += amount;
+            updateLastUpdateInfo(data) {
+                const lastUpdateEl = document.getElementById('lastUpdateTime');
+                const statusEl = document.getElementById('updateStatus');
+                const infoContainer = document.getElementById('lastUpdateInfo');
                 
-                const dayOfMonth = date.getDate();
-                monthStats.daily[dayOfMonth] = (monthStats.daily[dayOfMonth] || 0) + amount;
-                
-                monthStats.categories[category] = (monthStats.categories[category] || 0) + amount;
-                monthStats.organizations[organization] = (monthStats.organizations[organization] || 0) + amount;
-                
-                const key = `${organization}_${category}`;
-                monthStats.categoryOrg[key] = (monthStats.categoryOrg[key] || 0) + amount;
+                if (data.lastUpdateLocal) {
+                    lastUpdateEl.textContent = data.lastUpdateLocal;
+                    
+                    // Check how old the data is
+                    const lastUpdate = new Date(data.lastUpdate);
+                    const now = new Date();
+                    const hoursDiff = Math.abs(now - lastUpdate) / 36e5;
+                    
+                    if (hoursDiff < 24) {
+                        statusEl.className = 'update-status success';
+                        statusEl.innerHTML = '✅ מעודכן';
+                    } else if (hoursDiff < 48) {
+                        statusEl.className = 'update-status loading';
+                        statusEl.innerHTML = '⚠️ לא עודכן היום';
+                    } else {
+                        statusEl.className = 'update-status error';
+                        statusEl.innerHTML = '❌ דרוש עדכון';
+                    }
+                    
+                    infoContainer.style.display = 'flex';
+                }
             }
 
-            displayData(stats) {
+            displayData(data) {
+                // Check if dashboard elements exist
+                if (!document.getElementById('originalDashboard')) {
+                    console.error('Dashboard elements not found');
+                    return;
+                }
+                
                 // Update totals
-                document.getElementById('currentMonthTotal').textContent = stats.currentMonth.total.toLocaleString('he-IL');
-                document.getElementById('lastMonthTotal').textContent = stats.lastMonth.total.toLocaleString('he-IL');
+                const currentMonthTotalEl = document.getElementById('currentMonthTotal');
+                const lastMonthTotalEl = document.getElementById('lastMonthTotal');
+                
+                if (currentMonthTotalEl) {
+                    currentMonthTotalEl.textContent = data.currentMonth.total.toLocaleString('he-IL');
+                }
+                if (lastMonthTotalEl) {
+                    lastMonthTotalEl.textContent = data.lastMonth.total.toLocaleString('he-IL');
+                }
 
                 // Update details
-                this.updatePaymentDetails('currentMonthPayments', stats.currentMonth);
-                this.updatePaymentDetails('lastMonthPayments', stats.lastMonth);
-                this.updateSourceDetails('currentMonthSources', stats.currentMonth);
-                this.updateSourceDetails('lastMonthSources', stats.lastMonth);
+                this.updatePaymentDetails('currentMonthPayments', data.currentMonth);
+                this.updatePaymentDetails('lastMonthPayments', data.lastMonth);
+                this.updateSourceDetails('currentMonthSources', data.currentMonth);
+                this.updateSourceDetails('lastMonthSources', data.lastMonth);
 
                 // Create charts
-                this.createDailyChart('dailyChart1', stats.currentMonth.daily, 'החודש הנוכחי');
-                this.createDailyChart('dailyChart2', stats.lastMonth.daily, 'החודש הקודם');
-                this.createPaymentChart('paymentMethodChart1', stats.currentMonth.categories);
-                this.createPaymentChart('paymentMethodChart2', stats.lastMonth.categories);
-                this.createSourceChart('sourceChart1', stats.currentMonth.organizations);
-                this.createSourceChart('sourceChart2', stats.lastMonth.organizations);
-                this.createOrganizationBreakdownChart('kesherBreakdownChart1', stats.currentMonth.categoryOrg, 'קשר');
-                this.createOrganizationBreakdownChart('kesherBreakdownChart2', stats.lastMonth.categoryOrg, 'קשר');
-                this.createOrganizationBreakdownChart('nedarimBreakdownChart1', stats.currentMonth.categoryOrg, 'נדרים פלוס');
-                this.createOrganizationBreakdownChart('nedarimBreakdownChart2', stats.lastMonth.categoryOrg, 'נדרים פלוס');
-                this.createMonthlyTrendChart(stats.monthlyData);
-                this.createYearlyChart(stats.yearlyData);
+                this.createDailyChart('dailyChart1', data.currentMonth.daily, 'החודש הנוכחי');
+                this.createDailyChart('dailyChart2', data.lastMonth.daily, 'החודש הקודם');
+                this.createPaymentChart('paymentMethodChart1', data.currentMonth.categories);
+                this.createPaymentChart('paymentMethodChart2', data.lastMonth.categories);
+                this.createSourceChart('sourceChart1', data.currentMonth.organizations);
+                this.createSourceChart('sourceChart2', data.lastMonth.organizations);
+                this.createOrganizationBreakdownChart('kesherBreakdownChart1', data.currentMonth.categoryOrg, 'קשר');
+                this.createOrganizationBreakdownChart('kesherBreakdownChart2', data.lastMonth.categoryOrg, 'קשר');
+                this.createOrganizationBreakdownChart('nedarimBreakdownChart1', data.currentMonth.categoryOrg, 'נדרים פלוס');
+                this.createOrganizationBreakdownChart('nedarimBreakdownChart2', data.lastMonth.categoryOrg, 'נדרים פלוס');
+                this.createMonthlyTrendChart(data.monthlyData);
+                this.createYearlyChart(data.yearlyData);
 
-                document.getElementById('originalDashboard').style.display = 'block';
                 this.formatNumbers();
             }
 
@@ -1905,293 +1722,265 @@
                             element.textContent = text.replace(/₪[0-9,]+/, '₪' + number.toLocaleString('he-IL'));
                         }
                     }
+});
+            }
+        }
+
+        // Create global instance
+        let dashboardController;
+
+        // Initialize dashboard function (called after authentication)
+        window.initializeDashboard = function() {
+            console.log('מאתחל דשבורד...');
+            
+            // Clear any cached data
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
                 });
             }
-
-            showMessage(message, type = 'success') {
-                // הפונקציה לא מציגה הודעות - מבוטלת
-                return;
-                
-                const statusEl = document.getElementById('statusMessage');
-                statusEl.textContent = message;
-                statusEl.className = `status-message ${type === 'error' ? 'error' : ''}`;
-                statusEl.style.display = 'block';
-                
-                setTimeout(() => {
-                    statusEl.style.display = 'none';
-                }, 8000);
-            }
-
-            showLoading(show) {
-                const loadingEl = document.getElementById('loadingMessage');
-                const progressFill = document.getElementById('progressFill');
-                const progressPercentage = document.getElementById('progressPercentage');
-                
-                if (show) {
-                    loadingEl.style.display = 'block';
-                    // Start progress animation
-                    this.animateProgress(progressFill, progressPercentage);
-                } else {
-                    loadingEl.style.display = 'none';
-                    // Reset progress
-                    if (progressFill) {
-                        progressFill.style.width = '0%';
-                    }
-                    if (progressPercentage) {
-                        progressPercentage.textContent = '0%';
-                    }
-                }
-            }
-
-            animateProgress(progressFill, progressPercentage) {
-                if (!progressFill || !progressPercentage) return;
-                
-                let progress = 0;
-                const duration = 110000; // 110 seconds total
-                const interval = 300; // Update every 300ms
-                const increment = (interval / duration) * 100;
-                
-                const progressInterval = setInterval(() => {
-                    progress += increment + Math.random() * 0.6; // Add some randomness
-                    
-                    if (progress >= 95) {
-                        progress = 95; // Stop at 95% and wait for actual completion
-                    }
-                    
-                    progressFill.style.width = progress + '%';
-                    if (progressPercentage) {
-                        progressPercentage.textContent = Math.round(progress) + '%';
-                    }
-                    
-                    if (progress >= 95) {
-                        clearInterval(progressInterval);
-                    }
-                }, interval);
-                
-                // Store interval ID so we can clear it if needed
-                this.progressInterval = progressInterval;
-            }
-
-            completeProgress() {
-                const progressFill = document.getElementById('progressFill');
-                const progressPercentage = document.getElementById('progressPercentage');
-                
-                if (progressFill) {
-                    progressFill.style.width = '100%';
-                }
-                if (progressPercentage) {
-                    progressPercentage.textContent = '100%';
-                }
-                
-                // Clear any existing interval
-                if (this.progressInterval) {
-                    clearInterval(this.progressInterval);
-                }
-                
-                // Hide loading after a short delay
-                setTimeout(() => {
-                    this.showLoading(false);
-                }, 500);
-            }
-
-            debug(message, data = null) {
-                if (!debugMode) return;
-                
-                const debugContent = document.getElementById('debugContent');
-                const timestamp = new Date().toLocaleTimeString();
-                const logEntry = `[${timestamp}] ${message}`;
-                
-                console.log(logEntry, data);
-                
-                if (debugContent) {
-                    debugContent.innerHTML += `<div>${logEntry}</div>`;
-                    if (data) {
-                        debugContent.innerHTML += `<div style="margin-left: 10px; color: #666; font-size: 10px;">${JSON.stringify(data, null, 2)}</div>`;
-                    }
-                    debugContent.scrollTop = debugContent.scrollHeight;
-                }
-            }
-        }
-
-        // Create instance and global functions
-        let airtableConnector;
-
-        function toggleDebug() {
-            debugMode = !debugMode;
-            const debugPanel = document.getElementById('debugPanel');
-            debugPanel.style.display = debugMode ? 'block' : 'none';
             
-            if (debugMode) {
-                document.getElementById('debugContent').innerHTML = '<div>מצב דיבאג מופעל</div>';
-            }
-        }
-
-        function openSettings() {
-            console.log('פותח חלון הגדרות');
-            console.log('הגדרות נוכחיות:', {
-                baseId: airtableConnector?.baseId,
-                tableId: airtableConnector?.tableId,
-                apiKey: airtableConnector?.apiKey ? 'קיים' : 'לא קיים'
-            });
+            dashboardController = new DashboardController();
             
-            // Load current values into modal - show defaults if no current values
+            // Load data immediately
+            dashboardController.loadDataFromGitHub();
+        };
+
+        // Manual refresh function
+        window.handleRefresh = function() {
+            console.log('רענון נתונים...');
+            
+            if (dashboardController) {
+                const refreshBtn = document.getElementById('refreshBtn');
+                refreshBtn.classList.add('loading');
+                
+                // Show message
+                const lastUpdateEl = document.getElementById('lastUpdateInfo');
+                if (lastUpdateEl) {
+                    lastUpdateEl.innerHTML = `
+                        <span>מפעיל עדכון נתונים... התהליך יכול לקחת 2-3 דקות</span>
+                        <span class="update-status loading">⏳ בעיבוד</span>
+                    `;
+                    lastUpdateEl.style.display = 'flex';
+                }
+                
+                // Trigger GitHub Action
+                triggerGitHubAction();
+            }
+        };
+        
+        // Settings functions
+        window.openSettings = function() {
             const modal = document.getElementById('settingsModal');
-            document.getElementById('modalBaseId').value = airtableConnector?.baseId || 'appxvOE27PFbq5z9J';
-            document.getElementById('modalTableId').value = airtableConnector?.tableId || 'tbloSMtX2CV0yHAg8';
-            document.getElementById('modalApiKey').value = airtableConnector?.apiKey || 'pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99';
+            const tokenInput = document.getElementById('githubToken');
+            
+            // Load saved token
+            const savedToken = localStorage.getItem('github_pat_token');
+            if (savedToken) {
+                tokenInput.value = savedToken;
+            }
             
             modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden'; // Prevent background scroll
-        }
-
-        function closeSettings() {
+            document.body.style.overflow = 'hidden';
+        };
+        
+        window.closeSettings = function() {
             const modal = document.getElementById('settingsModal');
             modal.style.display = 'none';
-            document.body.style.overflow = 'auto'; // Restore scroll
-        }
-
-        function testConnectionFromModal() {
-            console.log('בודק חיבור מהמודל');
+            document.body.style.overflow = 'auto';
+        };
+        
+        window.saveSettings = function() {
+            const tokenInput = document.getElementById('githubToken');
+            const token = tokenInput.value.trim();
             
-            // Get values from modal
-            const baseId = document.getElementById('modalBaseId').value.trim();
-            const tableId = document.getElementById('modalTableId').value.trim();
-            const apiKey = document.getElementById('modalApiKey').value.trim();
-            
-            // Validate fields
-            if (!baseId || !tableId || !apiKey) {
-                alert('נא למלא את כל השדות לפני בדיקת החיבור');
-                return;
-            }
-            
-            // Update connector credentials from modal
-            airtableConnector.baseId = baseId;
-            airtableConnector.tableId = tableId;
-            airtableConnector.apiKey = apiKey;
-            
-            if (airtableConnector) {
-                airtableConnector.testConnection();
-            }
-        }
-
-        function saveSettingsAndLoad() {
-            console.log('שומר הגדרות וטוען נתונים');
-            
-            // Get values from modal
-            const baseId = document.getElementById('modalBaseId').value.trim();
-            const tableId = document.getElementById('modalTableId').value.trim();
-            const apiKey = document.getElementById('modalApiKey').value.trim();
-            
-            console.log('ערכים חדשים:', { baseId, tableId, apiKey: apiKey ? 'קיים' : 'ריק' });
-            
-            // Update connector credentials from modal
-            airtableConnector.baseId = baseId;
-            airtableConnector.tableId = tableId;
-            airtableConnector.apiKey = apiKey;
-            
-            // Validate before closing
-            if (!baseId || !tableId || !apiKey) {
-                alert('נא למלא את כל השדות');
-                return;
-            }
-            
-            // Close modal
-            closeSettings();
-            
-            // Load data
-            if (airtableConnector) {
-                airtableConnector.loadData();
-            }
-        }
-
-        function testConnection() {
-            if (airtableConnector) {
-                airtableConnector.testConnection();
-            }
-        }
-
-        function loadAirtableData() {
-            if (airtableConnector) {
-                airtableConnector.loadData();
-            }
-        }
-
-        function handleRefresh() {
-            console.log('handleRefresh נקרא');
-            console.log('airtableConnector קיים:', !!airtableConnector);
-            
-            if (!airtableConnector) {
-                console.error('airtableConnector לא קיים!');
-                openSettings();
-                return;
-            }
-            
-            console.log('בודק הגדרות:', {
-                baseId: airtableConnector.baseId,
-                tableId: airtableConnector.tableId,
-                apiKey: airtableConnector.apiKey ? `קיים (${airtableConnector.apiKey.length} תווים)` : 'לא קיים'
-            });
-            
-            // Check if we have valid credentials
-            if (airtableConnector.baseId && 
-                airtableConnector.tableId && 
-                airtableConnector.apiKey &&
-                airtableConnector.baseId.trim() !== '' &&
-                airtableConnector.tableId.trim() !== '' &&
-                airtableConnector.apiKey.trim() !== '') {
+            if (token) {
+                // Validate token format
+                if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
+                    alert('הטוקן חייב להתחיל ב-ghp_ או github_pat_');
+                    return;
+                }
                 
-                console.log('יש הגדרות תקפות, טוען נתונים');
-                airtableConnector.loadData();
+                // Save to localStorage
+                localStorage.setItem('github_pat_token', token);
+                alert('הטוקן נשמר בהצלחה!');
             } else {
-                console.log('אין הגדרות תקפות, פותח חלון הגדרות');
-                openSettings();
+                // Remove token if empty
+                localStorage.removeItem('github_pat_token');
+                alert('הטוקן הוסר');
+            }
+            
+            closeSettings();
+        };
+
+        // Function to trigger GitHub Action
+        async function triggerGitHubAction() {
+            try {
+                // Get token from localStorage
+                const githubToken = localStorage.getItem('github_pat_token');
+                
+                if (!githubToken) {
+                    // No token - open settings or use manual method
+                    const result = confirm(
+                        'להפעלת עדכון אוטומטי נדרש GitHub Token.\n\n' +
+                        'לחץ OK כדי להגדיר טוקן\n' +
+                        'או Cancel כדי לפתוח את GitHub Actions ידנית'
+                    );
+                    
+                    if (result) {
+                        openSettings();
+                    } else {
+                        window.open('https://github.com/na5845/Dashboard/actions/workflows/daily-airtable-update.yml', '_blank');
+                        checkForUpdates();
+                    }
+                    return;
+                }
+                
+                // GitHub API to trigger workflow
+                const response = await fetch('https://api.github.com/repos/na5845/Dashboard/actions/workflows/daily-airtable-update.yml/dispatches', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/vnd.github+json',
+                        'Authorization': `Bearer ${githubToken}`,
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    },
+                    body: JSON.stringify({
+                        ref: 'main'
+                    })
+                });
+                
+                if (response.status === 204) {
+                    console.log('GitHub Action הופעל בהצלחה');
+                    
+                    // Show success message with progress bar
+                    const lastUpdateEl = document.getElementById('lastUpdateInfo');
+                    if (lastUpdateEl) {
+                        lastUpdateEl.innerHTML = `
+                            <div style="width: 100%; text-align: center;">
+                                <span>GitHub Action הופעל בהצלחה! ממתין לעדכון...</span>
+                                <span class="update-status loading">⏳ בעיבוד</span>
+                                <div class="progress-container">
+                                    <div class="progress-bar-wrapper">
+                                        <div class="progress-bar-fill" id="updateProgressBar"></div>
+                                    </div>
+                                    <div class="progress-time" id="progressTime">0:00 / 2:00</div>
+                                </div>
+                            </div>
+                        `;
+                        lastUpdateEl.style.display = 'block';
+                        lastUpdateEl.style.flexDirection = 'column';
+                        lastUpdateEl.style.alignItems = 'center';
+                    }
+                    
+                    // Start progress bar animation
+                    startProgressBar();
+                    
+                } else if (response.status === 401) {
+                    // Token is invalid
+                    localStorage.removeItem('github_pat_token');
+                    alert('הטוקן אינו תקין. אנא הזן טוקן חדש.');
+                    openSettings();
+                } else {
+                    throw new Error(`Failed to trigger action: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('שגיאה בהפעלת GitHub Action:', error);
+                
+                // Alternative: Open GitHub Actions page
+                alert('להפעלת עדכון ידני:\n1. לחץ אישור\n2. בדף שייפתח, לחץ "Run workflow"\n3. חזור לכאן בעוד 2-3 דקות');
+                window.open('https://github.com/na5845/Dashboard/actions/workflows/daily-airtable-update.yml', '_blank');
+                
+                // Show progress bar for manual update too
+                const lastUpdateEl = document.getElementById('lastUpdateInfo');
+                if (lastUpdateEl) {
+                    lastUpdateEl.innerHTML = `
+                        <div style="width: 100%; text-align: center;">
+                            <span>אנא הפעל את העדכון ידנית בחלון שנפתח</span>
+                            <span class="update-status loading">⏳ ממתין להפעלה ידנית</span>
+                            <div class="progress-container">
+                                <div class="progress-bar-wrapper">
+                                    <div class="progress-bar-fill" id="updateProgressBar"></div>
+                                </div>
+                                <div class="progress-time" id="progressTime">0:00 / 2:00</div>
+                            </div>
+                        </div>
+                    `;
+                    lastUpdateEl.style.display = 'block';
+                    lastUpdateEl.style.flexDirection = 'column';
+                    lastUpdateEl.style.alignItems = 'center';
+                }
+                
+                // Start progress bar after a delay (to allow manual triggering)
+                setTimeout(() => {
+                    startProgressBar();
+                }, 5000); // 5 seconds delay
             }
         }
-
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('מאתחל דף');
+        
+        // Function to start progress bar
+        function startProgressBar() {
+            const duration = 2 * 60 * 1000; // 2 minutes in milliseconds
+            const startTime = Date.now();
+            const progressBar = document.getElementById('updateProgressBar');
+            const progressTime = document.getElementById('progressTime');
             
-            try {
-                airtableConnector = new AirtableConnector();
-                console.log('AirtableConnector נוצר בהצלחה');
+            const updateProgress = () => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min((elapsed / duration) * 100, 100);
                 
-                // Set default values and save them to the connector
-                airtableConnector.baseId = 'appxvOE27PFbq5z9J';
-                airtableConnector.tableId = 'tbloSMtX2CV0yHAg8';
-                airtableConnector.apiKey = 'pat2Hg1btF5ar4zsu.eb7a21f8087b568b1db75402ae8522fec11d8797f959d92a1314175603099c99';
+                if (progressBar) {
+                    progressBar.style.width = progress + '%';
+                }
                 
-                console.log('ערכי ברירת מחדל נקבעו בהצלחה:', {
-                    baseId: airtableConnector.baseId,
-                    tableId: airtableConnector.tableId,
-                    apiKey: airtableConnector.apiKey ? 'קיים' : 'לא קיים'
-                });
+                if (progressTime) {
+                    const secondsElapsed = Math.floor(elapsed / 1000);
+                    const minutesElapsed = Math.floor(secondsElapsed / 60);
+                    const secondsRemaining = secondsElapsed % 60;
+                    progressTime.textContent = `${minutesElapsed}:${secondsRemaining.toString().padStart(2, '0')} / 2:00`;
+                }
                 
-                // Try to load cached data first
-                const hasCachedData = airtableConnector.loadCachedDataIfExists();
-                
-                // בכל מקרה - תמיד טען נתונים חדשים אחרי שנייה
-                setTimeout(() => {
-                    if (hasCachedData) {
-                        console.log('יש נתונים שמורים שמוצגים כעת, מתחיל טעינה אוטומטית לעדכון...');
-                    } else {
-                        console.log('אין נתונים שמורים, מתחיל טעינה אוטומטית...');
-                    }
-                    airtableConnector.loadData();
-                }, 1000); // המתנה של שנייה לאחר טעינת הדף
-                
-                // Close modal when clicking outside
-                document.getElementById('settingsModal').addEventListener('click', function(e) {
-                    if (e.target === this) {
-                        closeSettings();
-                    }
-                });
-                
-                console.log('אתחול הושלם בהצלחה');
-                
-            } catch (error) {
-                console.error('שגיאה באתחול:', error);
-            }
+                if (progress < 100) {
+                    requestAnimationFrame(updateProgress);
+                } else {
+                    // Progress complete - reload the page
+                    console.log('זמן ההמתנה הסתיים - מרענן את הדף...');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+                }
+            };
+            
+            updateProgress();
+        }
+
+        // Page initialization (before authentication)
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('דף נטען - ממתין לאימות...');
+            
+            // Add meta tags to prevent caching
+            const metaNoCache = document.createElement('meta');
+            metaNoCache.httpEquiv = 'Cache-Control';
+            metaNoCache.content = 'no-cache, no-store, must-revalidate';
+            document.head.appendChild(metaNoCache);
+            
+            const metaPragma = document.createElement('meta');
+            metaPragma.httpEquiv = 'Pragma';
+            metaPragma.content = 'no-cache';
+            document.head.appendChild(metaPragma);
+            
+            const metaExpires = document.createElement('meta');
+            metaExpires.httpEquiv = 'Expires';
+            metaExpires.content = '0';
+            document.head.appendChild(metaExpires);
+            
+            // Close modal when clicking outside
+            document.getElementById('settingsModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeSettings();
+                }
+            });
         });
     </script>
 </body>
