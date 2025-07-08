@@ -1057,12 +1057,8 @@
                 document.getElementById('originalDashboard').style.display = 'none';
                 
                 try {
-                    // Simple fetch with timestamp to bypass cache
-                    const timestamp = Date.now();
-                    const url = `${JSON_URL}?t=${timestamp}`;
-                    console.log('מנסה לטעון מ:', url);
-                    
-                    const response = await fetch(url);
+                    // Simple fetch without aggressive cache busting
+                    const response = await fetch(JSON_URL);
                     
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -1070,7 +1066,6 @@
                     
                     const data = await response.json();
                     console.log('נתונים נטענו בהצלחה');
-                    console.log('זמן עדכון אחרון:', data.lastUpdateLocal);
                     
                     // Update last update info
                     this.updateLastUpdateInfo(data);
@@ -1084,7 +1079,6 @@
                     
                 } catch (error) {
                     console.error('שגיאה בטעינת נתונים:', error);
-                    console.error('פרטי השגיאה:', error.message);
                     document.getElementById('dataLoading').style.display = 'none';
                     document.getElementById('errorMessage').style.display = 'block';
                     document.getElementById('errorDetails').textContent = error.message;
@@ -1817,68 +1811,6 @@
             };
             
             updateProgress();
-        }
-        
-        // Function to check for updates
-        async function checkForUpdates() {
-            const startTime = Date.now();
-            const maxWaitTime = 5 * 60 * 1000; // 5 minutes
-            let lastData = null;
-            
-            // Get current data
-            try {
-                const timestamp = Date.now();
-                const response = await fetch(`${JSON_URL}?t=${timestamp}&r=${Math.random()}`, {
-                    cache: 'no-cache',
-                    headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate'
-                    }
-                });
-                lastData = await response.json();
-                console.log('נתוני התחלה:', lastData.lastUpdateLocal);
-            } catch (error) {
-                console.log('Could not get initial data');
-            }
-            
-            const checkInterval = setInterval(async () => {
-                try {
-                    // Check if file was updated - force bypass cache
-                    const timestamp = Date.now();
-                    const response = await fetch(`${JSON_URL}?t=${timestamp}&r=${Math.random()}`, {
-                        cache: 'no-cache',
-                        headers: {
-                            'Cache-Control': 'no-cache, no-store, must-revalidate'
-                        }
-                    });
-                    const newData = await response.json();
-                    
-                    // Compare actual data, not just headers
-                    const dataChanged = lastData && (
-                        newData.lastUpdate !== lastData.lastUpdate ||
-                        newData.currentMonth.total !== lastData.currentMonth.total
-                    );
-                    
-                    if (dataChanged || (Date.now() - startTime) > maxWaitTime) {
-                        clearInterval(checkInterval);
-                        
-                        // Reload data
-                        await dashboardController.loadDataFromGitHub();
-                        
-                        // Update button
-                        const refreshBtn = document.getElementById('refreshBtn');
-                        refreshBtn.classList.remove('loading');
-                        
-                        if (dataChanged) {
-                            console.log('נתונים עודכנו בהצלחה!');
-                            console.log('עדכון חדש:', newData.lastUpdateLocal);
-                        } else {
-                            console.log('תם הזמן המוקצב לבדיקה');
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error checking for updates:', error);
-                }
-            }, 10000); // Check every 10 seconds
         }
 
         // Page initialization (before authentication)
