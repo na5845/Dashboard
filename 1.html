@@ -921,9 +921,22 @@
             }
 
             displayData(data) {
+                // Check if dashboard elements exist
+                if (!document.getElementById('originalDashboard')) {
+                    console.error('Dashboard elements not found');
+                    return;
+                }
+                
                 // Update totals
-                document.getElementById('currentMonthTotal').textContent = data.currentMonth.total.toLocaleString('he-IL');
-                document.getElementById('lastMonthTotal').textContent = data.lastMonth.total.toLocaleString('he-IL');
+                const currentMonthTotalEl = document.getElementById('currentMonthTotal');
+                const lastMonthTotalEl = document.getElementById('lastMonthTotal');
+                
+                if (currentMonthTotalEl) {
+                    currentMonthTotalEl.textContent = data.currentMonth.total.toLocaleString('he-IL');
+                }
+                if (lastMonthTotalEl) {
+                    lastMonthTotalEl.textContent = data.lastMonth.total.toLocaleString('he-IL');
+                }
 
                 // Update details
                 this.updatePaymentDetails('currentMonthPayments', data.currentMonth);
@@ -1394,18 +1407,104 @@
 
         // Manual refresh function
         window.handleRefresh = function() {
-            console.log('רענון ידני...');
+            console.log('רענון נתונים...');
             
             if (dashboardController) {
                 const refreshBtn = document.getElementById('refreshBtn');
                 refreshBtn.classList.add('loading');
                 
-                // Reload data from GitHub
-                dashboardController.loadDataFromGitHub().finally(() => {
-                    refreshBtn.classList.remove('loading');
-                });
+                // Show message
+                const lastUpdateEl = document.getElementById('lastUpdateInfo');
+                if (lastUpdateEl) {
+                    lastUpdateEl.innerHTML = `
+                        <span>מפעיל עדכון נתונים... התהליך יכול לקחת 2-3 דקות</span>
+                        <span class="update-status loading">⏳ בעיבוד</span>
+                    `;
+                    lastUpdateEl.style.display = 'flex';
+                }
+                
+                // Trigger GitHub Action
+                triggerGitHubAction();
             }
         };
+        
+        // Function to trigger GitHub Action
+        async function triggerGitHubAction() {
+            try {
+                // GitHub API to trigger workflow
+                const response = await fetch('https://api.github.com/repos/na5845/Dashboard/actions/workflows/daily-airtable-update.yml/dispatches', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/vnd.github+json',
+                        'Authorization': 'Bearer ghp_YOUR_TOKEN_HERE', // צריך טוקן - ראה הסבר למטה
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    },
+                    body: JSON.stringify({
+                        ref: 'main'
+                    })
+                });
+                
+                if (response.status === 204) {
+                    console.log('GitHub Action הופעל בהצלחה');
+                    
+                    // Wait and check for updates
+                    checkForUpdates();
+                } else {
+                    throw new Error('Failed to trigger action');
+                }
+            } catch (error) {
+                console.error('שגיאה בהפעלת GitHub Action:', error);
+                
+                // Alternative: Open GitHub Actions page
+                alert('להפעלת עדכון ידני:\n1. לחץ אישור\n2. בדף שייפתח, לחץ "Run workflow"\n3. חזור לכאן בעוד 2-3 דקות');
+                window.open('https://github.com/na5845/Dashboard/actions/workflows/daily-airtable-update.yml', '_blank');
+                
+                // Still check for updates
+                checkForUpdates();
+            }
+        }
+        
+        // Function to check for updates
+        async function checkForUpdates() {
+            const startTime = Date.now();
+            const maxWaitTime = 5 * 60 * 1000; // 5 minutes
+            let lastModified = null;
+            
+            // Get current last modified time
+            try {
+                const response = await fetch(JSON_URL + '?t=' + Date.now(), { method: 'HEAD' });
+                lastModified = response.headers.get('last-modified');
+            } catch (error) {
+                console.log('Could not get last modified time');
+            }
+            
+            const checkInterval = setInterval(async () => {
+                try {
+                    // Check if file was updated
+                    const response = await fetch(JSON_URL + '?t=' + Date.now(), { method: 'HEAD' });
+                    const newLastModified = response.headers.get('last-modified');
+                    
+                    if (newLastModified !== lastModified || (Date.now() - startTime) > maxWaitTime) {
+                        clearInterval(checkInterval);
+                        
+                        // Reload data
+                        await dashboardController.loadDataFromGitHub();
+                        
+                        // Update button
+                        const refreshBtn = document.getElementById('refreshBtn');
+                        refreshBtn.classList.remove('loading');
+                        
+                        if (newLastModified !== lastModified) {
+                            console.log('נתונים עודכנו בהצלחה!');
+                        } else {
+                            console.log('תם הזמן המוקצב לבדיקה');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking for updates:', error);
+                }
+            }, 10000); // Check every 10 seconds
+        }
 
         // Page initialization (before authentication)
         document.addEventListener('DOMContentLoaded', () => {
