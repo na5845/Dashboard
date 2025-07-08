@@ -1862,10 +1862,11 @@
                                 <span>GitHub Action הופעל בהצלחה! ממתין לעדכון...</span>
                                 <span class="update-status loading">⏳ בעיבוד</span>
                                 <div class="progress-container">
-                                    <div class="progress-bar-wrapper">
+                                    <div class="progress-text">טוען נתונים...</div>
+                                    <div class="progress-bar">
                                         <div class="progress-bar-fill" id="updateProgressBar"></div>
                                     </div>
-                                    <div class="progress-time" id="progressTime">0:00 / 2:00</div>
+                                    <div class="progress-percentage" id="progressPercentage">0%</div>
                                 </div>
                             </div>
                         `;
@@ -1900,10 +1901,11 @@
                             <span>אנא הפעל את העדכון ידנית בחלון שנפתח</span>
                             <span class="update-status loading">⏳ ממתין להפעלה ידנית</span>
                             <div class="progress-container">
-                                <div class="progress-bar-wrapper">
+                                <div class="progress-text">ממתין לעדכון...</div>
+                                <div class="progress-bar">
                                     <div class="progress-bar-fill" id="updateProgressBar"></div>
                                 </div>
-                                <div class="progress-time" id="progressTime">0:00 / 2:00</div>
+                                <div class="progress-percentage" id="progressPercentage">0%</div>
                             </div>
                         </div>
                     `;
@@ -1924,7 +1926,7 @@
             const duration = 2 * 60 * 1000; // 2 minutes in milliseconds
             const startTime = Date.now();
             const progressBar = document.getElementById('updateProgressBar');
-            const progressTime = document.getElementById('progressTime');
+            const progressPercentage = document.getElementById('progressPercentage');
             
             const updateProgress = () => {
                 const elapsed = Date.now() - startTime;
@@ -1934,11 +1936,8 @@
                     progressBar.style.width = progress + '%';
                 }
                 
-                if (progressTime) {
-                    const secondsElapsed = Math.floor(elapsed / 1000);
-                    const minutesElapsed = Math.floor(secondsElapsed / 60);
-                    const secondsRemaining = secondsElapsed % 60;
-                    progressTime.textContent = `${minutesElapsed}:${secondsRemaining.toString().padStart(2, '0')} / 2:00`;
+                if (progressPercentage) {
+                    progressPercentage.textContent = Math.round(progress) + '%';
                 }
                 
                 if (progress < 100) {
@@ -1946,6 +1945,9 @@
                 } else {
                     // Progress complete - reload the page
                     console.log('זמן ההמתנה הסתיים - מרענן את הדף...');
+                    if (progressPercentage) {
+                        progressPercentage.textContent = '100%';
+                    }
                     setTimeout(() => {
                         window.location.reload();
                     }, 500);
