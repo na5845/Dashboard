@@ -1718,18 +1718,29 @@
                 if (response.status === 204) {
                     console.log('GitHub Action הופעל בהצלחה');
                     
-                    // Show success message
+                    // Show success message with progress bar
                     const lastUpdateEl = document.getElementById('lastUpdateInfo');
                     if (lastUpdateEl) {
                         lastUpdateEl.innerHTML = `
-                            <span>GitHub Action הופעל בהצלחה! ממתין לעדכון...</span>
-                            <span class="update-status loading">⏳ בעיבוד</span>
+                            <div style="width: 100%; text-align: center;">
+                                <span>GitHub Action הופעל בהצלחה! ממתין לעדכון...</span>
+                                <span class="update-status loading">⏳ בעיבוד</span>
+                                <div class="progress-container">
+                                    <div class="progress-bar-wrapper">
+                                        <div class="progress-bar-fill" id="updateProgressBar"></div>
+                                    </div>
+                                    <div class="progress-time" id="progressTime">0:00 / 2:00</div>
+                                </div>
+                            </div>
                         `;
-                        lastUpdateEl.style.display = 'flex';
+                        lastUpdateEl.style.display = 'block';
+                        lastUpdateEl.style.flexDirection = 'column';
+                        lastUpdateEl.style.alignItems = 'center';
                     }
                     
-                    // Wait and check for updates
-                    checkForUpdates();
+                    // Start progress bar animation
+                    startProgressBar();
+                    
                 } else if (response.status === 401) {
                     // Token is invalid
                     localStorage.removeItem('github_pat_token');
@@ -1745,9 +1756,67 @@
                 alert('להפעלת עדכון ידני:\n1. לחץ אישור\n2. בדף שייפתח, לחץ "Run workflow"\n3. חזור לכאן בעוד 2-3 דקות');
                 window.open('https://github.com/na5845/Dashboard/actions/workflows/daily-airtable-update.yml', '_blank');
                 
-                // Still check for updates
-                checkForUpdates();
+                // Show progress bar for manual update too
+                const lastUpdateEl = document.getElementById('lastUpdateInfo');
+                if (lastUpdateEl) {
+                    lastUpdateEl.innerHTML = `
+                        <div style="width: 100%; text-align: center;">
+                            <span>אנא הפעל את העדכון ידנית בחלון שנפתח</span>
+                            <span class="update-status loading">⏳ ממתין להפעלה ידנית</span>
+                            <div class="progress-container">
+                                <div class="progress-bar-wrapper">
+                                    <div class="progress-bar-fill" id="updateProgressBar"></div>
+                                </div>
+                                <div class="progress-time" id="progressTime">0:00 / 2:00</div>
+                            </div>
+                        </div>
+                    `;
+                    lastUpdateEl.style.display = 'block';
+                    lastUpdateEl.style.flexDirection = 'column';
+                    lastUpdateEl.style.alignItems = 'center';
+                }
+                
+                // Start progress bar after a delay (to allow manual triggering)
+                setTimeout(() => {
+                    startProgressBar();
+                }, 5000); // 5 seconds delay
             }
+        }
+        
+        // Function to start progress bar
+        function startProgressBar() {
+            const duration = 2 * 60 * 1000; // 2 minutes in milliseconds
+            const startTime = Date.now();
+            const progressBar = document.getElementById('updateProgressBar');
+            const progressTime = document.getElementById('progressTime');
+            
+            const updateProgress = () => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min((elapsed / duration) * 100, 100);
+                
+                if (progressBar) {
+                    progressBar.style.width = progress + '%';
+                }
+                
+                if (progressTime) {
+                    const secondsElapsed = Math.floor(elapsed / 1000);
+                    const minutesElapsed = Math.floor(secondsElapsed / 60);
+                    const secondsRemaining = secondsElapsed % 60;
+                    progressTime.textContent = `${minutesElapsed}:${secondsRemaining.toString().padStart(2, '0')} / 2:00`;
+                }
+                
+                if (progress < 100) {
+                    requestAnimationFrame(updateProgress);
+                } else {
+                    // Progress complete - reload the page
+                    console.log('זמן ההמתנה הסתיים - מרענן את הדף...');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+                }
+            };
+            
+            updateProgress();
         }
         
         // Function to check for updates
