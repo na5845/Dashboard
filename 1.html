@@ -1057,8 +1057,9 @@
                 document.getElementById('originalDashboard').style.display = 'none';
                 
                 try {
-                    // Simple fetch without aggressive cache busting
-                    const response = await fetch(JSON_URL);
+                    // Add timestamp to bypass browser cache
+                    const timestamp = Date.now();
+                    const response = await fetch(`${JSON_URL}?t=${timestamp}`);
                     
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -1066,6 +1067,7 @@
                     
                     const data = await response.json();
                     console.log('נתונים נטענו בהצלחה');
+                    console.log('זמן עדכון אחרון:', data.lastUpdateLocal || 'לא זמין');
                     
                     // Update last update info
                     this.updateLastUpdateInfo(data);
