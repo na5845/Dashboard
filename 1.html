@@ -323,7 +323,7 @@
             gap: 10px;
         }
 
-        .refresh-button, .reports-button {
+        .refresh-button, .reports-button, .settings-button {
             border: none;
             padding: 15px 20px;
             border-radius: 50px;
@@ -367,7 +367,7 @@
             background: linear-gradient(135deg, #7d3c98 0%, #8e44ad 100%);
         }
 
-        .refresh-icon, .reports-icon {
+        .refresh-icon, .reports-icon, .settings-icon {
             width: 20px;
             height: 20px;
             transition: transform 0.3s ease;
@@ -1594,6 +1594,50 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log('דף נטען - ממתין לאימות...');
         });
+        
+        // Settings functions
+        function openSettings() {
+            const modal = document.getElementById('settingsModal');
+            const tokenInput = document.getElementById('githubToken');
+            
+            // Load saved token
+            const savedToken = localStorage.getItem('github_pat_token');
+            if (savedToken) {
+                tokenInput.value = savedToken;
+            }
+            
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeSettings() {
+            const modal = document.getElementById('settingsModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+        
+        function saveSettings() {
+            const tokenInput = document.getElementById('githubToken');
+            const token = tokenInput.value.trim();
+            
+            if (token) {
+                // Validate token format
+                if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
+                    alert('הטוקן חייב להתחיל ב-ghp_ או github_pat_');
+                    return;
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('github_pat_token', token);
+                alert('הטוקן נשמר בהצלחה!');
+            } else {
+                // Remove token if empty
+                localStorage.removeItem('github_pat_token');
+                alert('הטוקן הוסר');
+            }
+            
+            closeSettings();
+        }
     </script>
 </body>
 </html>
