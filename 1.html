@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>דוח תרומות - נתונים מעודכנים יומית</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCl9J7h5NOJ5aGHj3_BBw0jzm5iGSE7n20",
+            authDomain: "dashboard-3e2a5.firebaseapp.com",
+            projectId: "dashboard-3e2a5",
+            storageBucket: "dashboard-3e2a5.firebasestorage.app",
+            messagingSenderId: "682842596931",
+            appId: "1:682842596931:web:5c0a049a981d750e1e16f6",
+            measurementId: "G-NV42P569WJ"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Check if user is authenticated
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log('משתמש מחובר:', user.email);
+                // Show dashboard content
+                document.getElementById('dashboard-content').style.display = 'block';
+                document.getElementById('loading-auth').style.display = 'none';
+                
+                // Add user info to header
+                const userInfo = document.getElementById('user-info');
+                if (userInfo) {
+                    userInfo.innerHTML = `
+                        <span class="user-name">שלום, ${user.displayName || user.email}</span>
+                        <button class="logout-btn" onclick="handleLogout()">התנתק</button>
+                    `;
+                }
+                
+                // Initialize the dashboard after authentication
+                window.initializeDashboard();
+            } else {
+                console.log('משתמש לא מחובר - מפנה לדף התחברות');
+                // Redirect to login page
+                window.location.href = 'index.html';
+            }
+        });
+
+        // Logout function
+        window.handleLogout = async function() {
+            try {
+                await signOut(auth);
+                console.log('התנתקות הצליחה');
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('שגיאה בהתנתקות:', error);
+                alert('שגיאה בהתנתקות: ' + error.message);
+            }
+        };
+    </script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        /* Loading screen styles */
+        #loading-auth {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Data loading styles */
+        .data-loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .data-loading .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        /* Last update info */
+        .last-update-info {
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid #3498db;
+            border-radius: 10px;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #2c3e50;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .last-update-info strong {
+            color: #3498db;
+        }
+
+        .update-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .update-status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .update-status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .update-status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* User info positioned on blue background */
+        #user-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .user-name {
+            color: white;
+            font-weight: bold;
+            font-size: 1rem;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .logout-btn {
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+            backdrop-filter: blur(10px);
+        }
+
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.6);
+            background: rgba(192, 57, 43, 0.95);
+        }
+
+        /* Hide dashboard content initially */
+        #dashboard-content {
+            display: none;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            direction: rtl;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .header-content {
+            flex: 1;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+
+        .logo-container {
+            flex: 0 0 auto;
+            margin-right: 20px;
+        }
+
+        .logo-container img {
+            width: 150px;
+            height: 142px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            object-fit: contain;
+        }
+
+        .buttons-container {
+            flex: 0 0 auto;
+            margin-left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .refresh-button, .reports-button {
+            border: none;
+            padding: 15px 20px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-family: inherit;
+            width: 150px;
+            height: 50px;
+            justify-content: center;
+            color: white;
+            min-width: 150px;
+            min-height: 50px;
+            box-sizing: border-box;
+        }
+
+        .refresh-button {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
+        }
+
+        .refresh-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(46, 204, 113, 0.4);
+            background: linear-gradient(135deg, #229954 0%, #27ae60 100%);
+        }
+
+        .reports-button {
+            background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+            box-shadow: 0 8px 20px rgba(142, 68, 173, 0.3);
+        }
+
+        .reports-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(142, 68, 173, 0.4);
+            background: linear-gradient(135deg, #7d3c98 0%, #8e44ad 100%);
+        }
+
+        .refresh-icon, .reports-icon {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .refresh-button.loading {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            pointer-events: none;
+        }
+
+        .refresh-button.loading .refresh-icon {
+            animation: spin 1s linear infinite;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .error-message h3 {
+            margin-bottom: 10px;
+        }
+
+        /* Dashboard styles */
+        .overview-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .months-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .month-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .month-title {
+            color: #2c3e50;
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stats-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .source-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card.total {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+            box-shadow: 0 15px 35px rgba(255, 107, 107, 0.4);
+            transform: scale(1.05);
+            border: 3px solid #fff;
+            position: relative;
+        }
+
+        .stat-card.total:hover {
+            transform: scale(1.08) translateY(-5px);
+        }
+
+        .stat-card.total .amount {
+            font-size: 2.2rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-card.total h3 {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .stat-card.source {
+            background: linear-gradient(135deg, #6a1b9a 0%, #9c27b0 100%);
+            box-shadow: 0 10px 25px rgba(106, 27, 154, 0.3);
+        }
+
+        .stat-card.source:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(106, 27, 154, 0.4);
+        }
+
+        .divider {
+            margin: 25px 0;
+            position: relative;
+            text-align: center;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, #3498db 20%, #e74c3c 50%, #f39c12 80%, transparent 100%);
+            transform: translateY(-50%);
+        }
+
+        .divider-text {
+            background: white;
+            padding: 0 25px;
+            color: #7f8c8d;
+            font-weight: bold;
+            font-size: 1rem;
+            display: inline-block;
+            position: relative;
+        }
+
+        .stat-card h3 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .stat-card .amount {
+            font-size: 1.6rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container.daily {
+            grid-column: 1 / -1;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .daily-chart-wrapper {
+            position: relative;
+            height: 250px;
+            margin-bottom: 10px;
+        }
+
+        .chart-container {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            position: relative;
+        }
+
+        .chart-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            text-align: center;
+            border-bottom: 1px solid #3498db;
+            padding-bottom: 5px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 180px;
+            margin-bottom: 10px;
+        }
+
+        .pie-chart-wrapper {
+            position: relative;
+            height: 200px;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 1200px) {
+            .months-container {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            
+            .overview-charts {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+            
+            .charts-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            #user-info {
+                position: static;
+                top: auto;
+                left: auto;
+                order: 1;
+                margin-bottom: 20px;
+                justify-content: center;
+            }
+
+            .stats-details {
+                grid-template-columns: 1fr;
+            }
+
+            .source-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .header {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .header-content {
+                order: 2;
+            }
+
+            .buttons-container {
+                order: 3;
+                margin: 0;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .logo-container {
+                order: 4;
+                margin: 0;
+            }
+
+            .refresh-button, .reports-button {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- User info positioned on blue background -->
+    <div id="user-info">
+        <!-- User info will be populated by JavaScript -->
+    </div>
+
+    <!-- Loading screen while checking authentication -->
+    <div id="loading-auth">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>בודק הרשאות...</h2>
+            <p>נא המתן...</p>
+        </div>
+    </div>
+
+    <!-- Dashboard content - hidden until user is authenticated -->
+    <div id="dashboard-content">
+        <div class="container">
+            <div class="header">
+                <div class="logo-container">
+                    <img src="https://raw.githubusercontent.com/na5845/E/main/logo.png" alt="לוגו הארגון" id="organizationLogo">
+                </div>
+                
+                <div class="header-content">
+                    <h1>📊<br>דשבורד תרומות</h1>
+                    <p class="subtitle">קרן התורה - ניתוח נתונים מפורט</p>
+                </div>
+                
+                <div class="buttons-container">
+                    <button class="refresh-button" id="refreshBtn" onclick="handleRefresh()">
+                        <svg class="refresh-icon" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span id="refreshBtnText">רענן נתונים</span>
+                    </button>
+                    
+                    <a href="https://na5845.github.io/Dashboard/Reports.html#" class="reports-button">
+                        <svg class="reports-icon" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                        </svg>
+                        דוחות
+                    </a>
+                </div>
+            </div>
+
+            <!-- Last update info -->
+            <div id="lastUpdateInfo" class="last-update-info" style="display: none;">
+                <span>עדכון אחרון: <strong id="lastUpdateTime">טוען...</strong></span>
+                <span id="updateStatus" class="update-status loading">בודק...</span>
+            </div>
+
+            <!-- Data loading indicator -->
+            <div id="dataLoading" class="data-loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>טוען נתונים...</p>
+            </div>
+
+            <!-- Error message -->
+            <div id="errorMessage" class="error-message" style="display: none;">
+                <h3>שגיאה בטעינת הנתונים</h3>
+                <p id="errorDetails"></p>
+                <button onclick="handleRefresh()" style="margin-top: 10px; padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">נסה שוב</button>
+            </div>
+
+            <!-- Dashboard content -->
+            <div id="originalDashboard" style="display: none;">
+                <div class="divider">
+                    <span class="divider-text">📈 מגמות כלליות</span>
+                </div>
+
+                <div class="overview-charts">
+                    <div class="chart-container">
+                        <h2 class="chart-title">12 החודשים האחרונים</h2>
+                        <div class="chart-wrapper">
+                            <canvas id="yearlyTrendChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <h2 class="chart-title">מפתחת הקרן</h2>
+                        <div class="chart-wrapper">
+                            <canvas id="fundDevelopmentChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider">
+                    <span class="divider-text">📊 פירוט חודשי מפורט</span>
+                </div>
+
+                <div class="months-container">
+                    <!-- Current month -->
+                    <div class="month-section">
+                        <h2 class="month-title">מתחילת החודש</h2>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-card total">
+                                <h3>💰 סה"כ תרומות</h3>
+                                <div class="amount">₪<span class="formatted-number" id="currentMonthTotal">0</span></div>
+                            </div>
+                        </div>
+
+                        <div class="divider">
+                            <span class="divider-text">פירוט לפי אמצעי תשלום</span>
+                        </div>
+
+                        <div class="stats-details" id="currentMonthPayments">
+                            <!-- Will be updated dynamically -->
+                        </div>
+
+                        <div class="divider">
+                            <span class="divider-text">🎯 פירוט לפי מקור הכנסה</span>
+                        </div>
+
+                        <div class="source-details" id="currentMonthSources">
+                            <!-- Will be updated dynamically -->
+                        </div>
+
+                        <div class="divider">
+                            <span class="divider-text">📊 גרפים וניתוחים</span>
+                        </div>
+
+                        <div class="charts-grid">
+                            <div class="chart-container daily">
+                                <h2 class="chart-title">הכנסות יומיות - מתחילת החודש</h2>
+                                <div class="daily-chart-wrapper">
+                                    <canvas id="dailyChart1"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="chart-container">
+                                <h2 class="chart-title">התפלגות לפי מקור הכנסה</h2>
+                                <div class="pie-chart-wrapper">
+                                    <canvas id="sourceChart1"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="chart-container">
+                                <h2 class="chart-title">התפלגות לפי אמצעי תשלום</h2>
+                                <div class="pie-chart-wrapper">
+                                    <canvas id="paymentMethodChart1"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="chart-container">
+                                <h2 class="chart-title">פירוט קשר</h2>
+                                <div class="pie-chart-wrapper">
+                                    <canvas id="kesherBreakdownChart1"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="chart-container">
+                                <h2 class="chart-title">פירוט נדרים פלוס</h2>
+                                <div class="pie-chart-wrapper">
+                                    <canvas id="nedarimBreakdownChart1"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Last month -->
+                    <div class="month-section">
+                        <h2 class="month-title">חודש קודם</h2>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-card total">
+                                <h3>💰 סה"כ תרומות</h3>
+                                <div class="amount">₪<span class="formatted-number" id="lastMonthTotal">0</span></div>
+                            </div>
+                        </div>
+
+                        <div class="divider">
+                            <span class="divider-text">פירוט לפי אמצעי תשלום</span>
+                        </div>
+
+                        <div class="stats-details" id="lastMonthPayments">
+                            <!-- Will be updated dynamically -->
+                        </div>
+
+                        <div class="divider">
+                            <span class="divider-text">🎯 פירוט לפי מקור הכנסה</span>
+                        </div>
+
+                        <div class="source-details" id="lastMonthSources">
+                            <!-- Will be updated dynamically -->
+                        </div>
+
+                        <div class="divider">
+                            <span class="divider-text">📊 גרפים וניתוחים</span>
+                        </div>
+
+                        <div class="charts-grid">
+                            <div class="chart-container daily">
+                                <h2 class="chart-title">הכנסות יומיות - חודש קודם</h2>
+                                <div class="daily-chart-wrapper">
+                                    <canvas id="dailyChart2"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="chart-container">
+                                <h2 class="chart-title">התפלגות לפי אמצעי תשלום</h2>
+                                <div class="pie-chart-wrapper">
+                                    <canvas id="paymentMethodChart2"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="chart-container">
+                                <h2 class="chart-title">התפלגות לפי מקור הכנסה</h2>
+                                <div class="pie-chart-wrapper">
+                                    <canvas id="sourceChart2"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="chart-container">
+                                <h2 class="chart-title">פירוט קשר</h2>
+                                <div class="pie-chart-wrapper">
+                                    <canvas id="kesherBreakdownChart2"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="chart-container">
+                                <h2 class="chart-title">פירוט נדרים פלוס</h2>
+                                <div class="pie-chart-wrapper">
+                                    <canvas id="nedarimBreakdownChart2"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let charts = {};
+        const JSON_URL = 'https://raw.githubusercontent.com/na5845/Dashboard/main/data/daily-donations.json';
+
+        // Main dashboard controller
+        class DashboardController {
+            constructor() {
+                console.log('DashboardController נוצר');
+            }
+
+            async loadDataFromGitHub() {
+                console.log('טוען נתונים מ-GitHub...');
+                document.getElementById('dataLoading').style.display = 'block';
+                document.getElementById('errorMessage').style.display = 'none';
+                document.getElementById('originalDashboard').style.display = 'none';
+                
+                try {
+                    const response = await fetch(JSON_URL + '?t=' + Date.now()); // Add timestamp to bypass cache
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('נתונים נטענו בהצלחה');
+                    
+                    // Update last update info
+                    this.updateLastUpdateInfo(data);
+                    
+                    // Display the data
+                    this.displayData(data);
+                    
+                    // Hide loading, show dashboard
+                    document.getElementById('dataLoading').style.display = 'none';
+                    document.getElementById('originalDashboard').style.display = 'block';
+                    
+                } catch (error) {
+                    console.error('שגיאה בטעינת נתונים:', error);
+                    document.getElementById('dataLoading').style.display = 'none';
+                    document.getElementById('errorMessage').style.display = 'block';
+                    document.getElementById('errorDetails').textContent = error.message;
+                }
+            }
+
+            updateLastUpdateInfo(data) {
+                const lastUpdateEl = document.getElementById('lastUpdateTime');
+                const statusEl = document.getElementById('updateStatus');
+                const infoContainer = document.getElementById('lastUpdateInfo');
+                
+                if (data.lastUpdateLocal) {
+                    lastUpdateEl.textContent = data.lastUpdateLocal;
+                    
+                    // Check how old the data is
+                    const lastUpdate = new Date(data.lastUpdate);
+                    const now = new Date();
+                    const hoursDiff = Math.abs(now - lastUpdate) / 36e5;
+                    
+                    if (hoursDiff < 24) {
+                        statusEl.className = 'update-status success';
+                        statusEl.innerHTML = '✅ מעודכן';
+                    } else if (hoursDiff < 48) {
+                        statusEl.className = 'update-status loading';
+                        statusEl.innerHTML = '⚠️ לא עודכן היום';
+                    } else {
+                        statusEl.className = 'update-status error';
+                        statusEl.innerHTML = '❌ דרוש עדכון';
+                    }
+                    
+                    infoContainer.style.display = 'flex';
+                }
+            }
+
+            displayData(data) {
+                // Update totals
+                document.getElementById('currentMonthTotal').textContent = data.currentMonth.total.toLocaleString('he-IL');
+                document.getElementById('lastMonthTotal').textContent = data.lastMonth.total.toLocaleString('he-IL');
+
+                // Update details
+                this.updatePaymentDetails('currentMonthPayments', data.currentMonth);
+                this.updatePaymentDetails('lastMonthPayments', data.lastMonth);
+                this.updateSourceDetails('currentMonthSources', data.currentMonth);
+                this.updateSourceDetails('lastMonthSources', data.lastMonth);
+
+                // Create charts
+                this.createDailyChart('dailyChart1', data.currentMonth.daily, 'החודש הנוכחי');
+                this.createDailyChart('dailyChart2', data.lastMonth.daily, 'החודש הקודם');
+                this.createPaymentChart('paymentMethodChart1', data.currentMonth.categories);
+                this.createPaymentChart('paymentMethodChart2', data.lastMonth.categories);
+                this.createSourceChart('sourceChart1', data.currentMonth.organizations);
+                this.createSourceChart('sourceChart2', data.lastMonth.organizations);
+                this.createOrganizationBreakdownChart('kesherBreakdownChart1', data.currentMonth.categoryOrg, 'קשר');
+                this.createOrganizationBreakdownChart('kesherBreakdownChart2', data.lastMonth.categoryOrg, 'קשר');
+                this.createOrganizationBreakdownChart('nedarimBreakdownChart1', data.currentMonth.categoryOrg, 'נדרים פלוס');
+                this.createOrganizationBreakdownChart('nedarimBreakdownChart2', data.lastMonth.categoryOrg, 'נדרים פלוס');
+                this.createMonthlyTrendChart(data.monthlyData);
+                this.createYearlyChart(data.yearlyData);
+
+                this.formatNumbers();
+            }
+
+            createOrganizationBreakdownChart(canvasId, categoryOrgData, orgName) {
+                const ctx = document.getElementById(canvasId);
+                if (!ctx) return;
+
+                const orgData = {};
+                Object.entries(categoryOrgData).forEach(([key, value]) => {
+                    if (key.startsWith(`${orgName}_`)) {
+                        const category = key.replace(`${orgName}_`, '');
+                        orgData[category] = value;
+                    }
+                });
+
+                if (Object.keys(orgData).length === 0) {
+                    orgData['אין נתונים'] = 0;
+                }
+
+                if (charts[canvasId]) {
+                    charts[canvasId].destroy();
+                }
+
+                const colors = orgName === 'קשר' ? 
+                    ['#3498db', '#e74c3c', '#f39c12', '#2ecc71'] : 
+                    ['#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
+
+                charts[canvasId] = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(orgData),
+                        datasets: [{
+                            data: Object.values(orgData),
+                            backgroundColor: colors.slice(0, Object.keys(orgData).length),
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 8,
+                                    font: { size: 8 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+                                        return `${label}: ₪${value.toLocaleString('he-IL')} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            updateSourceDetails(containerId, monthData) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+
+                const organizations = monthData.organizations;
+                const incomeSources = ['קשר', 'נדרים פלוס', 'אחר'];
+                
+                container.innerHTML = '';
+
+                incomeSources.forEach(sourceName => {
+                    const amount = organizations[sourceName] || 0;
+                    container.innerHTML += `
+                        <div class="stat-card source">
+                            <h3>${sourceName}</h3>
+                            <div class="amount">₪${amount.toLocaleString('he-IL')}</div>
+                        </div>
+                    `;
+                });
+            }
+
+            updatePaymentDetails(containerId, monthData) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+
+                const categories = monthData.categories;
+                
+                // Always show these 4 payment methods
+                const paymentMethods = ['אשראי', 'בנקאי', 'מזומן','העברות והמחאות'];
+                
+                container.innerHTML = '';
+
+                paymentMethods.forEach(methodName => {
+                    let amount = categories[methodName] || 0;
+                    
+                    // For 'העברות והמחאות', combine both 'העברה' and 'המחאה'
+                    if (methodName === 'העברות והמחאות') {
+                        amount = (categories['העברה'] || 0) + (categories['המחאה'] || 0);
+                    }
+                    
+                    container.innerHTML += `
+                        <div class="stat-card">
+                            <h3>${methodName}</h3>
+                            <div class="amount">₪${amount.toLocaleString('he-IL')}</div>
+                        </div>
+                    `;
+                });
+            }
+
+            createPaymentChart(canvasId, categoriesData) {
+                const ctx = document.getElementById(canvasId);
+                if (!ctx) return;
+
+                if (charts[canvasId]) {
+                    charts[canvasId].destroy();
+                }
+
+                if (!categoriesData || Object.keys(categoriesData).length === 0) {
+                    // Create empty chart
+                    charts[canvasId] = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: ['אין נתונים'],
+                            datasets: [{
+                                data: [1],
+                                backgroundColor: ['#cccccc'],
+                                borderWidth: 2,
+                                borderColor: '#fff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            }
+                        }
+                    });
+                    return;
+                }
+
+                const colors = ['#3498db', '#e74c3c', '#f39c12', '#2ecc71', '#9b59b6', '#1abc9c'];
+
+                charts[canvasId] = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(categoriesData),
+                        datasets: [{
+                            data: Object.values(categoriesData),
+                            backgroundColor: colors.slice(0, Object.keys(categoriesData).length),
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 8,
+                                    font: { size: 8 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return `${label}: ₪${value.toLocaleString('he-IL')} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            createSourceChart(canvasId, organizationsData) {
+                const ctx = document.getElementById(canvasId);
+                if (!ctx) return;
+
+                if (charts[canvasId]) {
+                    charts[canvasId].destroy();
+                }
+
+                if (!organizationsData || Object.keys(organizationsData).length === 0) {
+                    // Create empty chart
+                    charts[canvasId] = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: ['אין נתונים'],
+                            datasets: [{
+                                data: [1],
+                                backgroundColor: ['#cccccc'],
+                                borderWidth: 2,
+                                borderColor: '#fff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            }
+                        }
+                    });
+                    return;
+                }
+
+                const colors = ['#9b59b6', '#1abc9c', '#34495e', '#e67e22', '#95a5a6'];
+
+                charts[canvasId] = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(organizationsData),
+                        datasets: [{
+                            data: Object.values(organizationsData),
+                            backgroundColor: colors.slice(0, Object.keys(organizationsData).length),
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 8,
+                                    font: { size: 8 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return `${label}: ₪${value.toLocaleString()} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            createDailyChart(canvasId, dailyData, title) {
+                const ctx = document.getElementById(canvasId);
+                if (!ctx) return;
+
+                const daysInMonth = 31;
+                const labels = [];
+                const data = [];
+                
+                for (let day = 1; day <= daysInMonth; day++) {
+                    labels.push(day.toString());
+                    data.push(dailyData[day] || 0);
+                }
+
+                if (charts[canvasId]) {
+                    charts[canvasId].destroy();
+                }
+
+                charts[canvasId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: `תרומות יומיות - ${title}`,
+                            data: data,
+                            backgroundColor: canvasId === 'dailyChart1' ? '#3498db' : '#e74c3c',
+                            borderColor: canvasId === 'dailyChart1' ? '#2980b9' : '#c0392b',
+                            borderWidth: 1,
+                            borderRadius: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₪' + (value >= 1000 ? (value / 1000) + 'K' : value);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            createMonthlyTrendChart(monthlyData) {
+                const ctx = document.getElementById('yearlyTrendChart');
+                if (!ctx) return;
+
+                if (charts.yearlyTrendChart) {
+                    charts.yearlyTrendChart.destroy();
+                }
+
+                if (!monthlyData || Object.keys(monthlyData).length === 0) {
+                    monthlyData = { 'אין נתונים': 0 };
+                }
+
+                // Sort months chronologically
+                const sortedMonths = Object.keys(monthlyData).sort((a, b) => {
+                    // Convert MM-YYYY to Date for proper sorting
+                    const [monthA, yearA] = a.split('-');
+                    const [monthB, yearB] = b.split('-');
+                    const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+                    const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
+                    return dateA - dateB;
+                });
+
+                const sortedData = sortedMonths.map(month => monthlyData[month]);
+
+                charts.yearlyTrendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: sortedMonths,
+                        datasets: [{
+                            label: 'תרומות חודשיות',
+                            data: sortedData,
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#3498db',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 6,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₪' + (value / 1000) + 'K';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            createYearlyChart(yearlyData) {
+                const ctx = document.getElementById('fundDevelopmentChart');
+                if (!ctx) return;
+
+                if (charts.fundDevelopmentChart) {
+                    charts.fundDevelopmentChart.destroy();
+                }
+
+                const colors = ['#95a5a6', '#1abc9c', '#3498db', '#e74c3c', '#f39c12'];
+
+                charts.fundDevelopmentChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(yearlyData),
+                        datasets: [{
+                            label: 'תרומות שנתיות',
+                            data: Object.values(yearlyData),
+                            backgroundColor: colors.slice(0, Object.keys(yearlyData).length),
+                            borderColor: colors.slice(0, Object.keys(yearlyData).length).map(color => color.replace('a6', '8d')),
+                            borderWidth: 1,
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₪' + (value / 1000) + 'K';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            formatNumbers() {
+                document.querySelectorAll('.formatted-number').forEach(element => {
+                    const number = parseInt(element.textContent.replace(/,/g, ''));
+                    if (!isNaN(number)) {
+                        element.textContent = number.toLocaleString('he-IL');
+                    }
+                });
+                
+                // Also format all .amount elements
+                document.querySelectorAll('.amount').forEach(element => {
+                    const text = element.textContent;
+                    const match = text.match(/₪([0-9,]+)/);
+                    if (match) {
+                        const number = parseInt(match[1].replace(/,/g, ''));
+                        if (!isNaN(number)) {
+                            element.textContent = text.replace(/₪[0-9,]+/, '₪' + number.toLocaleString('he-IL'));
+                        }
+                    }
+                });
+            }
+        }
+
+        // Create global instance
+        let dashboardController;
+
+        // Initialize dashboard function (called after authentication)
+        window.initializeDashboard = function() {
+            console.log('מאתחל דשבורד...');
+            
+            dashboardController = new DashboardController();
+            
+            // Load data immediately
+            dashboardController.loadDataFromGitHub();
+        };
+
+        // Manual refresh function
+        window.handleRefresh = function() {
+            console.log('רענון ידני...');
+            
+            if (dashboardController) {
+                const refreshBtn = document.getElementById('refreshBtn');
+                refreshBtn.classList.add('loading');
+                
+                // Reload data from GitHub
+                dashboardController.loadDataFromGitHub().finally(() => {
+                    refreshBtn.classList.remove('loading');
+                });
+            }
+        };
+
+        // Page initialization (before authentication)
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('דף נטען - ממתין לאימות...');
+        });
+    </script>
+</body>
+</html>
