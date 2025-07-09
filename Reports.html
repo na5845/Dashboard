@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="-1">
+    <meta http-equiv="Clear-Site-Data" content="cache, storage">
     <title>מערכת דוחות - קרן התורה</title>
     
     <!-- Firebase SDKs -->
@@ -1188,6 +1192,7 @@
             showApiStatus('טוען נתונים מ-GitHub...', 'loading');
 
             try {
+                // תמיד השתמש ב-GitHub API כדי לקבל את ה-SHA
                 const response = await fetch(`https://api.github.com/repos/${config.username}/${config.repo}/contents/${config.filePath}`, {
                     headers: {
                         'Authorization': `token ${config.token}`,
@@ -1197,7 +1202,7 @@
 
                 if (response.ok) {
                     const fileData = await response.json();
-                    gitHubFileSha = fileData.sha;
+                    gitHubFileSha = fileData.sha; // שמירת ה-SHA
                     
                     // תיקון בעיית הקידוד
                     const content = decodeURIComponent(escape(atob(fileData.content)));
@@ -1216,7 +1221,7 @@
                 } else if (response.status === 404) {
                     // קובץ לא קיים - ניצור נתונים ברירת מחדל
                     reportsData = createDefaultData();
-                    gitHubFileSha = null;
+                    gitHubFileSha = null; // אין SHA כי הקובץ לא קיים
                     
                     showApiStatus('קובץ לא נמצא. נוצרו נתונים ברירת מחדל.', 'success');
                     
@@ -1264,78 +1269,177 @@
 
         // טעינה אוטומטית מ-GitHub מיד בפתיחת הדף
         async function autoLoadFromGitHub() {
-            console.log('🔄 מתחיל טעינה אוטומטית...');
+            console.log('🔄 טוען נתונים מ-GitHub...', new Date().toISOString());
             
-            // טעינת הגדרות מהזיכרון
-            const savedConfig = localStorage.getItem('github-config');
-            if (!savedConfig) {
-                console.log('❌ אין הגדרות GitHub שמורות');
-                reportsData = createDefaultData();
-                displayReportsForYear(currentYear);
-                return;
-            }
-
+            // אפס את המשתנה הגלובלי
+            reportsData = {};
+            
             try {
-                const config = JSON.parse(savedConfig);
-                console.log('📋 הגדרות GitHub נמצאו:', config.username, config.repo);
+                // יצירת URL ייחודי לחלוטין
+                const uniqueId = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
                 
-                if (config.username && config.repo && config.token && config.filePath) {
-                    console.log('🔗 מנסה לטעון מ-GitHub...');
-                    
-                    const response = await fetch(`https://api.github.com/repos/${config.username}/${config.repo}/contents/${config.filePath}`, {
-                        headers: {
-                            'Authorization': `token ${config.token}`,
-                            'Accept': 'application/vnd.github.v3+json'
-                        }
-                    });
-
-                    if (response.ok) {
-                        const fileData = await response.json();
-                        gitHubFileSha = fileData.sha;
-                        
-                        // תיקון בעיית הקידוד
-                        const content = decodeURIComponent(escape(atob(fileData.content)));
-                        reportsData = JSON.parse(content);
-                        
-                        console.log('✅ נתונים נטענו בהצלחה מ-GitHub!');
-                        displayReportsForYear(currentYear);
-                        
-                        // הצגת הודעה קצרה למשתמש
-                        const statusEl = document.getElementById('api-status');
-                        if (statusEl) {
-                            statusEl.textContent = '✅ נתונים עודכנו מ-GitHub';
-                            statusEl.className = 'api-status api-success';
-                            statusEl.style.display = 'block';
-                            setTimeout(() => {
-                                statusEl.style.display = 'none';
-                            }, 2000);
-                        }
-                        
-                    } else if (response.status === 404) {
-                        console.log('📄 קובץ לא נמצא - יוצר נתונים ברירת מחדל');
-                        reportsData = createDefaultData();
-                        gitHubFileSha = null;
-                        displayReportsForYear(currentYear);
-                    } else {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                // שיטה 1: GitHub API (הכי אמין)
+                console.log('מנסה GitHub API...');
+                const apiUrl = `https://api.github.com/repos/na5845/Dashboard/contents/data/reports.json`;
+                let response = await fetch(`${apiUrl}?ref=main&_=${uniqueId}`, {
+                    method: 'GET',
+                    cache: 'no-store',
+                    headers: {
+                        'Accept': 'application/vnd.github.v3+json'
                     }
-                } else {
-                    console.log('❌ הגדרות GitHub לא שלמות');
-                    reportsData = createDefaultData();
+                });
+                
+                if (response.ok) {
+                    const apiData = await response.json();
+                    console.log('📄 קיבלתי תשובה מ-API, SHA:', apiData.sha);
+                    
+                    // תיקון בעיית הקידוד - שימוש בשיטה הנכונה
+                    const content = apiData.content.replace(/\n/g, '');
+                    const decodedContent = decodeURIComponent(escape(atob(content)));
+                    reportsData = JSON.parse(decodedContent);
+                    
+                    gitHubFileSha = apiData.sha;
+                    console.log('✅ נתונים נטענו מ-GitHub API:', new Date().toISOString());
+                    console.log('📊 מספר שנים שנטענו:', Object.keys(reportsData).length);
                     displayReportsForYear(currentYear);
+                    return;
+                } else {
+                    console.error('❌ GitHub API נכשל:', response.status, response.statusText);
                 }
-            } catch (e) {
-                console.log('❌ שגיאה בטעינה אוטומטית:', e.message);
+                
+                // שיטה 2: JSDelivr CDN (מתעדכן מהר)
+                console.log('מנסה JSDelivr CDN...');
+                const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/na5845/Dashboard@main/data/reports.json`;
+                response = await fetch(`${jsdelivrUrl}?t=${uniqueId}`, {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                
+                if (response.ok) {
+                    reportsData = await response.json();
+                    console.log('✅ נתונים נטענו מ-JSDelivr:', new Date().toISOString());
+                    console.log('📊 מספר שנים שנטענו:', Object.keys(reportsData).length);
+                    displayReportsForYear(currentYear);
+                    return;
+                } else {
+                    console.error('❌ JSDelivr נכשל:', response.status, response.statusText);
+                }
+                
+                // שיטה 3: GitHub Pages
+                console.log('מנסה GitHub Pages...');
+                const githubPagesUrl = `https://na5845.github.io/Dashboard/data/reports.json`;
+                response = await fetch(`${githubPagesUrl}?cachebuster=${uniqueId}`, {
+                    method: 'GET',
+                    cache: 'reload',
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    reportsData = await response.json();
+                    console.log('✅ נתונים נטענו מ-GitHub Pages:', new Date().toISOString());
+                    console.log('📊 מספר שנים שנטענו:', Object.keys(reportsData).length);
+                    displayReportsForYear(currentYear);
+                    return;
+                } else {
+                    console.error('❌ GitHub Pages נכשל:', response.status, response.statusText);
+                }
+                
+                // שיטה 4: Proxy service כמוצא אחרון
+                console.log('מנסה proxy service...');
+                const rawUrl = 'https://raw.githubusercontent.com/na5845/Dashboard/main/data/reports.json';
+                const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(rawUrl);
+                response = await fetch(`${proxyUrl}&_=${uniqueId}`, {
+                    method: 'GET',
+                    cache: 'no-store'
+                });
+                
+                if (response.ok) {
+                    reportsData = await response.json();
+                    console.log('✅ נתונים נטענו דרך proxy:', new Date().toISOString());
+                    console.log('📊 מספר שנים שנטענו:', Object.keys(reportsData).length);
+                    displayReportsForYear(currentYear);
+                    return;
+                } else {
+                    console.error('❌ Proxy service נכשל:', response.status, response.statusText);
+                }
+                
+                throw new Error('כל שיטות הטעינה נכשלו');
+                
+            } catch (error) {
+                console.error('❌ שגיאה בטעינת נתונים:', error);
+                console.error('Stack trace:', error.stack);
+                
+                // נסה לטעון עם הגדרות GitHub אם קיימות
+                const savedConfig = localStorage.getItem('github-config');
+                if (savedConfig) {
+                    try {
+                        const config = JSON.parse(savedConfig);
+                        if (config.token) {
+                            console.log('🔑 מנסה עם טוקן GitHub...');
+                            const response = await fetch(`https://api.github.com/repos/na5845/Dashboard/contents/data/reports.json`, {
+                                headers: {
+                                    'Authorization': `token ${config.token}`,
+                                    'Accept': 'application/vnd.github.v3+json'
+                                }
+                            });
+                            
+                            if (response.ok) {
+                                const apiData = await response.json();
+                                // תיקון בעיית הקידוד גם כאן
+                                const content = apiData.content.replace(/\n/g, '');
+                                const decodedContent = decodeURIComponent(escape(atob(content)));
+                                reportsData = JSON.parse(decodedContent);
+                                
+                                gitHubFileSha = apiData.sha;
+                                console.log('✅ נתונים נטענו עם טוקן!');
+                                displayReportsForYear(currentYear);
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                        console.error('שגיאה בטעינה עם טוקן:', e);
+                    }
+                }
+                
+                // יצירת נתוני ברירת מחדל רק אם אין ברירה
+                console.log('📝 יוצר נתוני ברירת מחדל...');
                 reportsData = createDefaultData();
                 displayReportsForYear(currentYear);
+                
+                // הצג הודעה למשתמש
+                alert('לא ניתן לטעון את נתוני הדוחות מהשרת.\nמוצגים נתוני דוגמה.\n\nאפשרויות:\n1. בדוק את החיבור לאינטרנט\n2. נסה שוב בעוד מספר דקות\n3. הגדר טוקן GitHub בהגדרות');
             }
         }
+
         async function saveToGitHub() {
             const config = getGitHubConfig();
             
             if (!config.username || !config.repo || !config.token || !config.filePath) {
                 showApiStatus('נא ודא שכל פרטי GitHub מוגדרים', 'error');
                 return;
+            }
+
+            // אם אין SHA, נצטרך לקבל אותו קודם
+            if (!gitHubFileSha) {
+                showApiStatus('מאחזר נתוני קובץ...', 'loading');
+                try {
+                    const getResponse = await fetch(`https://api.github.com/repos/${config.username}/${config.repo}/contents/${config.filePath}`, {
+                        headers: {
+                            'Authorization': `token ${config.token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+                    
+                    if (getResponse.ok) {
+                        const fileData = await getResponse.json();
+                        gitHubFileSha = fileData.sha;
+                    }
+                    // אם הקובץ לא קיים, זה בסדר - ניצור אותו
+                } catch (error) {
+                    console.log('הקובץ עדיין לא קיים, ייווצר כעת');
+                }
             }
 
             // עדכון הנתונים לפני השמירה
@@ -1376,6 +1480,7 @@
                     branch: 'main'
                 };
 
+                // הוסף SHA רק אם קיים
                 if (gitHubFileSha) {
                     updateData.sha = gitHubFileSha;
                 }
@@ -1392,7 +1497,7 @@
 
                 if (response.ok) {
                     const responseData = await response.json();
-                    gitHubFileSha = responseData.content.sha;
+                    gitHubFileSha = responseData.content.sha; // עדכון ה-SHA החדש
                     
                     showApiStatus('✅ השינויים נשמרו בהצלחה ל-GitHub!', 'success');
                     displayReportsForYear(currentYear);
@@ -1618,15 +1723,58 @@
 
         // אתחול הדף
         document.addEventListener('DOMContentLoaded', async function() {
-            // טעינה אוטומטית מ-GitHub (אם קיימת הגדרה)
+            console.log('🚀 אתחול הדף...', new Date().toISOString());
+            
+            // כפה reload אם הדף נטען מ-back/forward cache
+            window.addEventListener('pageshow', function(event) {
+                if (event.persisted) {
+                    console.log('🔄 הדף נטען מ-cache, מרענן...');
+                    window.location.reload(true);
+                }
+            });
+            
+            // מנע שמירה ב-back/forward cache
+            window.addEventListener('unload', function() {});
+            
+            // נקה את כל סוגי האחסון
+            try {
+                // נקה service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                    }
+                }
+                
+                // נקה caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                }
+                
+                // נקה את כל ה-sessionStorage
+                sessionStorage.clear();
+                
+                // נקה רק נתוני דוחות מ-localStorage
+                const keysToKeep = ['github-config', 'github_pat_token'];
+                Object.keys(localStorage).forEach(key => {
+                    if (!keysToKeep.some(keepKey => key.includes(keepKey))) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                
+                console.log('✅ כל האחסונים נוקו');
+            } catch (e) {
+                console.error('שגיאה בניקוי אחסון:', e);
+            }
+            
+            // אפס משתנים גלובליים
+            reportsData = {};
+            gitHubFileSha = null;
+            
+            // טעינה מחדש של הנתונים
             await autoLoadFromGitHub();
             
-            // אם לא נטענו נתונים מ-GitHub, השתמש בברירת מחדל
-            if (!reportsData || Object.keys(reportsData).length === 0) {
-                reportsData = createDefaultData();
-                displayReportsForYear(currentYear);
-            }
-
             // פונקציונליות החלפת שנים בתצוגה הראשית
             document.querySelectorAll('.year-tab').forEach(tab => {
                 tab.addEventListener('click', function() {
@@ -1642,7 +1790,7 @@
                 });
             });
 
-            // אתחול עורכי הנתונים עם שמירה אוטומטית
+            // אתחול עורכי הנתונים עם שמירה אוטומטית (רק להגדרות GitHub)
             ['github-username', 'github-repo', 'github-file', 'github-token'].forEach(id => {
                 const element = document.getElementById(id);
                 if (element) {
@@ -1657,6 +1805,12 @@
                     closeSettings();
                 }
             });
+            
+            // הוסף reload כל דקה (אופציונלי - אפשר להסיר אם לא רוצים)
+            // setInterval(() => {
+            //     console.log('🔄 רענון אוטומטי של נתונים...');
+            //     autoLoadFromGitHub();
+            // }, 60000); // כל 60 שניות
         });
     </script>
 </body>
