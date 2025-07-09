@@ -1292,8 +1292,12 @@
                 if (response.ok) {
                     const apiData = await response.json();
                     console.log('📄 קיבלתי תשובה מ-API, SHA:', apiData.sha);
-                    const content = atob(apiData.content.replace(/\n/g, ''));
-                    reportsData = JSON.parse(content);
+                    
+                    // תיקון בעיית הקידוד - שימוש בשיטה הנכונה
+                    const content = apiData.content.replace(/\n/g, '');
+                    const decodedContent = decodeURIComponent(escape(atob(content)));
+                    reportsData = JSON.parse(decodedContent);
+                    
                     gitHubFileSha = apiData.sha;
                     console.log('✅ נתונים נטענו מ-GitHub API:', new Date().toISOString());
                     console.log('📊 מספר שנים שנטענו:', Object.keys(reportsData).length);
@@ -1383,8 +1387,11 @@
                             
                             if (response.ok) {
                                 const apiData = await response.json();
-                                const content = atob(apiData.content.replace(/\n/g, ''));
-                                reportsData = JSON.parse(content);
+                                // תיקון בעיית הקידוד גם כאן
+                                const content = apiData.content.replace(/\n/g, '');
+                                const decodedContent = decodeURIComponent(escape(atob(content)));
+                                reportsData = JSON.parse(decodedContent);
+                                
                                 gitHubFileSha = apiData.sha;
                                 console.log('✅ נתונים נטענו עם טוקן!');
                                 displayReportsForYear(currentYear);
