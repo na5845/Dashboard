@@ -1274,31 +1274,45 @@
             // אפס את המשתנה הגלובלי
             reportsData = {};
             
-            // נקה את כל ה-fetch cache
-            if ('caches' in window) {
-                try {
-                    const cacheNames = await caches.keys();
-                    await Promise.all(cacheNames.map(name => caches.delete(name)));
-                    console.log('✅ Cache נוקה');
-                } catch (e) {
-                    console.error('שגיאה בניקוי cache:', e);
-                }
-            }
-            
             try {
                 // יצירת URL ייחודי לחלוטין
                 const uniqueId = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
                 
-                // שיטה 1: GitHub Raw Content עם URL ייחודי
-                console.log('מנסה לטעון מ-GitHub Raw...');
-                const rawUrl = `https://raw.githubusercontent.com/na5845/Dashboard/main/data/reports.json`;
-                let response = await fetch(`${rawUrl}?cachebuster=${uniqueId}`, {
+                // שיטה 1: GitHub API (הכי אמין)
+                console.log('מנסה GitHub API...');
+                const apiUrl = `https://api.github.com/repos/na5845/Dashboard/contents/data/reports.json`;
+                let response = await fetch(`${apiUrl}?ref=main&t=${uniqueId}`, {
                     method: 'GET',
                     cache: 'no-store',
-                    mode: 'cors',
-                    credentials: 'omit',
                     headers: {
-                        'Cache-Control': 'no-cache, no-store, max-age=0',
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Cache-Control': 'no-cache',
+                        'If-None-Match': '', // מונע שימוש ב-ETag
+                        'If-Modified-Since': '0' // מונע שימוש בתאריך שינוי
+                    }
+                });
+                
+                if (response.ok) {
+                    const apiData = await response.json();
+                    console.log('📄 קיבלתי תשובה מ-API, SHA:', apiData.sha);
+                    const content = atob(apiData.content.replace(/\n/g, ''));
+                    reportsData = JSON.parse(content);
+                    gitHubFileSha = apiData.sha;
+                    console.log('✅ נתונים נטענו מ-GitHub API:', new Date().toISOString());
+                    console.log('📊 מספר שנים שנטענו:', Object.keys(reportsData).length);
+                    displayReportsForYear(currentYear);
+                    return;
+                }
+                
+                // שיטה 2: GitHub Pages עם reload מלא
+                console.log('מנסה GitHub Pages...');
+                const githubPagesUrl = `https://na5845.github.io/Dashboard/data/reports.json`;
+                response = await fetch(`${githubPagesUrl}?cachebuster=${uniqueId}`, {
+                    method: 'GET',
+                    cache: 'reload', // כופה טעינה מחדש מהשרת
+                    mode: 'cors',
+                    headers: {
+                        'Cache-Control': 'no-cache, max-age=0',
                         'Pragma': 'no-cache'
                     }
                 });
@@ -1306,71 +1320,25 @@
                 if (response.ok) {
                     const text = await response.text();
                     reportsData = JSON.parse(text);
-                    console.log('✅ נתונים נטענו מ-GitHub Raw:', Object.keys(reportsData));
+                    console.log('✅ נתונים נטענו מ-GitHub Pages:', new Date().toISOString());
                     displayReportsForYear(currentYear);
                     return;
                 }
                 
-                // שיטה 2: GitHub Pages עם bypass cache
-                console.log('מנסה GitHub Pages...');
-                const githubPagesUrl = `https://na5845.github.io/Dashboard/data/reports.json`;
-                response = await fetch(`${githubPagesUrl}?v=${uniqueId}`, {
-                    method: 'GET',
-                    cache: 'reload', // כופה טעינה מחדש
-                    mode: 'cors',
-                    headers: new Headers({
-                        'pragma': 'no-cache',
-                        'cache-control': 'no-cache'
-                    })
-                });
-                
-                if (response.ok) {
-                    const text = await response.text();
-                    reportsData = JSON.parse(text);
-                    console.log('✅ נתונים נטענו מ-GitHub Pages:', Object.keys(reportsData));
-                    displayReportsForYear(currentYear);
-                    return;
-                }
-                
-                // שיטה 3: GitHub API
-                console.log('מנסה GitHub API...');
-                const apiUrl = `https://api.github.com/repos/na5845/Dashboard/contents/data/reports.json`;
-                response = await fetch(`${apiUrl}?ref=main&t=${uniqueId}`, {
-                    method: 'GET',
-                    cache: 'no-store',
-                    headers: {
-                        'Accept': 'application/vnd.github.v3.raw',
-                        'Cache-Control': 'no-cache'
-                    }
-                });
-                
-                if (response.ok) {
-                    // אם קיבלנו raw response
-                    const contentType = response.headers.get('content-type');
-                    if (contentType && contentType.includes('application/json')) {
-                        reportsData = await response.json();
-                    } else {
-                        // אם קיבלנו base64
-                        const apiData = await response.json();
-                        const content = atob(apiData.content.replace(/\n/g, ''));
-                        reportsData = JSON.parse(content);
-                        gitHubFileSha = apiData.sha;
-                    }
-                    console.log('✅ נתונים נטענו מ-GitHub API:', Object.keys(reportsData));
-                    displayReportsForYear(currentYear);
-                    return;
-                }
-                
-                // שיטה 4: JSDelivr CDN (מתעדכן מהר)
+                // שיטה 3: JSDelivr CDN עם purge
                 console.log('מנסה JSDelivr CDN...');
-                const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/na5845/Dashboard@main/data/reports.json`;
+                // השתמש ב-purge כדי לקבל את הגרסה העדכנית
+                const purgeUrl = `https://purge.jsdelivr.net/gh/na5845/Dashboard@main/data/reports.json`;
+                await fetch(purgeUrl).catch(() => {}); // נקה את המטמון של jsdelivr
+                
+                const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/na5845/Dashboard@latest/data/reports.json`;
                 response = await fetch(`${jsdelivrUrl}?t=${uniqueId}`, {
                     cache: 'no-store'
                 });
                 
                 if (response.ok) {
                     reportsData = await response.json();
-                    console.log('✅ נתונים נטענו מ-JSDelivr:', Object.keys(reportsData));
+                    console.log('✅ נתונים נטענו מ-JSDelivr:', new Date().toISOString());
                     displayReportsForYear(currentYear);
                     return;
                 }
