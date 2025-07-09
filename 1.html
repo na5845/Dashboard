@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="-1">
+    <meta http-equiv="Clear-Site-Data" content="cache, storage">
     <title>מערכת דוחות - קרן התורה</title>
     
     <!-- Firebase SDKs -->
@@ -1265,91 +1269,119 @@
 
         // טעינה אוטומטית מ-GitHub מיד בפתיחת הדף
         async function autoLoadFromGitHub() {
-            console.log('🔄 טוען נתונים מ-GitHub...');
+            console.log('🔄 טוען נתונים מ-GitHub...', new Date().toISOString());
             
-            // נקה כל מטמון אפשרי
+            // אפס את המשתנה הגלובלי
+            reportsData = {};
+            
+            // נקה את כל ה-fetch cache
             if ('caches' in window) {
-                caches.keys().then(names => {
-                    names.forEach(name => {
-                        caches.delete(name);
-                    });
-                });
+                try {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    console.log('✅ Cache נוקה');
+                } catch (e) {
+                    console.error('שגיאה בניקוי cache:', e);
+                }
             }
             
             try {
-                // שיטה 1: נסה GitHub Pages עם timestamp ייחודי
-                const githubPagesUrl = 'https://na5845.github.io/Dashboard/data/reports.json';
-                const timestamp = Date.now();
-                const randomParam = Math.random().toString(36).substring(7);
-                let response = await fetch(`${githubPagesUrl}?t=${timestamp}&r=${randomParam}`, {
+                // יצירת URL ייחודי לחלוטין
+                const uniqueId = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+                
+                // שיטה 1: GitHub Raw Content עם URL ייחודי
+                console.log('מנסה לטעון מ-GitHub Raw...');
+                const rawUrl = `https://raw.githubusercontent.com/na5845/Dashboard/main/data/reports.json`;
+                let response = await fetch(`${rawUrl}?cachebuster=${uniqueId}`, {
                     method: 'GET',
                     cache: 'no-store',
                     mode: 'cors',
                     credentials: 'omit',
                     headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache',
-                        'Expires': '0'
+                        'Cache-Control': 'no-cache, no-store, max-age=0',
+                        'Pragma': 'no-cache'
                     }
                 });
                 
                 if (response.ok) {
-                    const data = await response.json();
-                    reportsData = JSON.parse(JSON.stringify(data)); // יצירת עותק חדש
-                    console.log('✅ נתונים נטענו בהצלחה מ-GitHub Pages');
+                    const text = await response.text();
+                    reportsData = JSON.parse(text);
+                    console.log('✅ נתונים נטענו מ-GitHub Raw:', Object.keys(reportsData));
                     displayReportsForYear(currentYear);
                     return;
                 }
                 
-                // שיטה 2: GitHub API (ללא צורך בטוקן לקריאה)
-                console.log('מנסה דרך GitHub API...');
-                const apiUrl = 'https://api.github.com/repos/na5845/Dashboard/contents/data/reports.json';
-                response = await fetch(`${apiUrl}?t=${timestamp}`, {
+                // שיטה 2: GitHub Pages עם bypass cache
+                console.log('מנסה GitHub Pages...');
+                const githubPagesUrl = `https://na5845.github.io/Dashboard/data/reports.json`;
+                response = await fetch(`${githubPagesUrl}?v=${uniqueId}`, {
                     method: 'GET',
-                    cache: 'no-store',
-                    headers: {
-                        'Accept': 'application/vnd.github.v3+json',
-                        'Cache-Control': 'no-cache',
-                        'If-None-Match': '' // מונע שימוש ב-ETag
-                    }
+                    cache: 'reload', // כופה טעינה מחדש
+                    mode: 'cors',
+                    headers: new Headers({
+                        'pragma': 'no-cache',
+                        'cache-control': 'no-cache'
+                    })
                 });
                 
                 if (response.ok) {
-                    const apiData = await response.json();
-                    const content = atob(apiData.content.replace(/\n/g, ''));
-                    reportsData = JSON.parse(content);
-                    gitHubFileSha = apiData.sha;
-                    console.log('✅ נתונים נטענו בהצלחה מ-GitHub API');
+                    const text = await response.text();
+                    reportsData = JSON.parse(text);
+                    console.log('✅ נתונים נטענו מ-GitHub Pages:', Object.keys(reportsData));
                     displayReportsForYear(currentYear);
                     return;
                 }
                 
-                // שיטה 3: Proxy service
-                console.log('מנסה דרך proxy service...');
-                const rawUrl = 'https://raw.githubusercontent.com/na5845/Dashboard/main/data/reports.json';
-                const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(rawUrl);
-                response = await fetch(`${proxyUrl}&t=${timestamp}&r=${randomParam}`, {
+                // שיטה 3: GitHub API
+                console.log('מנסה GitHub API...');
+                const apiUrl = `https://api.github.com/repos/na5845/Dashboard/contents/data/reports.json`;
+                response = await fetch(`${apiUrl}?ref=main&t=${uniqueId}`, {
                     method: 'GET',
                     cache: 'no-store',
                     headers: {
+                        'Accept': 'application/vnd.github.v3.raw',
                         'Cache-Control': 'no-cache'
                     }
                 });
                 
                 if (response.ok) {
-                    reportsData = await response.json();
-                    console.log('✅ נתונים נטענו בהצלחה דרך proxy');
+                    // אם קיבלנו raw response
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        reportsData = await response.json();
+                    } else {
+                        // אם קיבלנו base64
+                        const apiData = await response.json();
+                        const content = atob(apiData.content.replace(/\n/g, ''));
+                        reportsData = JSON.parse(content);
+                        gitHubFileSha = apiData.sha;
+                    }
+                    console.log('✅ נתונים נטענו מ-GitHub API:', Object.keys(reportsData));
                     displayReportsForYear(currentYear);
                     return;
                 }
                 
-                // אם כל השיטות נכשלו
-                throw new Error('לא ניתן לטעון נתונים מאף מקור');
+                // שיטה 4: JSDelivr CDN (מתעדכן מהר)
+                console.log('מנסה JSDelivr CDN...');
+                const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/na5845/Dashboard@main/data/reports.json`;
+                response = await fetch(`${jsdelivrUrl}?t=${uniqueId}`, {
+                    cache: 'no-store'
+                });
+                
+                if (response.ok) {
+                    reportsData = await response.json();
+                    console.log('✅ נתונים נטענו מ-JSDelivr:', Object.keys(reportsData));
+                    displayReportsForYear(currentYear);
+                    return;
+                }
+                
+                throw new Error('כל שיטות הטעינה נכשלו');
                 
             } catch (error) {
                 console.error('❌ שגיאה בטעינת נתונים:', error);
                 // יצירת נתוני ברירת מחדל
                 reportsData = createDefaultData();
+                console.log('📝 נוצרו נתוני ברירת מחדל');
                 displayReportsForYear(currentYear);
             }
         }
@@ -1664,60 +1696,56 @@
 
         // אתחול הדף
         document.addEventListener('DOMContentLoaded', async function() {
-            // הוסף meta tags למניעת caching
-            const metaNoCache = document.createElement('meta');
-            metaNoCache.httpEquiv = 'Cache-Control';
-            metaNoCache.content = 'no-cache, no-store, must-revalidate, post-check=0, pre-check=0';
-            document.head.appendChild(metaNoCache);
+            console.log('🚀 אתחול הדף...', new Date().toISOString());
             
-            const metaPragma = document.createElement('meta');
-            metaPragma.httpEquiv = 'Pragma';
-            metaPragma.content = 'no-cache';
-            document.head.appendChild(metaPragma);
-            
-            const metaExpires = document.createElement('meta');
-            metaExpires.httpEquiv = 'Expires';
-            metaExpires.content = '0';
-            document.head.appendChild(metaExpires);
-            
-            // נקה את כל המטמון
-            if ('caches' in window) {
-                try {
-                    const cacheNames = await caches.keys();
-                    await Promise.all(
-                        cacheNames.map(cacheName => caches.delete(cacheName))
-                    );
-                    console.log('✅ כל המטמון נוקה');
-                } catch (e) {
-                    console.log('לא ניתן לנקות מטמון:', e);
+            // כפה reload אם הדף נטען מ-back/forward cache
+            window.addEventListener('pageshow', function(event) {
+                if (event.persisted) {
+                    console.log('🔄 הדף נטען מ-cache, מרענן...');
+                    window.location.reload(true);
                 }
-            }
+            });
             
-            // נקה את ה-sessionStorage ו-localStorage מנתוני דוחות
+            // מנע שמירה ב-back/forward cache
+            window.addEventListener('unload', function() {});
+            
+            // נקה את כל סוגי האחסון
             try {
-                // אל תמחק את הגדרות GitHub, רק נתוני דוחות
-                const keysToKeep = ['github-config', 'github_pat_token'];
-                
-                // נקה sessionStorage
-                Object.keys(sessionStorage).forEach(key => {
-                    if (!keysToKeep.includes(key)) {
-                        sessionStorage.removeItem(key);
+                // נקה service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
                     }
-                });
+                }
                 
-                // נקה localStorage מנתוני דוחות
+                // נקה caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                }
+                
+                // נקה את כל ה-sessionStorage
+                sessionStorage.clear();
+                
+                // נקה רק נתוני דוחות מ-localStorage
+                const keysToKeep = ['github-config', 'github_pat_token'];
                 Object.keys(localStorage).forEach(key => {
-                    if (key.includes('reports') && !keysToKeep.includes(key)) {
+                    if (!keysToKeep.some(keepKey => key.includes(keepKey))) {
                         localStorage.removeItem(key);
                     }
                 });
                 
-                console.log('✅ נתוני דוחות ישנים נוקו מהזיכרון');
+                console.log('✅ כל האחסונים נוקו');
             } catch (e) {
-                console.log('שגיאה בניקוי זיכרון:', e);
+                console.error('שגיאה בניקוי אחסון:', e);
             }
             
-            // טעינה אוטומטית מ-GitHub תמיד מהקובץ
+            // אפס משתנים גלובליים
+            reportsData = {};
+            gitHubFileSha = null;
+            
+            // טעינה מחדש של הנתונים
             await autoLoadFromGitHub();
             
             // פונקציונליות החלפת שנים בתצוגה הראשית
@@ -1751,16 +1779,11 @@
                 }
             });
             
-            // הוסף event listener למניעת cache בכל הקישורים
-            document.addEventListener('click', function(e) {
-                if (e.target.tagName === 'A' && e.target.href && e.target.href.includes('reports.json')) {
-                    e.preventDefault();
-                    const url = new URL(e.target.href);
-                    url.searchParams.set('t', Date.now());
-                    url.searchParams.set('r', Math.random().toString(36).substring(7));
-                    window.location.href = url.toString();
-                }
-            });
+            // הוסף reload כל דקה (אופציונלי - אפשר להסיר אם לא רוצים)
+            // setInterval(() => {
+            //     console.log('🔄 רענון אוטומטי של נתונים...');
+            //     autoLoadFromGitHub();
+            // }, 60000); // כל 60 שניות
         });
     </script>
 </body>
