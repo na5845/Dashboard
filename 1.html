@@ -1267,20 +1267,35 @@
         async function autoLoadFromGitHub() {
             console.log('🔄 טוען נתונים מ-GitHub...');
             
+            // נקה כל מטמון אפשרי
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
+            
             try {
-                // שיטה 1: נסה GitHub Pages
+                // שיטה 1: נסה GitHub Pages עם timestamp ייחודי
                 const githubPagesUrl = 'https://na5845.github.io/Dashboard/data/reports.json';
                 const timestamp = Date.now();
-                let response = await fetch(`${githubPagesUrl}?t=${timestamp}`, {
+                const randomParam = Math.random().toString(36).substring(7);
+                let response = await fetch(`${githubPagesUrl}?t=${timestamp}&r=${randomParam}`, {
+                    method: 'GET',
                     cache: 'no-store',
+                    mode: 'cors',
+                    credentials: 'omit',
                     headers: {
                         'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache'
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
                     }
                 });
                 
                 if (response.ok) {
-                    reportsData = await response.json();
+                    const data = await response.json();
+                    reportsData = JSON.parse(JSON.stringify(data)); // יצירת עותק חדש
                     console.log('✅ נתונים נטענו בהצלחה מ-GitHub Pages');
                     displayReportsForYear(currentYear);
                     return;
@@ -1289,10 +1304,13 @@
                 // שיטה 2: GitHub API (ללא צורך בטוקן לקריאה)
                 console.log('מנסה דרך GitHub API...');
                 const apiUrl = 'https://api.github.com/repos/na5845/Dashboard/contents/data/reports.json';
-                response = await fetch(apiUrl, {
+                response = await fetch(`${apiUrl}?t=${timestamp}`, {
+                    method: 'GET',
+                    cache: 'no-store',
                     headers: {
                         'Accept': 'application/vnd.github.v3+json',
-                        'Cache-Control': 'no-cache'
+                        'Cache-Control': 'no-cache',
+                        'If-None-Match': '' // מונע שימוש ב-ETag
                     }
                 });
                 
@@ -1308,9 +1326,14 @@
                 
                 // שיטה 3: Proxy service
                 console.log('מנסה דרך proxy service...');
-                const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent('https://raw.githubusercontent.com/na5845/Dashboard/main/data/reports.json');
-                response = await fetch(`${proxyUrl}&t=${timestamp}`, {
-                    cache: 'no-store'
+                const rawUrl = 'https://raw.githubusercontent.com/na5845/Dashboard/main/data/reports.json';
+                const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(rawUrl);
+                response = await fetch(`${proxyUrl}&t=${timestamp}&r=${randomParam}`, {
+                    method: 'GET',
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
                 });
                 
                 if (response.ok) {
@@ -1644,7 +1667,7 @@
             // הוסף meta tags למניעת caching
             const metaNoCache = document.createElement('meta');
             metaNoCache.httpEquiv = 'Cache-Control';
-            metaNoCache.content = 'no-cache, no-store, must-revalidate';
+            metaNoCache.content = 'no-cache, no-store, must-revalidate, post-check=0, pre-check=0';
             document.head.appendChild(metaNoCache);
             
             const metaPragma = document.createElement('meta');
@@ -1656,6 +1679,43 @@
             metaExpires.httpEquiv = 'Expires';
             metaExpires.content = '0';
             document.head.appendChild(metaExpires);
+            
+            // נקה את כל המטמון
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(cacheName => caches.delete(cacheName))
+                    );
+                    console.log('✅ כל המטמון נוקה');
+                } catch (e) {
+                    console.log('לא ניתן לנקות מטמון:', e);
+                }
+            }
+            
+            // נקה את ה-sessionStorage ו-localStorage מנתוני דוחות
+            try {
+                // אל תמחק את הגדרות GitHub, רק נתוני דוחות
+                const keysToKeep = ['github-config', 'github_pat_token'];
+                
+                // נקה sessionStorage
+                Object.keys(sessionStorage).forEach(key => {
+                    if (!keysToKeep.includes(key)) {
+                        sessionStorage.removeItem(key);
+                    }
+                });
+                
+                // נקה localStorage מנתוני דוחות
+                Object.keys(localStorage).forEach(key => {
+                    if (key.includes('reports') && !keysToKeep.includes(key)) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                
+                console.log('✅ נתוני דוחות ישנים נוקו מהזיכרון');
+            } catch (e) {
+                console.log('שגיאה בניקוי זיכרון:', e);
+            }
             
             // טעינה אוטומטית מ-GitHub תמיד מהקובץ
             await autoLoadFromGitHub();
@@ -1675,7 +1735,7 @@
                 });
             });
 
-            // אתחול עורכי הנתונים עם שמירה אוטומטית
+            // אתחול עורכי הנתונים עם שמירה אוטומטית (רק להגדרות GitHub)
             ['github-username', 'github-repo', 'github-file', 'github-token'].forEach(id => {
                 const element = document.getElementById(id);
                 if (element) {
@@ -1688,6 +1748,17 @@
             document.getElementById('settings-modal').addEventListener('click', function(e) {
                 if (e.target === this) {
                     closeSettings();
+                }
+            });
+            
+            // הוסף event listener למניעת cache בכל הקישורים
+            document.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A' && e.target.href && e.target.href.includes('reports.json')) {
+                    e.preventDefault();
+                    const url = new URL(e.target.href);
+                    url.searchParams.set('t', Date.now());
+                    url.searchParams.set('r', Math.random().toString(36).substring(7));
+                    window.location.href = url.toString();
                 }
             });
         });
