@@ -1178,41 +1178,32 @@
 
         // טעינת נתונים מ-GitHub
         async function loadFromGitHub() {
+            const config = getGitHubConfig();
+            
+            if (!config.username || !config.repo || !config.token || !config.filePath) {
+                showApiStatus('נא מלא את כל השדות הנדרשים', 'error');
+                return;
+            }
+
             showApiStatus('טוען נתונים מ-GitHub...', 'loading');
 
             try {
-                // שיטה 1: GitHub Pages
-                let response = await fetch('https://na5845.github.io/Dashboard/data/reports.json?t=' + Date.now(), {
-                    cache: 'no-store',
+                // תמיד השתמש ב-GitHub API כדי לקבל את ה-SHA
+                const response = await fetch(`https://api.github.com/repos/${config.username}/${config.repo}/contents/${config.filePath}`, {
                     headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache'
+                        'Authorization': `token ${config.token}`,
+                        'Accept': 'application/vnd.github.v3+json'
                     }
                 });
 
-                if (!response.ok) {
-                    // שיטה 2: GitHub API
-                    const config = getGitHubConfig();
-                    if (config.token) {
-                        response = await fetch(`https://api.github.com/repos/${config.username}/${config.repo}/contents/${config.filePath}`, {
-                            headers: {
-                                'Authorization': `token ${config.token}`,
-                                'Accept': 'application/vnd.github.v3+json'
-                            }
-                        });
-
-                        if (response.ok) {
-                            const fileData = await response.json();
-                            gitHubFileSha = fileData.sha;
-                            const content = decodeURIComponent(escape(atob(fileData.content)));
-                            reportsData = JSON.parse(content);
-                        }
-                    }
-                } else {
-                    reportsData = await response.json();
-                }
-
                 if (response.ok) {
+                    const fileData = await response.json();
+                    gitHubFileSha = fileData.sha; // שמירת ה-SHA
+                    
+                    // תיקון בעיית הקידוד
+                    const content = decodeURIComponent(escape(atob(fileData.content)));
+                    reportsData = JSON.parse(content);
+                    
                     showApiStatus('✅ נתונים נטענו בהצלחה מ-GitHub!', 'success');
                     
                     // הצגת עורך הדוחות
@@ -1222,19 +1213,26 @@
                     
                     updateMonthOptions();
                     displayReportsForYear(currentYear);
+                    
+                } else if (response.status === 404) {
+                    // קובץ לא קיים - ניצור נתונים ברירת מחדל
+                    reportsData = createDefaultData();
+                    gitHubFileSha = null; // אין SHA כי הקובץ לא קיים
+                    
+                    showApiStatus('קובץ לא נמצא. נוצרו נתונים ברירת מחדל.', 'success');
+                    
+                    document.getElementById('editor-section').style.display = 'block';
+                    document.getElementById('report-section').style.display = 'block';
+                    document.getElementById('save-btn').style.display = 'block';
+                    
+                    updateMonthOptions();
+                    displayReportsForYear(currentYear);
+                    
                 } else {
-                    throw new Error('Failed to load data');
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-                
             } catch (error) {
                 showApiStatus(`❌ שגיאה בטעינה: ${error.message}`, 'error');
-                // יצירת נתוני ברירת מחדל
-                reportsData = createDefaultData();
-                document.getElementById('editor-section').style.display = 'block';
-                document.getElementById('report-section').style.display = 'block';
-                document.getElementById('save-btn').style.display = 'block';
-                updateMonthOptions();
-                displayReportsForYear(currentYear);
             }
         }
 
@@ -1341,6 +1339,27 @@
                 return;
             }
 
+            // אם אין SHA, נצטרך לקבל אותו קודם
+            if (!gitHubFileSha) {
+                showApiStatus('מאחזר נתוני קובץ...', 'loading');
+                try {
+                    const getResponse = await fetch(`https://api.github.com/repos/${config.username}/${config.repo}/contents/${config.filePath}`, {
+                        headers: {
+                            'Authorization': `token ${config.token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+                    
+                    if (getResponse.ok) {
+                        const fileData = await getResponse.json();
+                        gitHubFileSha = fileData.sha;
+                    }
+                    // אם הקובץ לא קיים, זה בסדר - ניצור אותו
+                } catch (error) {
+                    console.log('הקובץ עדיין לא קיים, ייווצר כעת');
+                }
+            }
+
             // עדכון הנתונים לפני השמירה
             const yearSelect = document.getElementById('edit-year-select');
             const monthSelect = document.getElementById('edit-month-select');
@@ -1379,6 +1398,7 @@
                     branch: 'main'
                 };
 
+                // הוסף SHA רק אם קיים
                 if (gitHubFileSha) {
                     updateData.sha = gitHubFileSha;
                 }
@@ -1395,7 +1415,7 @@
 
                 if (response.ok) {
                     const responseData = await response.json();
-                    gitHubFileSha = responseData.content.sha;
+                    gitHubFileSha = responseData.content.sha; // עדכון ה-SHA החדש
                     
                     showApiStatus('✅ השינויים נשמרו בהצלחה ל-GitHub!', 'success');
                     displayReportsForYear(currentYear);
