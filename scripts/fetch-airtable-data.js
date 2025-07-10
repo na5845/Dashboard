@@ -46,24 +46,80 @@ async function fetchAllRecords() {
     return allRecords;
 }
 
+// Helper function to get Israel time - FIXED VERSION
+function getIsraelTime(date = new Date()) {
+    // Create a date object with the correct timezone offset
+    const utcTime = date.getTime() + (date.getTimezoneOffset() * 60000);
+    const israelOffset = 3; // Israel is UTC+3 (or UTC+2 in winter, but let's use 3 for now)
+    const israelTime = new Date(utcTime + (3600000 * israelOffset));
+    return israelTime;
+}
+
+// Alternative more robust method using Intl.DateTimeFormat
+function getIsraelTimeV2(date = new Date()) {
+    // Format the date in Israel timezone
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Jerusalem',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+    
+    const parts = formatter.formatToParts(date);
+    const dateObj = {};
+    
+    parts.forEach(part => {
+        dateObj[part.type] = part.value;
+    });
+    
+    return new Date(
+        parseInt(dateObj.year),
+        parseInt(dateObj.month) - 1,
+        parseInt(dateObj.day),
+        parseInt(dateObj.hour),
+        parseInt(dateObj.minute),
+        parseInt(dateObj.second)
+    );
+}
+
+// Helper function to get date without time (at midnight)
+function getDateOnly(date) {
+    const d = new Date(date);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
 // Process the raw data
 function processData(records) {
     console.log('⚙️ Processing data...');
     
-    // Get current date
-    const now = new Date();
+    // Get current time - use the fixed function
+    const serverNow = new Date();
+    const now = getIsraelTimeV2(serverNow);
+    
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
     const currentDay = now.getDate();
     
-    console.log(`📅 Processing date: ${currentDay}/${currentMonth + 1}/${currentYear}`);
+    console.log('🕐 Server time:', serverNow.toString());
+    console.log('🕐 Israel time:', now.toString(), `(Should be UTC+3)`);
+    console.log(`📅 Processing for: ${currentDay}/${currentMonth + 1}/${currentYear}`);
     
-    // Calculate last month
+    // Calculate last month correctly
     const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
     
-    console.log(`📅 Current month: ${currentMonth + 1}/${currentYear}`);
-    console.log(`📅 Last month: ${lastMonth + 1}/${lastMonthYear}`);
+    // Create date ranges - using local Israel dates
+    const currentMonthStart = new Date(currentYear, currentMonth, 1);
+    const currentMonthEnd = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59, 999);
+    const lastMonthStart = new Date(lastMonthYear, lastMonth, 1);
+    const lastMonthEnd = new Date(lastMonthYear, lastMonth + 1, 0, 23, 59, 59, 999);
+    
+    console.log('📅 Current month range:', currentMonthStart.toLocaleDateString('he-IL'), 'to', currentMonthEnd.toLocaleDateString('he-IL'));
+    console.log('📅 Last month range:', lastMonthStart.toLocaleDateString('he-IL'), 'to', lastMonthEnd.toLocaleDateString('he-IL'));
     
     const stats = {
         lastUpdate: new Date().toISOString(),
@@ -136,12 +192,16 @@ function processData(records) {
     });
     
     console.log(`✅ Processing ${validRecords.length} valid records`);
-    
-    // Show sample records for debugging
     console.log('📊 Sample records for debugging:');
+    
+    // Show first 5 records for debugging
     validRecords.slice(0, 5).forEach((record, index) => {
-        const date = new Date(record.fields[dateField]);
-        console.log(`  Record ${index + 1}: ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} - ₪${record.fields[amountField]} - ${record.fields[categoryField] || 'N/A'} - ${record.fields[orgField] || 'N/A'}`);
+        console.log(`  Record ${index + 1}:`, {
+            date: record.fields[dateField],
+            amount: record.fields[amountField],
+            category: record.fields[categoryField],
+            org: record.fields[orgField]
+        });
     });
     
     let recordsInCurrentMonth = 0;
@@ -155,11 +215,15 @@ function processData(records) {
         
         let date;
         try {
+            // Parse the date - it comes in ISO format with Z (UTC)
             date = new Date(dateStr);
             if (isNaN(date.getTime())) {
                 console.warn(`❌ Invalid date in record ${recordIndex + 1}:`, dateStr);
                 return;
             }
+            
+            // Convert to Israel time for display and comparison
+            // Note: For comparison, we'll use the UTC date but compare at day level
         } catch (e) {
             console.warn(`❌ Error parsing date in record ${recordIndex + 1}:`, dateStr, e);
             return;
@@ -168,32 +232,34 @@ function processData(records) {
         const category = fields[categoryField] || 'לא מוגדר';
         const organization = fields[orgField] || 'אחר';
         
-        // Extract only date components - ignore time completely!
-        const recordYear = date.getFullYear();
-        const recordMonth = date.getMonth();
-        const recordDay = date.getDate();
+        // For comparison, use the date as-is but compare at day level
+        // Get the year, month, day in Israel timezone
+        const israelDate = getIsraelTimeV2(date);
+        const recordYear = israelDate.getFullYear();
+        const recordMonth = israelDate.getMonth();
+        const recordDay = israelDate.getDate();
         
-        // Log first few records for debugging
+        // Log first few records in detail
         if (recordIndex < 10) {
-            console.log(`📝 Record ${recordIndex + 1}: ${recordDay}/${recordMonth + 1}/${recordYear} - ₪${amount} - ${category} - ${organization}`);
+            console.log(`📝 Record ${recordIndex + 1}: ${israelDate.toLocaleDateString('he-IL')} ${israelDate.toLocaleTimeString('he-IL')} - ₪${amount} - ${category} - ${organization}`);
         }
         
-        // Current month check - simple year and month comparison
+        // Current month check
         if (recordYear === currentYear && recordMonth === currentMonth) {
             recordsInCurrentMonth++;
-            addToMonthStats(stats.currentMonth, amount, date, category, organization);
+            addToMonthStats(stats.currentMonth, amount, israelDate, category, organization);
             
             if (recordIndex < 10) {
-                console.log(`   ✅ Added to CURRENT month (${currentMonth + 1}/${currentYear})`);
+                console.log(`   ✅ Added to CURRENT month`);
             }
         }
-        // Last month check - simple year and month comparison
+        // Last month check
         else if (recordYear === lastMonthYear && recordMonth === lastMonth) {
             recordsInLastMonth++;
-            addToMonthStats(stats.lastMonth, amount, date, category, organization);
+            addToMonthStats(stats.lastMonth, amount, israelDate, category, organization);
             
             if (recordIndex < 10) {
-                console.log(`   📅 Added to LAST month (${lastMonth + 1}/${lastMonthYear})`);
+                console.log(`   📅 Added to LAST month`);
             }
         }
         // Other periods
@@ -201,20 +267,21 @@ function processData(records) {
             recordsInOtherPeriods++;
             
             if (recordIndex < 10) {
-                console.log(`   ⏭️ Skipped (${recordMonth + 1}/${recordYear} - other period)`);
+                console.log(`   ⏭️ Skipped (other period)`);
             }
         }
         
         // Current year data
-        if (recordYear === currentYear) {
+        if (israelDate.getFullYear() === currentYear) {
             stats.yearlyData[currentYear.toString()] += amount;
         }
         
-        // Last 12 months
+        // Last 12 months - using Israel date
         const monthsDiff = (currentYear - recordYear) * 12 + (currentMonth - recordMonth);
         if (monthsDiff >= 0 && monthsDiff < 12) {
-            const month = (recordMonth + 1).toString().padStart(2, '0');
-            const monthKey = `${month}-${recordYear}`;
+            const year = israelDate.getFullYear();
+            const month = (israelDate.getMonth() + 1).toString().padStart(2, '0');
+            const monthKey = `${month}-${year}`;
             stats.monthlyData[monthKey] = (stats.monthlyData[monthKey] || 0) + amount;
         }
     });
@@ -222,8 +289,8 @@ function processData(records) {
     // Summary for debugging
     console.log('\n📊 Processing Summary:');
     console.log(`   Total records processed: ${validRecords.length}`);
-    console.log(`   Records in current month (${currentMonth + 1}/${currentYear}): ${recordsInCurrentMonth}`);
-    console.log(`   Records in last month (${lastMonth + 1}/${lastMonthYear}): ${recordsInLastMonth}`);
+    console.log(`   Records in current month: ${recordsInCurrentMonth}`);
+    console.log(`   Records in last month: ${recordsInLastMonth}`);
     console.log(`   Records in other periods: ${recordsInOtherPeriods}`);
     console.log(`   Current month total: ₪${stats.currentMonth.total.toLocaleString('he-IL')}`);
     console.log(`   Last month total: ₪${stats.lastMonth.total.toLocaleString('he-IL')}`);
