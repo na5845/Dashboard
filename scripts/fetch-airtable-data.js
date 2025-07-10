@@ -46,47 +46,24 @@ async function fetchAllRecords() {
     return allRecords;
 }
 
-// Helper function to get Israel time
-function getIsraelTime(date = new Date()) {
-    // Convert to Israel timezone
-    const israelTimeString = date.toLocaleString("en-US", {timeZone: "Asia/Jerusalem"});
-    return new Date(israelTimeString);
-}
-
-// Helper function to get date without time (at midnight)
-function getDateOnly(date) {
-    const d = new Date(date);
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
 // Process the raw data
 function processData(records) {
     console.log('⚙️ Processing data...');
     
-    // Get current time in Israel timezone
-    const now = getIsraelTime();
+    // Get current date
+    const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
     const currentDay = now.getDate();
     
-    console.log('🕐 Server time:', new Date().toString());
-    console.log('🕐 Israel time:', now.toString());
-    console.log(`📅 Processing for: ${currentDay}/${currentMonth + 1}/${currentYear}`);
+    console.log(`📅 Processing date: ${currentDay}/${currentMonth + 1}/${currentYear}`);
     
-    // Calculate last month correctly
+    // Calculate last month
     const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
     
-    // Create date ranges (at midnight Israel time)
-    const currentMonthStart = new Date(currentYear, currentMonth, 1);
-    const currentMonthEnd = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59, 999);
-    const lastMonthStart = new Date(lastMonthYear, lastMonth, 1);
-    const lastMonthEnd = new Date(lastMonthYear, lastMonth + 1, 0, 23, 59, 59, 999);
-    const yearStart = new Date(currentYear, 0, 1);
-    const last12MonthsStart = new Date(currentYear, currentMonth - 11, 1);
-    
-    console.log('📅 Current month range:', currentMonthStart.toLocaleDateString('he-IL'), 'to', currentMonthEnd.toLocaleDateString('he-IL'));
-    console.log('📅 Last month range:', lastMonthStart.toLocaleDateString('he-IL'), 'to', lastMonthEnd.toLocaleDateString('he-IL'));
+    console.log(`📅 Current month: ${currentMonth + 1}/${currentYear}`);
+    console.log(`📅 Last month: ${lastMonth + 1}/${lastMonthYear}`);
     
     const stats = {
         lastUpdate: new Date().toISOString(),
@@ -159,16 +136,12 @@ function processData(records) {
     });
     
     console.log(`✅ Processing ${validRecords.length} valid records`);
-    console.log('📊 Sample records for debugging:');
     
-    // Show first 5 records for debugging
+    // Show sample records for debugging
+    console.log('📊 Sample records for debugging:');
     validRecords.slice(0, 5).forEach((record, index) => {
-        console.log(`  Record ${index + 1}:`, {
-            date: record.fields[dateField],
-            amount: record.fields[amountField],
-            category: record.fields[categoryField],
-            org: record.fields[orgField]
-        });
+        const date = new Date(record.fields[dateField]);
+        console.log(`  Record ${index + 1}: ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} - ₪${record.fields[amountField]} - ${record.fields[categoryField] || 'N/A'} - ${record.fields[orgField] || 'N/A'}`);
     });
     
     let recordsInCurrentMonth = 0;
@@ -182,15 +155,11 @@ function processData(records) {
         
         let date;
         try {
-            // Parse the date and convert to Israel timezone
             date = new Date(dateStr);
             if (isNaN(date.getTime())) {
                 console.warn(`❌ Invalid date in record ${recordIndex + 1}:`, dateStr);
                 return;
             }
-            
-            // Convert to Israel time for accurate comparison
-            date = getIsraelTime(date);
         } catch (e) {
             console.warn(`❌ Error parsing date in record ${recordIndex + 1}:`, dateStr, e);
             return;
@@ -199,34 +168,32 @@ function processData(records) {
         const category = fields[categoryField] || 'לא מוגדר';
         const organization = fields[orgField] || 'אחר';
         
-        // Get date without time for comparison
-        const dateOnly = getDateOnly(date);
-        const currentMonthStartOnly = getDateOnly(currentMonthStart);
-        const currentMonthEndOnly = getDateOnly(currentMonthEnd);
-        const lastMonthStartOnly = getDateOnly(lastMonthStart);
-        const lastMonthEndOnly = getDateOnly(lastMonthEnd);
+        // Extract only date components - ignore time completely!
+        const recordYear = date.getFullYear();
+        const recordMonth = date.getMonth();
+        const recordDay = date.getDate();
         
-        // Log first few records in detail
+        // Log first few records for debugging
         if (recordIndex < 10) {
-            console.log(`📝 Record ${recordIndex + 1}: ${date.toLocaleDateString('he-IL')} ${date.toLocaleTimeString('he-IL')} - ₪${amount} - ${category} - ${organization}`);
+            console.log(`📝 Record ${recordIndex + 1}: ${recordDay}/${recordMonth + 1}/${recordYear} - ₪${amount} - ${category} - ${organization}`);
         }
         
-        // Current month check
-        if (dateOnly >= currentMonthStartOnly && dateOnly <= currentMonthEndOnly) {
+        // Current month check - simple year and month comparison
+        if (recordYear === currentYear && recordMonth === currentMonth) {
             recordsInCurrentMonth++;
             addToMonthStats(stats.currentMonth, amount, date, category, organization);
             
             if (recordIndex < 10) {
-                console.log(`   ✅ Added to CURRENT month`);
+                console.log(`   ✅ Added to CURRENT month (${currentMonth + 1}/${currentYear})`);
             }
         }
-        // Last month check
-        else if (dateOnly >= lastMonthStartOnly && dateOnly <= lastMonthEndOnly) {
+        // Last month check - simple year and month comparison
+        else if (recordYear === lastMonthYear && recordMonth === lastMonth) {
             recordsInLastMonth++;
             addToMonthStats(stats.lastMonth, amount, date, category, organization);
             
             if (recordIndex < 10) {
-                console.log(`   📅 Added to LAST month`);
+                console.log(`   📅 Added to LAST month (${lastMonth + 1}/${lastMonthYear})`);
             }
         }
         // Other periods
@@ -234,21 +201,20 @@ function processData(records) {
             recordsInOtherPeriods++;
             
             if (recordIndex < 10) {
-                console.log(`   ⏭️ Skipped (other period)`);
+                console.log(`   ⏭️ Skipped (${recordMonth + 1}/${recordYear} - other period)`);
             }
         }
         
         // Current year data
-        if (date.getFullYear() === currentYear) {
+        if (recordYear === currentYear) {
             stats.yearlyData[currentYear.toString()] += amount;
         }
         
         // Last 12 months
-        const monthsDiff = (currentYear - date.getFullYear()) * 12 + (currentMonth - date.getMonth());
+        const monthsDiff = (currentYear - recordYear) * 12 + (currentMonth - recordMonth);
         if (monthsDiff >= 0 && monthsDiff < 12) {
-            const year = date.getFullYear();
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const monthKey = `${month}-${year}`;
+            const month = (recordMonth + 1).toString().padStart(2, '0');
+            const monthKey = `${month}-${recordYear}`;
             stats.monthlyData[monthKey] = (stats.monthlyData[monthKey] || 0) + amount;
         }
     });
@@ -256,8 +222,8 @@ function processData(records) {
     // Summary for debugging
     console.log('\n📊 Processing Summary:');
     console.log(`   Total records processed: ${validRecords.length}`);
-    console.log(`   Records in current month: ${recordsInCurrentMonth}`);
-    console.log(`   Records in last month: ${recordsInLastMonth}`);
+    console.log(`   Records in current month (${currentMonth + 1}/${currentYear}): ${recordsInCurrentMonth}`);
+    console.log(`   Records in last month (${lastMonth + 1}/${lastMonthYear}): ${recordsInLastMonth}`);
     console.log(`   Records in other periods: ${recordsInOtherPeriods}`);
     console.log(`   Current month total: ₪${stats.currentMonth.total.toLocaleString('he-IL')}`);
     console.log(`   Last month total: ₪${stats.lastMonth.total.toLocaleString('he-IL')}`);
