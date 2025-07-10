@@ -46,10 +46,9 @@ async function fetchAllRecords() {
     return allRecords;
 }
 
-// פונקציה להמרת תאריך ל-4 בבוקר
+// פונקציה פשוטה להמרת תאריך ל-4 בבוקר של אותו יום
 function setTo4AM(date) {
-    const newDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 4, 0, 0, 0);
-    return newDate;
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 4, 0, 0, 0);
 }
 
 // Process the raw data
@@ -57,14 +56,8 @@ function processData(records) {
     console.log('⚙️ Processing data...');
     
     const now = new Date();
-    const israelTime = new Date().toLocaleString("en-US", {timeZone: "Asia/Jerusalem"});
-    const nowIsrael = new Date(israelTime);
-    
-    console.log('🕐 זמן השרת:', now.toString());
-    console.log('🕐 זמן ישראל:', nowIsrael.toLocaleString('he-IL'));
-    
-    const currentMonth = nowIsrael.getMonth();
-    const currentYear = nowIsrael.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
     const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
     
@@ -75,8 +68,11 @@ function processData(records) {
     const yearStart = new Date(currentYear, 0, 1);
     const last12MonthsStart = new Date(currentYear, currentMonth - 11, 1);
     
-    console.log('📅 Current month range:', currentMonthStart.toLocaleString('he-IL'), 'to', currentMonthEnd.toLocaleString('he-IL'));
-    console.log('📅 Last month range:', lastMonthStart.toLocaleString('he-IL'), 'to', lastMonthEnd.toLocaleString('he-IL'));
+    // הוספת לוגים לדיבאג
+    console.log('📅 Current date:', now.toISOString());
+    console.log('📅 Israel time:', now.toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' }));
+    console.log('📅 Current month range:', currentMonthStart.toLocaleDateString('he-IL'), 'to', currentMonthEnd.toLocaleDateString('he-IL'));
+    console.log('📅 Last month range:', lastMonthStart.toLocaleDateString('he-IL'), 'to', lastMonthEnd.toLocaleDateString('he-IL'));
     
     const stats = {
         lastUpdate: new Date().toISOString(),
@@ -177,22 +173,13 @@ function processData(records) {
         const lastMonthStartAt4AM = setTo4AM(lastMonthStart);
         const lastMonthEndAt4AM = setTo4AM(lastMonthEnd);
         
-        // הוספת לוג לכל רשומה
-        console.log(`📝 רשומה: תאריך=${date.toLocaleString('he-IL')}, סכום=${amount}, קטגוריה=${category}, ארגון=${organization}`);
-        
         // Current month - השוואה עם תאריכים ב-4 בבוקר
         if (dateAt4AM >= currentMonthStartAt4AM && dateAt4AM <= currentMonthEndAt4AM) {
-            console.log(`   ✅ נכנס לחודש נוכחי`);
             addToMonthStats(stats.currentMonth, amount, date, category, organization);
         }
         // Last month - השוואה עם תאריכים ב-4 בבוקר
         else if (dateAt4AM >= lastMonthStartAt4AM && dateAt4AM <= lastMonthEndAt4AM) {
-            console.log(`   📅 נכנס לחודש קודם`);
             addToMonthStats(stats.lastMonth, amount, date, category, organization);
-        }
-        // תאריכים אחרים
-        else {
-            console.log(`   ⏭️ תאריך אחר - לא נכנס לסטטיסטיקה`);
         }
         
         // Current year data
@@ -210,8 +197,8 @@ function processData(records) {
         }
     });
     
-    // הדפסת סיכום
-    console.log('\n📊 Summary:');
+    // הדפסת סיכום לדיבאג
+    console.log('📊 Summary:');
     console.log(`   Current month total: ₪${stats.currentMonth.total.toLocaleString('he-IL')}`);
     console.log(`   Last month total: ₪${stats.lastMonth.total.toLocaleString('he-IL')}`);
     console.log(`   Current month days with data: ${Object.keys(stats.currentMonth.daily).length}`);
