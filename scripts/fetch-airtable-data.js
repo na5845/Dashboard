@@ -102,6 +102,7 @@ function processData(records) {
             categoryOrg: {} 
         },
         monthlyData: {},
+        monthlyDonors: {}, // NEW: מספר תורמים לפי חודש
         yearlyData: {
             '2022': 413501,
             '2023': 527445,
@@ -156,6 +157,9 @@ function processData(records) {
     
     console.log(`✅ Processing ${validRecords.length} valid records`);
     
+    // Track unique donors per month (using record ID as unique identifier)
+    const monthlyDonorSets = {};
+    
     // כשמעבדים את הרשומות:
     validRecords.forEach((record) => {
         const fields = record.fields;
@@ -201,15 +205,28 @@ function processData(records) {
             stats.yearlyData[currentYear.toString()] += amount;
         }
         
-        // Last 12 months
+        // Last 12 months - track both amount and donors
         const monthsDiff = (currentYear - dateIsrael.getFullYear()) * 12 + (currentMonth - dateIsrael.getMonth());
         if (monthsDiff >= 0 && monthsDiff < 12) {
             const year = dateIsrael.getFullYear();
             const month = (dateIsrael.getMonth() + 1).toString().padStart(2, '0');
             const monthKey = `${month}-${year}`;
+            
+            // Track amount
             stats.monthlyData[monthKey] = (stats.monthlyData[monthKey] || 0) + amount;
+            
+            // Track unique donors
+            if (!monthlyDonorSets[monthKey]) {
+                monthlyDonorSets[monthKey] = new Set();
+            }
+            monthlyDonorSets[monthKey].add(record.id); // Using record ID as unique identifier
         }
     });
+    
+    // Convert donor sets to counts
+    for (const monthKey in monthlyDonorSets) {
+        stats.monthlyDonors[monthKey] = monthlyDonorSets[monthKey].size;
+    }
     
     // הדפסת סיכום לדיבאג
     console.log('📊 Summary:');
@@ -217,6 +234,7 @@ function processData(records) {
     console.log(`   Last month total: ₪${stats.lastMonth.total.toLocaleString('he-IL')}`);
     console.log(`   Current month days with data: ${Object.keys(stats.currentMonth.daily).length}`);
     console.log(`   Last month days with data: ${Object.keys(stats.lastMonth.daily).length}`);
+    console.log(`   Monthly donor counts:`, stats.monthlyDonors);
     
     return stats;
 }
