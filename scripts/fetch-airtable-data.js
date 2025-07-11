@@ -46,9 +46,16 @@ async function fetchAllRecords() {
     return allRecords;
 }
 
+// פונקציה להמרת תאריך לשעון ישראל
+function toIsraelTime(date) {
+    // המרה לשעון ישראל עם התחשבות אוטומטית בשעון קיץ/חורף
+    const israelDateStr = date.toLocaleString("en-US", { timeZone: "Asia/Jerusalem" });
+    return new Date(israelDateStr);
+}
+
 // פונקציה פשוטה להמרת תאריך ל-4 בבוקר של אותו יום
 function setTo4AM(date) {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 7, 0, 0, 0);
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 4, 0, 0, 0);
 }
 
 // Process the raw data
@@ -56,8 +63,14 @@ function processData(records) {
     console.log('⚙️ Processing data...');
     
     const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const nowIsrael = toIsraelTime(now);
+    
+    console.log('🕐 UTC time:', now.toISOString());
+    console.log('🕐 Israel time:', nowIsrael.toLocaleString('he-IL'));
+    console.log('🕐 Hour difference:', Math.round((nowIsrael - now) / (1000 * 60 * 60)), 'hours');
+    
+    const currentMonth = nowIsrael.getMonth();
+    const currentYear = nowIsrael.getFullYear();
     const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
     
@@ -68,9 +81,6 @@ function processData(records) {
     const yearStart = new Date(currentYear, 0, 1);
     const last12MonthsStart = new Date(currentYear, currentMonth - 11, 1);
     
-    // הוספת לוגים לדיבאג
-    console.log('📅 Current date:', now.toISOString());
-    console.log('📅 Israel time:', now.toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' }));
     console.log('📅 Current month range:', currentMonthStart.toLocaleDateString('he-IL'), 'to', currentMonthEnd.toLocaleDateString('he-IL'));
     console.log('📅 Last month range:', lastMonthStart.toLocaleDateString('he-IL'), 'to', lastMonthEnd.toLocaleDateString('he-IL'));
     
@@ -146,6 +156,7 @@ function processData(records) {
     
     console.log(`✅ Processing ${validRecords.length} valid records`);
     
+    // כשמעבדים את הרשומות:
     validRecords.forEach((record) => {
         const fields = record.fields;
         const amount = parseFloat(fields[amountField]);
@@ -163,35 +174,38 @@ function processData(records) {
             return;
         }
         
+        // המרה לשעון ישראל
+        const dateIsrael = toIsraelTime(date);
+        
         const category = fields[categoryField] || 'לא מוגדר';
         const organization = fields[orgField] || 'אחר';
         
-        // המרת כל התאריכים ל-4 בבוקר
-        const dateAt4AM = setTo4AM(date);
-        const currentMonthStartAt4AM = setTo4AM(currentMonthStart);
-        const currentMonthEndAt4AM = setTo4AM(currentMonthEnd);
-        const lastMonthStartAt4AM = setTo4AM(lastMonthStart);
-        const lastMonthEndAt4AM = setTo4AM(lastMonthEnd);
+        // המרת כל התאריכים ל-4 בבוקר בשעון ישראל
+        const dateAt4AM = setTo4AM(dateIsrael);
+        const currentMonthStartAt4AM = setTo4AM(toIsraelTime(currentMonthStart));
+        const currentMonthEndAt4AM = setTo4AM(toIsraelTime(currentMonthEnd));
+        const lastMonthStartAt4AM = setTo4AM(toIsraelTime(lastMonthStart));
+        const lastMonthEndAt4AM = setTo4AM(toIsraelTime(lastMonthEnd));
         
         // Current month - השוואה עם תאריכים ב-4 בבוקר
         if (dateAt4AM >= currentMonthStartAt4AM && dateAt4AM <= currentMonthEndAt4AM) {
-            addToMonthStats(stats.currentMonth, amount, date, category, organization);
+            addToMonthStats(stats.currentMonth, amount, dateIsrael, category, organization);
         }
         // Last month - השוואה עם תאריכים ב-4 בבוקר
         else if (dateAt4AM >= lastMonthStartAt4AM && dateAt4AM <= lastMonthEndAt4AM) {
-            addToMonthStats(stats.lastMonth, amount, date, category, organization);
+            addToMonthStats(stats.lastMonth, amount, dateIsrael, category, organization);
         }
         
         // Current year data
-        if (date.getFullYear() === currentYear) {
+        if (dateIsrael.getFullYear() === currentYear) {
             stats.yearlyData[currentYear.toString()] += amount;
         }
         
         // Last 12 months
-        const monthsDiff = (currentYear - date.getFullYear()) * 12 + (currentMonth - date.getMonth());
+        const monthsDiff = (currentYear - dateIsrael.getFullYear()) * 12 + (currentMonth - dateIsrael.getMonth());
         if (monthsDiff >= 0 && monthsDiff < 12) {
-            const year = date.getFullYear();
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = dateIsrael.getFullYear();
+            const month = (dateIsrael.getMonth() + 1).toString().padStart(2, '0');
             const monthKey = `${month}-${year}`;
             stats.monthlyData[monthKey] = (stats.monthlyData[monthKey] || 0) + amount;
         }
