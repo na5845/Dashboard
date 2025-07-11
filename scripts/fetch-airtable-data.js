@@ -48,7 +48,7 @@ async function fetchAllRecords() {
 
 // פונקציה פשוטה להמרת תאריך ל-4 בבוקר של אותו יום
 function setTo4AM(date) {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 4, 0, 0, 0);
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 7, 0, 0, 0);
 }
 
 // Process the raw data
